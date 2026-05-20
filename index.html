@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sloppy Games — Free to Play Browser Games</title>
+  <meta name="description" content="Sloppy Games — a small family-made website with free to play browser games. New games dropping soon!" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-blobs" aria-hidden="true">
+    <span class="blob blob--purple"></span>
+    <span class="blob blob--lime"></span>
+    <span class="blob blob--purple blob--small"></span>
+  </div>
+
+  <header class="site-header">
+    <a href="#home" class="logo-link" aria-label="Sloppy Games home">
+      <img src="assets/logo.png" alt="Sloppy Games logo" class="logo-img" />
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#games">Games</a>
+      <a href="#about">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" class="hero">
+      <img src="assets/logo.png" alt="Sloppy Games" class="hero-logo" />
+      <h1 class="hero-title">Free to play browser games. <span class="accent">Made for fun.</span></h1>
+      <p class="hero-sub">A tiny indie game website built by a dad and his 8-year-old son. No accounts, no downloads — just hit play and go.</p>
+      <div class="hero-cta">
+        <a class="btn btn--primary" href="#games">Play a Game</a>
+        <a class="btn btn--ghost" href="#about">What is this?</a>
+      </div>
+    </section>
+
+    <section id="games" class="games">
+      <h2 class="section-title">Our Games</h2>
+      <p class="section-sub">Brand new and being built right now. Check back soon — there'll be more every few weeks.</p>
+
+      <div class="game-grid">
+        <article class="game-card game-card--coming">
+          <div class="game-thumb game-thumb--1" aria-hidden="true">
+            <span class="thumb-emoji">🎮</span>
+          </div>
+          <h3>First Game</h3>
+          <p>Our very first game is being built. Watch this space!</p>
+          <span class="badge">Coming Soon</span>
+        </article>
+
+        <article class="game-card game-card--coming">
+          <div class="game-thumb game-thumb--2" aria-hidden="true">
+            <span class="thumb-emoji">🕹️</span>
+          </div>
+          <h3>Mystery Game #2</h3>
+          <p>Something silly, something simple, something fun.</p>
+          <span class="badge">Coming Soon</span>
+        </article>
+
+        <article class="game-card game-card--coming">
+          <div class="game-thumb game-thumb--3" aria-hidden="true">
+            <span class="thumb-emoji">👾</span>
+          </div>
+          <h3>Mystery Game #3</h3>
+          <p>We haven't even decided what this one is yet.</p>
+          <span class="badge">Coming Soon</span>
+        </article>
+      </div>
+    </section>
+
+    <section id="about" class="about">
+      <div class="about-card">
+        <h2 class="section-title">About Sloppy Games</h2>
+        <p>
+          Hey! Sloppy Games is a small family-run website where my 8-year-old son
+          and I make free browser games. We came up with the ideas, the name,
+          and that gloriously sloppy logo together.
+        </p>
+        <p>
+          Everything here will always be free to play — no logins, no ads
+          pushed in your face, no nonsense. Just click and play. Our goal is to
+          build one little game at a time and get better as we go.
+        </p>
+        <p class="about-signoff">— The Sloppy Games team 💜💚</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <img src="assets/logo.png" alt="" class="footer-logo" />
+    <p>&copy; <span id="year"></span> Sloppy Games. Free to play, made with love.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
