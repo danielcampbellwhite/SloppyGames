@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Sloppy Paint — Sloppy Games</title>
+  <meta name="description" content="A relaxed painting playground. Pick a brush, a colour, a size — or stamp sloppy splats and stars all over the canvas." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple: #9333ea;
+      --purple-dark: #6b21a8;
+      --lime: #84cc16;
+      --lime-dark: #65a30d;
+      --pink: #ec4899;
+      --ink: #1a1a1a;
+      --paper: #ffffff;
+      --bg: #fdfdf6;
+      --shadow: rgba(26, 26, 26, 0.2);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Fredoka', system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-tap-highlight-color: transparent;
+    }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1.25rem;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      gap: 0.5rem;
+    }
+    .back {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      text-decoration: none; color: var(--ink);
+      font-family: 'Baloo 2', sans-serif; font-weight: 700;
+      padding: 0.4rem 0.8rem; border-radius: 999px;
+      border: 3px solid var(--ink); background: var(--paper);
+      box-shadow: 4px 4px 0 var(--ink);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .back:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .topbar img { height: 40px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    .topbar h1 {
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 0.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.6rem 0.75rem;
+      padding: 0.75rem;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: 0 6px 0 var(--ink);
+    }
+    .group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .group-label {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #666;
+    }
+    .group-row {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .swatch, .tool, .stamp, .size {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      padding: 0;
+      color: var(--ink);
+      flex-shrink: 0;
+    }
+    .swatch:active, .tool:active, .stamp:active, .size:active {
+      transform: translate(3px,3px);
+      box-shadow: 0 0 0 var(--ink);
+    }
+    .swatch.active, .tool.active, .stamp.active, .size.active {
+      outline: 3px solid var(--ink);
+      outline-offset: 3px;
+    }
+
+    .swatch {
+      border-radius: 50%;
+    }
+    .swatch.white {
+      background: #ffffff;
+    }
+    .swatch.rainbow {
+      background:
+        conic-gradient(from 0deg,
+          #ef4444 0deg, #f59e0b 60deg, #facc15 120deg,
+          #84cc16 180deg, #06b6d4 240deg, #6366f1 300deg, #ec4899 360deg);
+    }
+
+    .tool svg, .stamp svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .size {
+      background: var(--paper);
+    }
+    .size .dot {
+      background: var(--ink);
+      border-radius: 50%;
+    }
+    .size[data-size="s"] .dot { width: 6px;  height: 6px;  }
+    .size[data-size="m"] .dot { width: 12px; height: 12px; }
+    .size[data-size="l"] .dot { width: 20px; height: 20px; }
+    .size[data-size="xl"] .dot { width: 28px; height: 28px; }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .btn {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding: 0.55rem 1rem;
+      border-radius: 12px;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 4px 4px 0 var(--ink);
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+    }
+    .btn:hover { background: #f3f3f3; }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .btn.primary { background: var(--lime); }
+    .btn.primary:hover { background: #a3e635; }
+    .btn.danger:hover { background: #fecaca; }
+
+    /* Canvas */
+    .stage {
+      position: relative;
+      width: 100%;
+      flex: 1;
+      min-height: 360px;
+      background: #ffffff;
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: 0 6px 0 var(--ink);
+      overflow: hidden;
+    }
+    canvas#paper {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+    canvas#cursor {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .hint {
+      font-size: 0.85rem;
+      color: #666;
+      text-align: center;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 1rem;
+    }
+    .modal-bg.show { display: flex; }
+    .modal {
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: 6px 6px 0 var(--ink);
+      padding: 1.25rem 1.5rem;
+      max-width: 360px;
+      text-align: center;
+    }
+    .modal h2 { font-size: 1.4rem; margin-bottom: 0.4rem; }
+    .modal p { margin: 0.5rem 0 1rem; color: #444; }
+    .modal .row { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+
+    @media (max-width: 640px) {
+      .toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+      .swatch, .tool, .stamp, .size { width: 34px; height: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html" aria-label="Back to Sloppy Games">← Back</a>
+    <h1>Sloppy Paint</h1>
+    <a href="../../index.html" aria-label="Sloppy Games home">
+      <img src="../../assets/logo.png" alt="Sloppy Games" />
+    </a>
+  </header>
+
+  <main>
+    <div class="toolbar" id="toolbar">
+      <div class="group">
+        <span class="group-label">Brush</span>
+        <div class="group-row" id="brushRow">
+          <button class="tool active" data-brush="round" title="Round brush" aria-label="Round brush">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="#1a1a1a" stroke-width="2"/></svg>
+          </button>
+          <button class="tool" data-brush="spray" title="Spray" aria-label="Spray">
+            <svg viewBox="0 0 24 24">
+              <circle cx="6"  cy="10" r="1.4" fill="currentColor"/>
+              <circle cx="10" cy="8"  r="1.6" fill="currentColor"/>
+              <circle cx="14" cy="11" r="1.4" fill="currentColor"/>
+              <circle cx="18" cy="9"  r="1.6" fill="currentColor"/>
+              <circle cx="8"  cy="14" r="1.4" fill="currentColor"/>
+              <circle cx="13" cy="16" r="1.6" fill="currentColor"/>
+              <circle cx="17" cy="15" r="1.4" fill="currentColor"/>
+            </svg>
+          </button>
+          <button class="tool" data-brush="splat" title="Splat brush" aria-label="Splat brush">
+            <svg viewBox="0 0 100 100">
+              <path d="M 50 6 C 70 6, 78 18, 80 30 C 92 32, 96 46, 90 56 C 96 66, 90 80, 78 80 C 74 92, 56 96, 50 88 C 42 96, 26 90, 22 80 C 10 80, 4 66, 10 56 C 4 46, 8 32, 20 30 C 22 18, 30 6, 50 6 Z" fill="currentColor" stroke="#1a1a1a" stroke-width="5" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button class="tool" data-brush="rainbow" title="Rainbow brush" aria-label="Rainbow brush">
+            <svg viewBox="0 0 24 24">
+              <path d="M 4 16 A 8 8 0 0 1 20 16" fill="none" stroke="#ef4444" stroke-width="2"/>
+              <path d="M 6 16 A 6 6 0 0 1 18 16" fill="none" stroke="#facc15" stroke-width="2"/>
+              <path d="M 8 16 A 4 4 0 0 1 16 16" fill="none" stroke="#84cc16" stroke-width="2"/>
+              <path d="M 10 16 A 2 2 0 0 1 14 16" fill="none" stroke="#06b6d4" stroke-width="2"/>
+            </svg>
+          </button>
+          <button class="tool" data-brush="eraser" title="Eraser" aria-label="Eraser">
+            <svg viewBox="0 0 24 24">
+              <rect x="4" y="13" width="16" height="7" fill="#fff" stroke="#1a1a1a" stroke-width="2"/>
+              <rect x="7" y="6" width="10" height="9" fill="#fbbf24" stroke="#1a1a1a" stroke-width="2" transform="rotate(-15 12 10)"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="group-label">Size</span>
+        <div class="group-row" id="sizeRow">
+          <button class="size"   data-size="s"  aria-label="Small"><span class="dot"></span></button>
+          <button class="size active" data-size="m"  aria-label="Medium"><span class="dot"></span></button>
+          <button class="size"   data-size="l"  aria-label="Large"><span class="dot"></span></button>
+          <button class="size"   data-size="xl" aria-label="Huge"><span class="dot"></span></button>
+        </div>
+      </div>
+
+      <div class="group" style="grid-column: span 2;">
+        <span class="group-label">Colour</span>
+        <div class="group-row" id="colorRow"></div>
+      </div>
+
+      <div class="group" style="grid-column: 1 / -1;">
+        <span class="group-label">Stamps (tap canvas to drop)</span>
+        <div class="group-row" id="stampRow"></div>
+      </div>
+
+      <div class="group" style="grid-column: 1 / -1;">
+        <span class="group-label">Actions</span>
+        <div class="actions">
+          <button class="btn" id="undoBtn">↶ Undo</button>
+          <button class="btn danger" id="clearBtn">Clear</button>
+          <button class="btn primary" id="saveBtn">💾 Save PNG</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="paper"></canvas>
+      <canvas id="cursor"></canvas>
+    </div>
+
+    <p class="hint">Drag to paint. Pick a stamp from the row to drop shapes by tapping. The Eraser paints over with white.</p>
+  </main>
+
+  <div class="modal-bg" id="modal">
+    <div class="modal">
+      <h2>Clear the canvas?</h2>
+      <p>This will wipe everything you've painted. Are you sure?</p>
+      <div class="row">
+        <button class="btn" id="modalCancel">Cancel</button>
+        <button class="btn danger" id="modalConfirm">Clear all</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Colors ----------
+    const COLORS = [
+      '#1a1a1a', // black
+      '#ffffff', // white
+      '#9333ea', // purple
+      '#84cc16', // lime
+      '#ec4899', // pink
+      '#06b6d4', // cyan
+      '#ef4444', // red
+      '#f97316', // orange
+      '#facc15', // yellow
+      '#22c55e', // green
+      '#3b82f6', // blue
+      '#a16207', // brown
+    ];
+    const RAINBOW = ['#ef4444', '#f97316', '#facc15', '#84cc16', '#06b6d4', '#3b82f6', '#a855f7', '#ec4899'];
+
+    const SIZES = { s: 6, m: 14, l: 28, xl: 48 };
+    const STAMP_SIZES = { s: 36, m: 64, l: 110, xl: 170 };
+
+    // ---------- State ----------
+    let activeColor = '#9333ea';
+    let activeBrush = 'round';
+    let activeSize = 'm';
+    let activeStamp = null; // 'splat' | 'star' | ... when in stamp mode
+
+    let drawing = false;
+    let lastX = 0, lastY = 0;
+    let rainbowPhase = 0;
+
+    // ---------- DOM ----------
+    const stageEl = document.getElementById('stage');
+    const canvas = document.getElementById('paper');
+    const ctx = canvas.getContext('2d');
+    const cursorCanvas = document.getElementById('cursor');
+    const cctx = cursorCanvas.getContext('2d');
+    const brushRow = document.getElementById('brushRow');
+    const sizeRow = document.getElementById('sizeRow');
+    const colorRow = document.getElementById('colorRow');
+    const stampRow = document.getElementById('stampRow');
+    const undoBtn = document.getElementById('undoBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const modal = document.getElementById('modal');
+
+    // ---------- Build palette ----------
+    COLORS.forEach((c, i) => {
+      const b = document.createElement('button');
+      b.className = 'swatch' + (c === '#ffffff' ? ' white' : '');
+      b.style.background = c;
+      b.dataset.color = c;
+      b.setAttribute('aria-label', 'Colour ' + c);
+      b.addEventListener('click', () => { activeColor = c; updateActiveStates(); updateBrushIcons(); });
+      colorRow.appendChild(b);
+    });
+    // Rainbow indicator (not a color, but visual cue)
+
+    // ---------- Build stamps ----------
+    const STAMPS = [
+      { key: 'splat',     label: 'Splat',     icon: stampSVG('splat') },
+      { key: 'star',      label: 'Star',      icon: stampSVG('star') },
+      { key: 'heart',     label: 'Heart',     icon: stampSVG('heart') },
+      { key: 'smiley',    label: 'Smiley',    icon: stampSVG('smiley') },
+      { key: 'flower',    label: 'Flower',    icon: stampSVG('flower') },
+      { key: 'cloud',     label: 'Cloud',     icon: stampSVG('cloud') },
+      { key: 'sun',       label: 'Sun',       icon: stampSVG('sun') },
+      { key: 'rainbow',   label: 'Rainbow',   icon: stampSVG('rainbow') },
+      { key: 'lightning', label: 'Lightning', icon: stampSVG('lightning') },
+      { key: 'tree',      label: 'Tree',      icon: stampSVG('tree') },
+      { key: 'fish',      label: 'Fish',      icon: stampSVG('fish') },
+      { key: 'moon',      label: 'Moon',      icon: stampSVG('moon') },
+    ];
+    STAMPS.forEach((s) => {
+      const b = document.createElement('button');
+      b.className = 'stamp';
+      b.innerHTML = s.icon;
+      b.dataset.stamp = s.key;
+      b.setAttribute('aria-label', s.label);
+      b.title = s.label;
+      b.addEventListener('click', () => {
+        activeStamp = activeStamp === s.key ? null : s.key;
+        updateActiveStates();
+      });
+      stampRow.appendChild(b);
+    });
+
+    function stampSVG(kind) {
+      const v = 24;
+      switch (kind) {
+        case 'splat':
+          return `<svg viewBox="0 0 100 100"><path d="M 50 6 C 70 6, 78 18, 80 30 C 92 32, 96 46, 90 56 C 96 66, 90 80, 78 80 C 74 92, 56 96, 50 88 C 42 96, 26 90, 22 80 C 10 80, 4 66, 10 56 C 4 46, 8 32, 20 30 C 22 18, 30 6, 50 6 Z" fill="#9333ea" stroke="#1a1a1a" stroke-width="5"/></svg>`;
+        case 'star':
+          return `<svg viewBox="0 0 ${v} ${v}"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18.5 21 L12 16.5 L5.5 21 L8 13.5 L2 9 L9.5 9 Z" fill="#facc15" stroke="#1a1a1a" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+        case 'heart':
+          return `<svg viewBox="0 0 ${v} ${v}"><path d="M12 21 C 4 14, 2 8, 6 5 C 9 3, 12 5, 12 8 C 12 5, 15 3, 18 5 C 22 8, 20 14, 12 21 Z" fill="#ec4899" stroke="#1a1a1a" stroke-width="1.5"/></svg>`;
+        case 'smiley':
+          return `<svg viewBox="0 0 ${v} ${v}"><circle cx="12" cy="12" r="10" fill="#facc15" stroke="#1a1a1a" stroke-width="1.5"/><circle cx="9" cy="10" r="1.3" fill="#1a1a1a"/><circle cx="15" cy="10" r="1.3" fill="#1a1a1a"/><path d="M 8 14 Q 12 18 16 14" fill="none" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+        case 'flower':
+          return `<svg viewBox="0 0 ${v} ${v}"><circle cx="12" cy="6"  r="3.5" fill="#ec4899" stroke="#1a1a1a" stroke-width="1.2"/><circle cx="18" cy="12" r="3.5" fill="#ec4899" stroke="#1a1a1a" stroke-width="1.2"/><circle cx="6"  cy="12" r="3.5" fill="#ec4899" stroke="#1a1a1a" stroke-width="1.2"/><circle cx="12" cy="18" r="3.5" fill="#ec4899" stroke="#1a1a1a" stroke-width="1.2"/><circle cx="12" cy="12" r="3"   fill="#facc15" stroke="#1a1a1a" stroke-width="1.2"/></svg>`;
+        case 'cloud':
+          return `<svg viewBox="0 0 ${v} ${v}"><path d="M6 16 a4 4 0 0 1 0-8 a5 5 0 0 1 9-2 a4 4 0 0 1 3 10 Z" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/></svg>`;
+        case 'sun':
+          return `<svg viewBox="0 0 ${v} ${v}"><g stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="5" y1="5" x2="7" y2="7"/><line x1="17" y1="17" x2="19" y2="19"/><line x1="5" y1="19" x2="7" y2="17"/><line x1="17" y1="7" x2="19" y2="5"/></g><circle cx="12" cy="12" r="5" fill="#facc15" stroke="#1a1a1a" stroke-width="1.6"/></svg>`;
+        case 'rainbow':
+          return `<svg viewBox="0 0 ${v} ${v}"><path d="M 3 18 A 9 9 0 0 1 21 18" fill="none" stroke="#ef4444" stroke-width="2"/><path d="M 5 18 A 7 7 0 0 1 19 18" fill="none" stroke="#facc15" stroke-width="2"/><path d="M 7 18 A 5 5 0 0 1 17 18" fill="none" stroke="#84cc16" stroke-width="2"/><path d="M 9 18 A 3 3 0 0 1 15 18" fill="none" stroke="#06b6d4" stroke-width="2"/></svg>`;
+        case 'lightning':
+          return `<svg viewBox="0 0 ${v} ${v}"><path d="M 13 2 L 6 13 L 11 13 L 9 22 L 17 10 L 12 10 Z" fill="#facc15" stroke="#1a1a1a" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+        case 'tree':
+          return `<svg viewBox="0 0 ${v} ${v}"><rect x="10" y="14" width="4" height="8" fill="#a16207" stroke="#1a1a1a" stroke-width="1.4"/><path d="M 12 2 L 4 16 L 20 16 Z" fill="#84cc16" stroke="#1a1a1a" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+        case 'fish':
+          return `<svg viewBox="0 0 ${v} ${v}"><path d="M 3 12 L 9 8 L 17 8 Q 21 12 17 16 L 9 16 Z" fill="#06b6d4" stroke="#1a1a1a" stroke-width="1.4" stroke-linejoin="round"/><circle cx="14" cy="11" r="1.2" fill="#1a1a1a"/></svg>`;
+        case 'moon':
+          return `<svg viewBox="0 0 ${v} ${v}"><path d="M 16 3 a 9 9 0 1 0 5 12 a 7 7 0 0 1 -5 -12 Z" fill="#fef3c7" stroke="#1a1a1a" stroke-width="1.5"/></svg>`;
+      }
+      return '';
+    }
+
+    // ---------- Wire brushes / sizes ----------
+    brushRow.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-brush]');
+      if (!b) return;
+      activeBrush = b.dataset.brush;
+      activeStamp = null;
+      updateActiveStates();
+      updateBrushIcons();
+    });
+    sizeRow.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-size]');
+      if (!b) return;
+      activeSize = b.dataset.size;
+      updateActiveStates();
+    });
+
+    function updateActiveStates() {
+      brushRow.querySelectorAll('button').forEach(b => b.classList.toggle('active', !activeStamp && b.dataset.brush === activeBrush));
+      sizeRow.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.size === activeSize));
+      colorRow.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.color === activeColor));
+      stampRow.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.stamp === activeStamp));
+    }
+    function updateBrushIcons() {
+      brushRow.querySelectorAll('button[data-brush]').forEach(b => {
+        const k = b.dataset.brush;
+        if (k === 'round' || k === 'spray' || k === 'splat') {
+          b.style.color = activeColor;
+        } else {
+          b.style.color = '';
+        }
+      });
+    }
+
+    // ---------- Canvas sizing & undo ----------
+    let CW = 1000, CH = 700; // virtual canvas size
+    function fitCanvas() {
+      // Pick a virtual canvas size that fits the visible stage at devicePixelRatio.
+      const r = stageEl.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const targetW = Math.max(320, Math.round(r.width * dpr));
+      const targetH = Math.max(360, Math.round(r.height * dpr));
+      const prev = document.createElement('canvas');
+      prev.width = canvas.width || targetW;
+      prev.height = canvas.height || targetH;
+      // Keep existing painted content when resizing
+      if (canvas.width) prev.getContext('2d').drawImage(canvas, 0, 0);
+
+      canvas.width = targetW;
+      canvas.height = targetH;
+      cursorCanvas.width = targetW;
+      cursorCanvas.height = targetH;
+      CW = targetW; CH = targetH;
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, CW, CH);
+      // Restore prior painting scaled to fit
+      if (prev.width > 1 && prev.height > 1) {
+        ctx.drawImage(prev, 0, 0, prev.width, prev.height, 0, 0, CW, CH);
+      }
+    }
+    window.addEventListener('resize', () => {
+      // debounce
+      clearTimeout(window._rt); window._rt = setTimeout(fitCanvas, 120);
+    });
+
+    // ---------- Coordinate transform ----------
+    function ptFromEvent(e) {
+      const r = canvas.getBoundingClientRect();
+      const cx = e.clientX - r.left;
+      const cy = e.clientY - r.top;
+      return {
+        x: (cx / r.width) * canvas.width,
+        y: (cy / r.height) * canvas.height,
+      };
+    }
+
+    // ---------- Undo (snapshot-based) ----------
+    const UNDO_LIMIT = 20;
+    const undoStack = [];
+    function pushUndo() {
+      const snap = document.createElement('canvas');
+      snap.width = canvas.width;
+      snap.height = canvas.height;
+      snap.getContext('2d').drawImage(canvas, 0, 0);
+      undoStack.push(snap);
+      if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+    }
+    function undo() {
+      const snap = undoStack.pop();
+      if (!snap) return;
+      ctx.clearRect(0, 0, CW, CH);
+      ctx.drawImage(snap, 0, 0);
+    }
+    undoBtn.addEventListener('click', undo);
+
+    // ---------- Drawing ----------
+    function brushSize() { return SIZES[activeSize] * (canvas.width / 1000); }
+    function stampPx() { return STAMP_SIZES[activeSize] * (canvas.width / 1000); }
+
+    function drawDab(x, y, color, size, brush) {
+      if (brush === 'splat') {
+        drawSplatDab(x, y, size, color);
+        return;
+      }
+      if (brush === 'spray') {
+        drawSpray(x, y, size, color);
+        return;
+      }
+      // round / rainbow / eraser
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawSpray(x, y, size, color) {
+      ctx.fillStyle = color;
+      const density = Math.max(4, Math.round(size * 1.5));
+      for (let i = 0; i < density; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()) * (size / 1.4);
+        const dx = Math.cos(a) * r;
+        const dy = Math.sin(a) * r;
+        const dotR = Math.random() * (size * 0.06) + 1;
+        ctx.beginPath();
+        ctx.arc(x + dx, y + dy, dotR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawSplatDab(x, y, size, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.random() * Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = Math.max(1, size * 0.06);
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      const points = 9 + Math.floor(Math.random() * 4);
+      const r = size * 0.85;
+      for (let i = 0; i < points; i++) {
+        const a = (i / points) * Math.PI * 2;
+        const rr = r * (0.75 + Math.random() * 0.35);
+        const px = Math.cos(a) * rr;
+        const py = Math.sin(a) * rr;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // a couple of little drips
+      const dripCount = 1 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < dripCount; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const d = r * (0.9 + Math.random() * 0.5);
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * d, Math.sin(a) * d, size * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function colorForStroke() {
+      if (activeBrush === 'eraser') return '#ffffff';
+      if (activeBrush === 'rainbow') {
+        rainbowPhase = (rainbowPhase + 0.04) % RAINBOW.length;
+        return RAINBOW[Math.floor(rainbowPhase)];
+      }
+      return activeColor;
+    }
+
+    function drawSegment(x0, y0, x1, y1) {
+      const dx = x1 - x0;
+      const dy = y1 - y0;
+      const dist = Math.hypot(dx, dy);
+      const size = brushSize();
+      // For splat brush, only drop occasional splats (looks better than continuous)
+      const step = activeBrush === 'splat' ? Math.max(size * 0.55, 12)
+                : activeBrush === 'spray' ? Math.max(size * 0.25, 3)
+                : Math.max(size * 0.18, 1.2);
+      const n = Math.max(1, Math.floor(dist / step));
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        const x = x0 + dx * t;
+        const y = y0 + dy * t;
+        const color = colorForStroke();
+        drawDab(x, y, color, size, activeBrush);
+      }
+    }
+
+    // ---------- Stamps ----------
+    function drawStamp(kind, x, y, size, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      switch (kind) {
+        case 'splat': {
+          // Use a sloppy splat with the active color
+          ctx.fillStyle = color === '#ffffff' ? '#9333ea' : color;
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.04);
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          // approximate the logo's splat path scaled
+          const s = size / 100;
+          const path = [
+            [50,6],[70,6,78,18,80,30],[92,32,96,46,90,56],[96,66,90,80,78,80],
+            [74,92,56,96,50,88],[42,96,26,90,22,80],[10,80,4,66,10,56],
+            [4,46,8,32,20,30],[22,18,30,6,50,6]
+          ];
+          ctx.moveTo((path[0][0]-50)*s, (path[0][1]-50)*s);
+          for (let i = 1; i < path.length; i++) {
+            const p = path[i];
+            if (p.length === 6) ctx.bezierCurveTo((p[0]-50)*s,(p[1]-50)*s,(p[2]-50)*s,(p[3]-50)*s,(p[4]-50)*s,(p[5]-50)*s);
+            else ctx.lineTo((p[0]-50)*s,(p[1]-50)*s);
+          }
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          // face
+          ctx.fillStyle = '#fff';
+          ctx.beginPath(); ctx.arc(-12*s, -6*s, 8*s, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc( 12*s, -6*s, 8*s, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#1a1a1a';
+          ctx.beginPath(); ctx.arc(-11*s, -4*s, 3*s, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.arc( 13*s, -4*s, 3*s, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, 12*s, 14*s, 0.15*Math.PI, 0.85*Math.PI);
+          ctx.lineWidth = Math.max(2, size * 0.05);
+          ctx.stroke();
+          break;
+        }
+        case 'star': {
+          const r = size / 2;
+          ctx.fillStyle = '#facc15';
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.05);
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+            const rr = i % 2 === 0 ? r : r * 0.45;
+            const px = Math.cos(a) * rr;
+            const py = Math.sin(a) * rr;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          break;
+        }
+        case 'heart': {
+          const s = size / 24;
+          ctx.fillStyle = '#ec4899';
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.05);
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(0, 9*s);
+          ctx.bezierCurveTo(-8*s, -2*s, -14*s, 6*s, 0, 12*s);
+          ctx.bezierCurveTo(14*s, 6*s, 8*s, -2*s, 0, 9*s);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          break;
+        }
+        case 'smiley': {
+          const r = size / 2;
+          ctx.fillStyle = '#facc15';
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.05);
+          ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#1a1a1a';
+          ctx.beginPath(); ctx.arc(-r*0.3, -r*0.2, r*0.1, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.arc( r*0.3, -r*0.2, r*0.1, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, r*0.05, r*0.45, 0.1*Math.PI, 0.9*Math.PI);
+          ctx.lineWidth = Math.max(2, size * 0.06);
+          ctx.stroke();
+          break;
+        }
+        case 'flower': {
+          const r = size / 2;
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.04);
+          ctx.fillStyle = color === '#ffffff' ? '#ec4899' : color;
+          for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2;
+            const px = Math.cos(a) * r * 0.55;
+            const py = Math.sin(a) * r * 0.55;
+            ctx.beginPath();
+            ctx.arc(px, py, r * 0.35, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+          }
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath(); ctx.arc(0, 0, r * 0.32, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          break;
+        }
+        case 'cloud': {
+          const s = size / 24;
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.04);
+          ctx.beginPath();
+          ctx.arc(-7*s,  0,    6*s, 0, Math.PI * 2);
+          ctx.arc( 0,   -4*s,  7*s, 0, Math.PI * 2);
+          ctx.arc( 7*s,  0,    6*s, 0, Math.PI * 2);
+          ctx.arc( 0,    4*s,  7*s, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          break;
+        }
+        case 'sun': {
+          const r = size / 3;
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.05);
+          // rays
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * r * 1.3, Math.sin(a) * r * 1.3);
+            ctx.lineTo(Math.cos(a) * r * 1.9, Math.sin(a) * r * 1.9);
+            ctx.lineCap = 'round';
+            ctx.stroke();
+          }
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI*2);
+          ctx.fill(); ctx.stroke();
+          break;
+        }
+        case 'rainbow': {
+          const r = size / 2;
+          const widths = ['#ef4444','#f97316','#facc15','#84cc16','#06b6d4','#3b82f6','#a855f7'];
+          ctx.lineWidth = Math.max(3, size * 0.08);
+          ctx.lineCap = 'round';
+          for (let i = 0; i < widths.length; i++) {
+            ctx.strokeStyle = widths[i];
+            const rr = r - i * (size * 0.07);
+            if (rr <= 0) break;
+            ctx.beginPath();
+            ctx.arc(0, r * 0.3, rr, Math.PI, 2 * Math.PI);
+            ctx.stroke();
+          }
+          // dark outline
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.04);
+          ctx.beginPath();
+          ctx.arc(0, r * 0.3, r, Math.PI, 2 * Math.PI);
+          ctx.stroke();
+          const innerR = r - (widths.length - 1) * (size * 0.07) - size * 0.07;
+          if (innerR > 0) {
+            ctx.beginPath();
+            ctx.arc(0, r * 0.3, innerR, Math.PI, 2 * Math.PI);
+            ctx.stroke();
+          }
+          break;
+        }
+        case 'lightning': {
+          const s = size / 24;
+          ctx.fillStyle = '#facc15';
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.05);
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(1*s, -10*s);
+          ctx.lineTo(-6*s, 2*s);
+          ctx.lineTo(-1*s, 2*s);
+          ctx.lineTo(-3*s, 11*s);
+          ctx.lineTo(5*s, -1*s);
+          ctx.lineTo(0*s, -1*s);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          break;
+        }
+        case 'tree': {
+          const s = size / 24;
+          ctx.fillStyle = '#a16207';
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.04);
+          // trunk
+          ctx.beginPath();
+          ctx.rect(-3*s, 3*s, 6*s, 8*s);
+          ctx.fill(); ctx.stroke();
+          // crown
+          ctx.fillStyle = '#84cc16';
+          ctx.beginPath();
+          ctx.moveTo(0, -11*s);
+          ctx.lineTo(-9*s, 4*s);
+          ctx.lineTo(9*s, 4*s);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          break;
+        }
+        case 'fish': {
+          const s = size / 24;
+          ctx.fillStyle = '#06b6d4';
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.04);
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(-11*s, 0);
+          ctx.lineTo(-5*s, -4*s);
+          ctx.lineTo(6*s, -4*s);
+          ctx.quadraticCurveTo(11*s, 0, 6*s, 4*s);
+          ctx.lineTo(-5*s, 4*s);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#1a1a1a';
+          ctx.beginPath();
+          ctx.arc(2*s, -1*s, s * 0.9, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+        case 'moon': {
+          const r = size / 2;
+          ctx.fillStyle = '#fef3c7';
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = Math.max(2, size * 0.05);
+          ctx.beginPath();
+          ctx.arc(0, 0, r, -0.3 * Math.PI, 1.3 * Math.PI);
+          ctx.arc(r * 0.3, -r * 0.1, r * 0.85, 1.0 * Math.PI, 0.0 * Math.PI, true);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          break;
+        }
+      }
+      ctx.restore();
+    }
+
+    // ---------- Cursor preview ----------
+    function drawCursor(x, y) {
+      cctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+      if (!x && !y) return;
+      const size = brushSize();
+      cctx.strokeStyle = '#1a1a1a';
+      cctx.lineWidth = 1.5;
+      cctx.setLineDash([4, 4]);
+      cctx.beginPath();
+      const r = activeStamp ? (stampPx() / 2) : (size / 2);
+      cctx.arc(x, y, r, 0, Math.PI * 2);
+      cctx.stroke();
+      cctx.setLineDash([]);
+    }
+
+    // ---------- Pointer handling ----------
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
+      const p = ptFromEvent(e);
+      pushUndo();
+      if (activeStamp) {
+        drawStamp(activeStamp, p.x, p.y, stampPx(), activeColor);
+      } else {
+        drawing = true;
+        lastX = p.x; lastY = p.y;
+        drawSegment(p.x, p.y, p.x, p.y);
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      const p = ptFromEvent(e);
+      drawCursor(p.x, p.y);
+      if (!drawing || activeStamp) return;
+      drawSegment(lastX, lastY, p.x, p.y);
+      lastX = p.x; lastY = p.y;
+    });
+    canvas.addEventListener('pointerup', (e) => {
+      drawing = false;
+      try { canvas.releasePointerCapture(e.pointerId); } catch {}
+    });
+    canvas.addEventListener('pointerleave', () => {
+      drawCursor(0, 0);
+    });
+    canvas.addEventListener('pointercancel', () => { drawing = false; });
+
+    // ---------- Clear ----------
+    clearBtn.addEventListener('click', () => { modal.classList.add('show'); });
+    document.getElementById('modalCancel').addEventListener('click', () => modal.classList.remove('show'));
+    document.getElementById('modalConfirm').addEventListener('click', () => {
+      pushUndo();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, CW, CH);
+      modal.classList.remove('show');
+    });
+
+    // ---------- Save ----------
+    saveBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      const now = new Date();
+      const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+      link.download = `sloppy-painting-${ts}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    // ---------- Keyboard ----------
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      } else if (e.key === '[') {
+        // smaller
+        const order = ['s','m','l','xl'];
+        const i = order.indexOf(activeSize);
+        if (i > 0) { activeSize = order[i-1]; updateActiveStates(); }
+      } else if (e.key === ']') {
+        const order = ['s','m','l','xl'];
+        const i = order.indexOf(activeSize);
+        if (i < order.length - 1) { activeSize = order[i+1]; updateActiveStates(); }
+      }
+    });
+
+    // ---------- Boot ----------
+    fitCanvas();
+    updateActiveStates();
+    updateBrushIcons();
+  </script>
+</body>
+</html>

@@ -443,6 +443,52 @@ a.game-card:hover h3 { text-decoration: underline; text-decoration-thickness: 3p
   height: 38%;
   background: var(--ink);
 }
+/* Sloppy Paint thumbnail — a paint canvas with brush strokes and stamps */
+.game-thumb--paint {
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.paint-canvas {
+  position: absolute;
+  inset: 8px;
+  background: #fff;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.paint-stroke {
+  position: absolute;
+  border-radius: 999px;
+  transform-origin: left center;
+}
+.paint-stroke--1 {
+  background: #84cc16;
+  width: 70%;
+  height: 12%;
+  top: 22%;
+  left: 8%;
+  transform: rotate(-8deg);
+  box-shadow: 1px 2px 0 var(--ink);
+}
+.paint-stroke--2 {
+  background: #06b6d4;
+  width: 60%;
+  height: 10%;
+  top: 48%;
+  left: 28%;
+  transform: rotate(6deg);
+  box-shadow: 1px 2px 0 var(--ink);
+}
+.paint-stamp {
+  position: absolute;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,0.15));
+}
+.paint-stamp svg { width: 100%; height: 100%; display: block; }
+.paint-stamp--star  { width: 22%; top: 8%;  right: 8%; }
+.paint-stamp--heart { width: 22%; bottom: 10%; left: 12%; }
+.paint-stamp--splat { width: 30%; bottom: 6%; right: 6%; }
+
 .maths-flag::after {
   content: '';
   position: absolute;
