@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Sloppy Snake — Sloppy Games</title>
+  <meta name="description" content="Steer the sloppy snake. Eat splats to grow. Don't hit the walls or yourself." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple: #9333ea;
+      --purple-dark: #6b21a8;
+      --purple-light: #c084fc;
+      --lime: #84cc16;
+      --lime-dark: #65a30d;
+      --pink: #ec4899;
+      --gold: #fbbf24;
+      --ink: #1a1a1a;
+      --paper: #ffffff;
+      --bg: #fff;
+      --grass: #d9f99d;
+      --grass-dark: #bef264;
+      --shadow: rgba(26, 26, 26, 0.2);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Fredoka', system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-tap-highlight-color: transparent;
+    }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .back {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      text-decoration: none; color: var(--ink);
+      font-family: 'Baloo 2', sans-serif; font-weight: 700;
+      padding: 0.5rem 0.9rem; border-radius: 999px;
+      border: 3px solid var(--ink); background: var(--paper);
+      box-shadow: 4px 4px 0 var(--ink);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .back:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.5rem 1rem 2rem;
+      gap: 0.75rem;
+    }
+    .title {
+      text-align: center;
+      font-size: clamp(1.75rem, 4.5vw, 2.5rem);
+      line-height: 1.1;
+    }
+    .title .accent {
+      background: var(--lime);
+      padding: 0 0.4rem;
+      border-radius: 10px;
+      box-shadow: 3px 3px 0 var(--ink);
+      display: inline-block;
+      transform: rotate(-1deg);
+    }
+    .subtitle {
+      text-align: center;
+      max-width: 540px;
+      color: #444;
+      margin: -0.25rem 0 0.5rem;
+    }
+
+    .hud {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      width: min(560px, 95vw);
+    }
+    .hud-pill {
+      flex: 1 1 0;
+      min-width: 110px;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.5rem 0.75rem;
+      text-align: center;
+    }
+    .hud-pill .label {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      color: #666;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .hud-pill .value {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .hud-pill.length .value { color: var(--purple-dark); }
+
+    .stage {
+      position: relative;
+      width: min(560px, 95vw);
+      aspect-ratio: 1;
+      border: 4px solid var(--ink);
+      border-radius: 24px;
+      box-shadow: 0 8px 0 var(--ink);
+      background:
+        linear-gradient(180deg, var(--grass) 0%, var(--grass-dark) 100%);
+      overflow: hidden;
+      user-select: none;
+      touch-action: none;
+    }
+    canvas#board {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    /* Curtain (idle / game over) */
+    .curtain {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(1px);
+      -webkit-backdrop-filter: blur(1px);
+      text-align: center;
+      padding: 1rem;
+      transition: opacity 0.2s ease;
+      z-index: 10;
+    }
+    .curtain.hidden { opacity: 0; pointer-events: none; }
+    .curtain > div {
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 20px;
+      box-shadow: 6px 6px 0 var(--ink);
+      padding: 1.25rem 1.5rem;
+      max-width: 90%;
+    }
+    .curtain h2 { font-size: clamp(1.4rem, 4.5vw, 2rem); margin-bottom: 0.4rem; }
+    .curtain p { margin: 0.25rem 0 0.75rem; color: #333; }
+
+    /* Mobile D-pad — appears on touch devices */
+    .dpad {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 0.4rem;
+      width: min(280px, 80vw);
+      aspect-ratio: 1;
+      margin-top: 0.25rem;
+    }
+    .dpad button {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: 1.6rem;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      box-shadow: 4px 4px 0 var(--ink);
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      color: var(--ink);
+    }
+    .dpad button:active {
+      transform: translate(4px, 4px);
+      box-shadow: 0 0 0 var(--ink);
+      background: var(--lime);
+    }
+    .dpad .up    { grid-column: 2; grid-row: 1; }
+    .dpad .left  { grid-column: 1; grid-row: 2; }
+    .dpad .right { grid-column: 3; grid-row: 2; }
+    .dpad .down  { grid-column: 2; grid-row: 3; }
+    @media (hover: none) and (pointer: coarse) {
+      .dpad { display: grid; }
+    }
+
+    .btn {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      padding: 0.7rem 1.4rem;
+      border-radius: 999px;
+      border: 3px solid var(--ink);
+      background: var(--lime);
+      color: var(--ink);
+      box-shadow: 4px 4px 0 var(--ink);
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+    .btn:hover { background: #a3e635; }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+
+    .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 440px; margin: 0 1rem; }
+    kbd {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      border-radius: 6px;
+      padding: 0 0.4rem;
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+
+    @media (max-width: 540px) {
+      .topbar { padding: 0.75rem 1rem; }
+      .topbar img { height: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html" aria-label="Back to Sloppy Games">← Back</a>
+    <a href="../../index.html" aria-label="Sloppy Games home">
+      <img src="../../assets/logo.png" alt="Sloppy Games" />
+    </a>
+  </header>
+
+  <main>
+    <h1 class="title">Sloppy Snake <span class="accent">Eat 'em up</span></h1>
+    <p class="subtitle">Steer the snake to gobble up sloppy splats. Don't hit the walls — or yourself!</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Score</div><div class="value" id="score">0</div></div>
+      <div class="hud-pill length"><div class="label">Length</div><div class="value" id="length">3</div></div>
+      <div class="hud-pill"><div class="label">Best</div><div class="value" id="best">0</div></div>
+    </div>
+
+    <div class="stage" id="stage" aria-label="Sloppy Snake board">
+      <canvas id="board" width="600" height="600"></canvas>
+      <div class="curtain" id="curtain">
+        <div>
+          <h2 id="curtain-title">Ready to slither?</h2>
+          <p id="curtain-sub">Use arrow keys or WASD. On a phone, use the buttons below or swipe.</p>
+          <button class="btn" id="startBtn">Start</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dpad" aria-label="On-screen controls">
+      <button class="up"    data-dir="up"    aria-label="Up">▲</button>
+      <button class="left"  data-dir="left"  aria-label="Left">◀</button>
+      <button class="right" data-dir="right" aria-label="Right">▶</button>
+      <button class="down"  data-dir="down"  aria-label="Down">▼</button>
+    </div>
+
+    <p class="hint">Arrows or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>. <kbd>Space</kbd> to start/restart. <kbd>P</kbd> to pause.</p>
+  </main>
+
+  <script>
+    // ---------- Audio ----------
+    let audio = null;
+    function ensureAudio() {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      return audio;
+    }
+    function envelope(g, t, a, h, r, peak = 0.25) {
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(peak, t + a);
+      g.gain.setValueAtTime(peak, t + a + h);
+      g.gain.linearRampToValueAtTime(0, t + a + h + r);
+    }
+    function playEat() {
+      const ctx = ensureAudio();
+      const t = ctx.currentTime;
+      // chirp up
+      const g = ctx.createGain();
+      g.connect(ctx.destination);
+      envelope(g, t, 0.005, 0.02, 0.07, 0.22);
+      const o = ctx.createOscillator();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(440, t);
+      o.frequency.exponentialRampToValueAtTime(880, t + 0.08);
+      o.connect(g); o.start(t); o.stop(t + 0.1);
+    }
+    function playGoldEat() {
+      const ctx = ensureAudio();
+      const t = ctx.currentTime;
+      [659.25, 880, 1318.5].forEach((f, i) => {
+        const g = ctx.createGain();
+        g.connect(ctx.destination);
+        envelope(g, t + i * 0.06, 0.005, 0.03, 0.1, 0.22);
+        const o = ctx.createOscillator();
+        o.type = 'triangle';
+        o.frequency.value = f;
+        o.connect(g); o.start(t + i * 0.06); o.stop(t + i * 0.06 + 0.16);
+      });
+    }
+    function playTurn() {
+      const ctx = ensureAudio();
+      const t = ctx.currentTime;
+      const g = ctx.createGain();
+      g.connect(ctx.destination);
+      envelope(g, t, 0.001, 0.005, 0.03, 0.06);
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = 800;
+      o.connect(g); o.start(t); o.stop(t + 0.04);
+    }
+    function playGameOver() {
+      const ctx = ensureAudio();
+      const t = ctx.currentTime;
+      [600, 480, 380, 260].forEach((f, i) => {
+        const g = ctx.createGain();
+        g.connect(ctx.destination);
+        envelope(g, t + i * 0.12, 0.01, 0.05, 0.15, 0.22);
+        const o = ctx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.value = f;
+        o.connect(g); o.start(t + i * 0.12); o.stop(t + i * 0.12 + 0.22);
+      });
+    }
+
+    // ---------- Game config ----------
+    const COLS = 24;
+    const ROWS = 24;
+    const START_STEP_MS = 180;     // slow at start
+    const MIN_STEP_MS = 75;        // can't get faster than this
+    const SPEED_UP_EVERY = 4;      // every N foods, speed up
+    const SPEED_UP_FACTOR = 0.92;
+    const GOLD_CHANCE = 0.12;      // 12% of new food spawns are gold
+    const BEST_KEY = 'sloppy.snake.best';
+
+    // ---------- DOM ----------
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const lengthEl = document.getElementById('length');
+    const bestEl = document.getElementById('best');
+    const curtainEl = document.getElementById('curtain');
+    const curtainTitle = document.getElementById('curtain-title');
+    const curtainSub = document.getElementById('curtain-sub');
+    const startBtn = document.getElementById('startBtn');
+    const stageEl = document.getElementById('stage');
+
+    function resizeCanvas() {
+      // Canvas backing store at a fixed multiple of cell size for crisp pixels
+      const cssSize = stageEl.clientWidth;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const cell = Math.floor((cssSize / COLS) * dpr);
+      canvas.width = cell * COLS;
+      canvas.height = cell * ROWS;
+      canvas.style.width = canvas.width / dpr + 'px';
+      canvas.style.height = canvas.height / dpr + 'px';
+      draw(); // re-render so the board doesn't flash blank during resize
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // ---------- Game state ----------
+    let best = Number(localStorage.getItem(BEST_KEY) || 0);
+    bestEl.textContent = best;
+
+    let snake = [];        // array of {x, y} from head to tail
+    let dir = { x: 1, y: 0 };
+    let nextDirQueue = []; // up to 2 buffered direction changes
+    let food = null;       // {x, y, kind}
+    let score = 0;
+    let stepMs = START_STEP_MS;
+    let lastStepAt = 0;
+    let state = 'idle';    // idle | playing | paused | gameover
+    let foodsEatenSinceSpeedUp = 0;
+    let goldPulse = 0;     // for animating gold food
+
+    function reset() {
+      snake = [
+        { x: Math.floor(COLS / 2) + 1, y: Math.floor(ROWS / 2) },
+        { x: Math.floor(COLS / 2),     y: Math.floor(ROWS / 2) },
+        { x: Math.floor(COLS / 2) - 1, y: Math.floor(ROWS / 2) },
+      ];
+      dir = { x: 1, y: 0 };
+      nextDirQueue = [];
+      score = 0;
+      stepMs = START_STEP_MS;
+      foodsEatenSinceSpeedUp = 0;
+      placeFood();
+      updateHud();
+    }
+
+    function placeFood() {
+      // pick an empty cell
+      const occupied = new Set(snake.map(s => s.y * COLS + s.x));
+      const empties = [];
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          if (!occupied.has(y * COLS + x)) empties.push({ x, y });
+        }
+      }
+      if (!empties.length) return null; // win condition
+      const pos = empties[Math.floor(Math.random() * empties.length)];
+      const kind = Math.random() < GOLD_CHANCE ? 'gold' : 'splat';
+      food = { ...pos, kind };
+    }
+
+    function updateHud() {
+      scoreEl.textContent = score;
+      lengthEl.textContent = snake.length;
+      if (score > best) {
+        best = score;
+        localStorage.setItem(BEST_KEY, String(best));
+        bestEl.textContent = best;
+      }
+    }
+
+    // ---------- Direction handling ----------
+    const DIRS = {
+      up:    { x: 0,  y: -1 },
+      down:  { x: 0,  y:  1 },
+      left:  { x: -1, y:  0 },
+      right: { x: 1,  y:  0 },
+    };
+    function setDir(name) {
+      const d = DIRS[name];
+      if (!d) return;
+      // last committed direction (use latest queued if any)
+      const cur = nextDirQueue.length ? nextDirQueue[nextDirQueue.length - 1] : dir;
+      // can't reverse
+      if (d.x === -cur.x && d.y === -cur.y) return;
+      // ignore duplicates
+      if (d.x === cur.x && d.y === cur.y) return;
+      if (nextDirQueue.length < 2) {
+        nextDirQueue.push(d);
+        playTurn();
+      }
+    }
+
+    // ---------- Main loop ----------
+    function step() {
+      if (state !== 'playing') return;
+      if (nextDirQueue.length) dir = nextDirQueue.shift();
+
+      const head = snake[0];
+      const newHead = { x: head.x + dir.x, y: head.y + dir.y };
+
+      // wall collision
+      if (newHead.x < 0 || newHead.x >= COLS || newHead.y < 0 || newHead.y >= ROWS) {
+        return gameOver();
+      }
+      // self collision (ignore the tail-to-be-removed cell; we'll check post-grow)
+      // simplest: check against all body cells except the last (which will move)
+      const ateFood = food && newHead.x === food.x && newHead.y === food.y;
+      const checkUntil = ateFood ? snake.length : snake.length - 1;
+      for (let i = 0; i < checkUntil; i++) {
+        const s = snake[i];
+        if (s.x === newHead.x && s.y === newHead.y) return gameOver();
+      }
+
+      snake.unshift(newHead);
+
+      if (ateFood) {
+        if (food.kind === 'gold') {
+          score += 5;
+          playGoldEat();
+        } else {
+          score += 1;
+          playEat();
+        }
+        foodsEatenSinceSpeedUp += 1;
+        if (foodsEatenSinceSpeedUp >= SPEED_UP_EVERY) {
+          foodsEatenSinceSpeedUp = 0;
+          stepMs = Math.max(MIN_STEP_MS, Math.round(stepMs * SPEED_UP_FACTOR));
+        }
+        placeFood();
+        updateHud();
+      } else {
+        snake.pop();
+      }
+    }
+
+    function loop(now) {
+      if (state === 'playing' && now - lastStepAt >= stepMs) {
+        lastStepAt = now;
+        step();
+      }
+      goldPulse += 0.06;
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    // ---------- Drawing ----------
+    function draw() {
+      const cell = canvas.width / COLS;
+      // background — gradient already on stage; clear and overlay subtle grid
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // subtle grid (dark green dots at intersections)
+      ctx.fillStyle = 'rgba(101, 163, 13, 0.18)';
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          ctx.beginPath();
+          ctx.arc(x * cell + cell / 2, y * cell + cell / 2, Math.max(0.5, cell * 0.06), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // food
+      if (food) drawFood(food, cell);
+
+      // snake — draw from tail to head so head ends on top
+      for (let i = snake.length - 1; i >= 0; i--) {
+        drawSegment(i, cell);
+      }
+    }
+
+    function drawFood(f, cell) {
+      const cx = f.x * cell + cell / 2;
+      const cy = f.y * cell + cell / 2;
+      const baseR = cell * 0.42;
+      const pulse = f.kind === 'gold' ? 1 + Math.sin(goldPulse) * 0.08 : 1;
+      const r = baseR * pulse;
+      const fill = f.kind === 'gold' ? '#fbbf24' : '#9333ea';
+
+      // soft shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + cell * 0.18, r * 0.85, r * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // body
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = Math.max(2, cell * 0.08);
+      ctx.lineJoin = 'round';
+      blobPath(ctx, cx, cy, r);
+      ctx.fill();
+      ctx.stroke();
+
+      // eyes
+      const eyeR = r * 0.18;
+      const eyeOff = r * 0.32;
+      ['l','r'].forEach((s, i) => {
+        const ex = cx + (i === 0 ? -eyeOff : eyeOff);
+        const ey = cy - r * 0.05;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(ex, ey, eyeR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = Math.max(1, cell * 0.04);
+        ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.arc(ex + eyeR * 0.1, ey + eyeR * 0.1, eyeR * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // smile
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = Math.max(1.5, cell * 0.06);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy + r * 0.18, r * 0.32, 0.1 * Math.PI, 0.9 * Math.PI);
+      ctx.stroke();
+
+      // gold star marker
+      if (f.kind === 'gold') {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.font = `bold ${Math.floor(cell * 0.35)}px 'Baloo 2', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('★', cx, cy - r * 0.55);
+      }
+    }
+
+    function blobPath(ctx, cx, cy, r) {
+      // wobbly blob shape with deterministic-ish offsets
+      ctx.beginPath();
+      const points = 9;
+      for (let i = 0; i < points; i++) {
+        const a = (i / points) * Math.PI * 2;
+        const rr = r * (0.85 + 0.15 * Math.sin(i * 1.7));
+        const x = cx + Math.cos(a) * rr;
+        const y = cy + Math.sin(a) * rr;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    }
+
+    function drawSegment(i, cell) {
+      const seg = snake[i];
+      const x = seg.x * cell;
+      const y = seg.y * cell;
+      const isHead = i === 0;
+      const pad = cell * 0.08;
+      const r = cell * 0.28;
+
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.16)';
+      roundRect(ctx, x + pad, y + pad + cell * 0.08, cell - pad * 2, cell - pad * 2, r);
+      ctx.fill();
+
+      // body
+      const grad = ctx.createLinearGradient(x, y, x, y + cell);
+      if (isHead) {
+        grad.addColorStop(0, '#a855f7');
+        grad.addColorStop(1, '#7e22ce');
+      } else {
+        // alternate slight tint for visible segmentation
+        const dark = i % 2 === 0;
+        grad.addColorStop(0, dark ? '#9333ea' : '#a855f7');
+        grad.addColorStop(1, dark ? '#7e22ce' : '#6b21a8');
+      }
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = Math.max(2, cell * 0.08);
+      ctx.lineJoin = 'round';
+      roundRect(ctx, x + pad, y + pad, cell - pad * 2, cell - pad * 2, r);
+      ctx.fill();
+      ctx.stroke();
+
+      if (isHead) drawHeadFace(seg, x, y, cell);
+    }
+
+    function drawHeadFace(head, x, y, cell) {
+      const cx = x + cell / 2;
+      const cy = y + cell / 2;
+      // eye positions depend on direction
+      const eyeOff = cell * 0.18;
+      const eyeR = cell * 0.1;
+      let exo = 0, eyo = 0; // forward offset for both eyes
+      if (dir.x === 1)  { exo =  eyeOff; eyo = -eyeOff * 0.4; }
+      if (dir.x === -1) { exo = -eyeOff; eyo = -eyeOff * 0.4; }
+      if (dir.y === -1) { eyo = -eyeOff; }
+      if (dir.y === 1)  { eyo =  eyeOff; }
+
+      // perpendicular offset between the two eyes
+      const perp = dir.x === 0
+        ? { x: cell * 0.16, y: 0 }
+        : { x: 0, y: cell * 0.16 };
+
+      for (const sign of [-1, 1]) {
+        const ex = cx + exo + perp.x * sign;
+        const ey = cy + eyo + perp.y * sign;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(ex, ey, eyeR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = Math.max(1, cell * 0.04);
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.arc(ex + dir.x * eyeR * 0.3, ey + dir.y * eyeR * 0.3, eyeR * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // little tongue if moving horizontally — purely cosmetic
+      if (dir.x !== 0 && (Math.floor(goldPulse * 4) % 8 === 0)) {
+        ctx.strokeStyle = '#ec4899';
+        ctx.lineWidth = Math.max(2, cell * 0.08);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        const tx = cx + dir.x * (cell * 0.5);
+        const ty = cy + cell * 0.05;
+        ctx.moveTo(cx + dir.x * (cell * 0.35), ty);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+      }
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // ---------- Game flow ----------
+    function gameOver() {
+      state = 'gameover';
+      playGameOver();
+      stageEl.animate(
+        [
+          { transform: 'translate(0, 0)' },
+          { transform: 'translate(-6px, 2px)' },
+          { transform: 'translate(6px, -2px)' },
+          { transform: 'translate(-3px, 0)' },
+          { transform: 'translate(0, 0)' },
+        ],
+        { duration: 220, easing: 'ease-out' }
+      );
+      let newBest = score >= best && score > 0;
+      // best was already saved during updateHud — check if this run was the best
+      newBest = score === best && score > 0;
+      curtainTitle.textContent = newBest ? `New best — ${score}!` : 'Game over!';
+      curtainSub.textContent = newBest
+        ? `Snake grew to ${snake.length}. Brilliant.`
+        : `You scored ${score}. Best: ${best}. Length: ${snake.length}.`;
+      startBtn.textContent = 'Play again';
+      curtainEl.classList.remove('hidden');
+    }
+
+    function startGame() {
+      ensureAudio();
+      reset();
+      state = 'playing';
+      lastStepAt = performance.now();
+      curtainEl.classList.add('hidden');
+    }
+
+    function togglePause() {
+      if (state === 'playing') {
+        state = 'paused';
+        curtainTitle.textContent = 'Paused';
+        curtainSub.textContent = 'Press P or tap Resume to keep going.';
+        startBtn.textContent = 'Resume';
+        curtainEl.classList.remove('hidden');
+      } else if (state === 'paused') {
+        state = 'playing';
+        lastStepAt = performance.now();
+        curtainEl.classList.add('hidden');
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (state === 'paused') togglePause();
+      else startGame();
+    });
+
+    // ---------- Input ----------
+    window.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if (e.repeat) return;
+      if (k === 'ArrowUp' || k === 'w' || k === 'W') { setDir('up'); e.preventDefault(); }
+      else if (k === 'ArrowDown' || k === 's' || k === 'S') { setDir('down'); e.preventDefault(); }
+      else if (k === 'ArrowLeft' || k === 'a' || k === 'A') { setDir('left'); e.preventDefault(); }
+      else if (k === 'ArrowRight' || k === 'd' || k === 'D') { setDir('right'); e.preventDefault(); }
+      else if (k === ' ' || k === 'Enter') {
+        if (state === 'idle' || state === 'gameover') { startGame(); e.preventDefault(); }
+        else if (state === 'paused') { togglePause(); e.preventDefault(); }
+      } else if (k === 'p' || k === 'P') {
+        if (state === 'playing' || state === 'paused') togglePause();
+      }
+    });
+
+    // D-pad
+    document.querySelectorAll('.dpad button').forEach((b) => {
+      const handler = (e) => { e.preventDefault(); setDir(b.dataset.dir); };
+      b.addEventListener('click', handler);
+      b.addEventListener('touchstart', handler, { passive: false });
+    });
+
+    // Swipe on stage
+    let touchStart = null;
+    stageEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }, { passive: true });
+    stageEl.addEventListener('touchmove', (e) => {
+      if (!touchStart) return;
+      const t = e.touches[0];
+      const dx = t.clientX - touchStart.x;
+      const dy = t.clientY - touchStart.y;
+      const adx = Math.abs(dx), ady = Math.abs(dy);
+      const threshold = 24;
+      if (Math.max(adx, ady) < threshold) return;
+      if (adx > ady) setDir(dx > 0 ? 'right' : 'left');
+      else setDir(dy > 0 ? 'down' : 'up');
+      touchStart = null;
+    }, { passive: true });
+    stageEl.addEventListener('touchend', () => { touchStart = null; });
+
+    // ---------- Boot ----------
+    reset();
+    resizeCanvas();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
