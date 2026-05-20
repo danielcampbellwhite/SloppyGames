@@ -265,6 +265,49 @@ a.game-card:hover h3 { text-decoration: underline; text-decoration-thickness: 3p
   color: var(--ink);
 }
 
+/* Whack-a-Splat thumbnail — grass field with holes and a popping splat */
+.game-thumb--whack {
+  background: linear-gradient(180deg, #d9f99d 0%, #bef264 45%, #84cc16 100%);
+  position: relative;
+  overflow: hidden;
+}
+.whack-hole {
+  position: absolute;
+  width: 28%;
+  height: 22%;
+  bottom: 18%;
+  background: radial-gradient(ellipse 60% 80% at 50% 100%, #3a230f 0%, #5b3a1f 60%, transparent 62%);
+  border-radius: 50%;
+}
+.whack-hole::before {
+  content: '';
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 14%;
+  height: 50%;
+  background: radial-gradient(ellipse at center, #0a0a0a 0%, #1a1a1a 60%, transparent 75%);
+  border-radius: 50%;
+}
+.whack-hole--1 { left: 8%; }
+.whack-hole--2 { left: 36%; }
+.whack-hole--3 { left: 64%; }
+
+.whack-splat {
+  position: absolute;
+  width: 26%;
+  height: auto;
+  left: 37%;
+  bottom: 30%;
+  filter: drop-shadow(0 4px 0 rgba(0,0,0,0.25));
+  animation: whackBob 1.4s ease-in-out infinite;
+}
+.whack-splat svg { width: 100%; height: 100%; display: block; }
+@keyframes whackBob {
+  0%, 100% { transform: translateY(8%); }
+  40%, 60% { transform: translateY(-10%); }
+}
+
 .badge {
   align-self: flex-start;
   font-family: 'Baloo 2', sans-serif;
