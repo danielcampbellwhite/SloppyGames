@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sloppy Memory — Sloppy Games</title>
+  <meta name="description" content="A 4-pad memory game. Watch the sequence, then repeat it. Each round adds one more step." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple: #9333ea;
+      --lime: #84cc16;
+      --pink: #ec4899;
+      --cyan: #06b6d4;
+      --ink: #1a1a1a;
+      --paper: #ffffff;
+      --bg: #ffffff;
+      --shadow: rgba(26, 26, 26, 0.2);
+
+      /* per-pad colors: dim (default) and lit */
+      --p0-dim: #6b21a8; --p0-lit: #d8b4fe;
+      --p1-dim: #4d7c0f; --p1-lit: #d9f99d;
+      --p2-dim: #be185d; --p2-lit: #fbcfe8;
+      --p3-dim: #0e7490; --p3-lit: #a5f3fc;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Fredoka', system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      overflow-x: hidden;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1, h2 {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    /* ---------- Header ---------- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .topbar a.back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: var(--ink);
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      padding: 0.5rem 0.9rem;
+      border-radius: 999px;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      box-shadow: 4px 4px 0 var(--ink);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .topbar a.back:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar a.back:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+
+    /* ---------- Main ---------- */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.5rem 1rem 2rem;
+      gap: 1rem;
+    }
+    .title {
+      text-align: center;
+      font-size: clamp(1.75rem, 4.5vw, 2.5rem);
+      line-height: 1.1;
+    }
+    .title .accent {
+      background: var(--lime);
+      padding: 0 0.4rem;
+      border-radius: 10px;
+      box-shadow: 3px 3px 0 var(--ink);
+      display: inline-block;
+      transform: rotate(-1deg);
+    }
+    .subtitle {
+      text-align: center;
+      max-width: 520px;
+      color: #444;
+      margin: -0.25rem 0 0.5rem;
+    }
+
+    /* ---------- Board ---------- */
+    .stage {
+      position: relative;
+      width: min(520px, 92vw);
+      aspect-ratio: 1;
+      margin-top: 0.5rem;
+    }
+    .board {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 14px;
+    }
+    .pad {
+      border: 4px solid var(--ink);
+      box-shadow: 0 6px 0 var(--ink), inset 0 -8px 0 rgba(0, 0, 0, 0.18);
+      background: var(--dim);
+      cursor: pointer;
+      transition: background 0.08s ease, box-shadow 0.08s ease, transform 0.08s ease, filter 0.08s ease;
+      outline: none;
+      padding: 0;
+      position: relative;
+    }
+    .pad:focus-visible { outline: 4px dashed var(--ink); outline-offset: 4px; }
+    .pad:disabled { cursor: default; }
+    .pad[data-i="0"] { border-radius: 50% 18px 18px 18px; --dim: var(--p0-dim); --lit: var(--p0-lit); }
+    .pad[data-i="1"] { border-radius: 18px 50% 18px 18px; --dim: var(--p1-dim); --lit: var(--p1-lit); }
+    .pad[data-i="2"] { border-radius: 18px 18px 18px 50%; --dim: var(--p2-dim); --lit: var(--p2-lit); }
+    .pad[data-i="3"] { border-radius: 18px 18px 50% 18px; --dim: var(--p3-dim); --lit: var(--p3-lit); }
+
+    .pad.lit {
+      background: var(--lit);
+      box-shadow: 0 6px 0 var(--ink), 0 0 32px 4px var(--lit), inset 0 -6px 0 rgba(0, 0, 0, 0.12);
+      filter: saturate(1.4) brightness(1.05);
+    }
+    .pad:not(:disabled):hover { filter: brightness(1.15); }
+    .pad:not(:disabled):active { transform: translateY(3px); box-shadow: 0 3px 0 var(--ink); }
+
+    /* ---------- Center HUD ---------- */
+    .hub {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 38%;
+      aspect-ratio: 1;
+      background: var(--paper);
+      border: 4px solid var(--ink);
+      border-radius: 50%;
+      box-shadow: 0 6px 0 var(--ink);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 0.5rem;
+      z-index: 2;
+    }
+    .hub .label {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: clamp(0.7rem, 1.6vw, 0.9rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #666;
+    }
+    .hub .round-num {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2.2rem, 6vw, 3.2rem);
+      line-height: 1;
+      color: var(--ink);
+    }
+    .hub .best {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: clamp(0.75rem, 1.7vw, 0.95rem);
+      color: var(--ink);
+    }
+    .hub.shake { animation: shake 0.4s ease; }
+    @keyframes shake {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      20% { transform: translate(-54%, -50%) rotate(-3deg); }
+      40% { transform: translate(-46%, -50%) rotate(3deg); }
+      60% { transform: translate(-52%, -50%) rotate(-2deg); }
+      80% { transform: translate(-48%, -50%) rotate(2deg); }
+    }
+
+    /* ---------- Controls ---------- */
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 0.25rem;
+    }
+    .btn {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 0.7rem 1.4rem;
+      border-radius: 999px;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 4px 4px 0 var(--ink);
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+    .btn:hover { background: #f3f3f3; }
+    .btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+    .btn.primary { background: var(--lime); }
+    .btn.primary:hover { background: #a3e635; }
+
+    .speed {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .speed select {
+      font-family: inherit;
+      font-weight: 700;
+      padding: 0.4rem 0.7rem;
+      border-radius: 12px;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      box-shadow: 3px 3px 0 var(--ink);
+      cursor: pointer;
+    }
+
+    .status {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      text-align: center;
+      min-height: 1.5em;
+      color: #444;
+    }
+    .status.win { color: var(--ink); }
+    .status.lose { color: #be185d; }
+
+    /* ---------- Hint footer ---------- */
+    .hint {
+      font-size: 0.9rem;
+      color: #666;
+      text-align: center;
+      max-width: 460px;
+      margin: 0 1rem;
+    }
+    kbd {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      border-radius: 6px;
+      padding: 0 0.4rem;
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hub.shake { animation: none; }
+      * { transition: none !important; }
+    }
+
+    @media (max-width: 540px) {
+      .topbar { padding: 0.75rem 1rem; }
+      .topbar img { height: 38px; }
+      .board { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html" aria-label="Back to Sloppy Games">← Back</a>
+    <a href="../../index.html" aria-label="Sloppy Games home">
+      <img src="../../assets/logo.png" alt="Sloppy Games" />
+    </a>
+  </header>
+
+  <main>
+    <h1 class="title">Sloppy Memory <span class="accent">Beat the Splat</span></h1>
+    <p class="subtitle">Watch the sequence, then repeat it. Each round adds one more step. How long can your brain hold on?</p>
+
+    <div class="stage">
+      <div class="board" id="board" aria-label="Memory game board">
+        <button class="pad" data-i="0" aria-label="Purple pad (key 1)" disabled></button>
+        <button class="pad" data-i="1" aria-label="Lime pad (key 2)" disabled></button>
+        <button class="pad" data-i="2" aria-label="Pink pad (key 3)" disabled></button>
+        <button class="pad" data-i="3" aria-label="Cyan pad (key 4)" disabled></button>
+      </div>
+      <div class="hub" id="hub">
+        <div>
+          <div class="label">Round</div>
+          <div class="round-num" id="round">0</div>
+          <div class="best">Best: <span id="best">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status" aria-live="polite">Press <strong>Start</strong> to play.</div>
+
+    <div class="controls">
+      <button class="btn primary" id="startBtn">Start</button>
+      <label class="speed">
+        Speed
+        <select id="speedSel">
+          <option value="700">Easy</option>
+          <option value="500" selected>Normal</option>
+          <option value="320">Hard</option>
+          <option value="200">Lightning</option>
+        </select>
+      </label>
+    </div>
+
+    <p class="hint">Tip: you can also use keys <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd>.</p>
+  </main>
+
+  <script>
+    // ---------- Audio (DTMF-style two-tone pairs) ----------
+    // Each pad plays a pair of sine tones, like a phone keypad.
+    const TONES = [
+      { f1: 697, f2: 1209 }, // pad 0 — purple  (like key '1')
+      { f1: 697, f2: 1336 }, // pad 1 — lime    (like key '2')
+      { f1: 697, f2: 1477 }, // pad 2 — pink    (like key '3')
+      { f1: 770, f2: 1209 }, // pad 3 — cyan    (like key '4')
+    ];
+
+    let audio = null;
+    function ensureAudio() {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      return audio;
+    }
+
+    function playTone(f1, f2, durationMs) {
+      const ctx = ensureAudio();
+      const t = ctx.currentTime;
+      const dur = durationMs / 1000;
+      const gain = ctx.createGain();
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.18, t + 0.012);
+      gain.gain.setValueAtTime(0.18, t + dur - 0.04);
+      gain.gain.linearRampToValueAtTime(0, t + dur);
+      [f1, f2].forEach((f) => {
+        const o = ctx.createOscillator();
+        o.type = 'sine';
+        o.frequency.value = f;
+        o.connect(gain);
+        o.start(t);
+        o.stop(t + dur + 0.01);
+      });
+    }
+
+    function playPadTone(i, dur) {
+      const { f1, f2 } = TONES[i];
+      playTone(f1, f2, dur);
+    }
+
+    function playWrong() {
+      const ctx = ensureAudio();
+      const t = ctx.currentTime;
+      const dur = 0.45;
+      const g = ctx.createGain();
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0, t);
+      g.gain.linearRampToValueAtTime(0.22, t + 0.02);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(220, t);
+      o.frequency.exponentialRampToValueAtTime(80, t + dur);
+      o.connect(g);
+      o.start(t);
+      o.stop(t + dur);
+    }
+
+    function playWin() {
+      // little ascending arpeggio
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((f, idx) => {
+        setTimeout(() => playTone(f, f, 180), idx * 120);
+      });
+    }
+
+    // ---------- Game state ----------
+    const padEls = Array.from(document.querySelectorAll('.pad'));
+    const roundEl = document.getElementById('round');
+    const bestEl = document.getElementById('best');
+    const statusEl = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+    const speedSel = document.getElementById('speedSel');
+    const hubEl = document.getElementById('hub');
+
+    const BEST_KEY = 'sloppy.memory.best';
+    let best = Number(localStorage.getItem(BEST_KEY) || 0);
+    bestEl.textContent = best;
+
+    let sequence = [];
+    let playerStep = 0;
+    let inputEnabled = false;
+    let playing = false;
+
+    function setStatus(msg, cls = '') {
+      statusEl.className = 'status ' + cls;
+      statusEl.textContent = msg;
+    }
+
+    function lightPad(i, dur) {
+      const el = padEls[i];
+      el.classList.add('lit');
+      playPadTone(i, dur);
+      setTimeout(() => el.classList.remove('lit'), dur);
+    }
+
+    function setPadsEnabled(on) {
+      padEls.forEach((p) => (p.disabled = !on));
+      inputEnabled = on;
+    }
+
+    function sleep(ms) {
+      return new Promise((res) => setTimeout(res, ms));
+    }
+
+    async function showSequence() {
+      setPadsEnabled(false);
+      setStatus('Watch carefully…');
+      const stepMs = Number(speedSel.value);
+      const litMs = Math.max(120, stepMs - 100);
+      await sleep(500);
+      for (const i of sequence) {
+        lightPad(i, litMs);
+        await sleep(stepMs);
+      }
+      setStatus('Your turn!');
+      setPadsEnabled(true);
+      playerStep = 0;
+    }
+
+    function nextRound() {
+      sequence.push(Math.floor(Math.random() * 4));
+      roundEl.textContent = sequence.length;
+      showSequence();
+    }
+
+    function onPadPress(i) {
+      if (!inputEnabled) return;
+      lightPad(i, 260);
+      const expected = sequence[playerStep];
+      if (i !== expected) {
+        gameOver();
+        return;
+      }
+      playerStep += 1;
+      if (playerStep === sequence.length) {
+        // round complete
+        setPadsEnabled(false);
+        if (sequence.length > best) {
+          best = sequence.length;
+          localStorage.setItem(BEST_KEY, String(best));
+          bestEl.textContent = best;
+        }
+        setStatus('Nice! Next round…', 'win');
+        setTimeout(nextRound, 850);
+      }
+    }
+
+    function gameOver() {
+      setPadsEnabled(false);
+      playing = false;
+      playWrong();
+      hubEl.classList.remove('shake');
+      void hubEl.offsetWidth; // restart animation
+      hubEl.classList.add('shake');
+      const reached = sequence.length;
+      setStatus(`Oops! You reached round ${reached}. Press Start to try again.`, 'lose');
+      startBtn.textContent = 'Try again';
+    }
+
+    function startGame() {
+      ensureAudio();
+      sequence = [];
+      playerStep = 0;
+      playing = true;
+      roundEl.textContent = 0;
+      startBtn.textContent = 'Restart';
+      setStatus('Get ready…');
+      setTimeout(nextRound, 400);
+    }
+
+    // ---------- Wire up ----------
+    padEls.forEach((el) => {
+      el.addEventListener('click', () => onPadPress(Number(el.dataset.i)));
+    });
+    startBtn.addEventListener('click', startGame);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (e.key >= '1' && e.key <= '4') {
+        const i = Number(e.key) - 1;
+        if (inputEnabled) onPadPress(i);
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        if (!playing || document.activeElement === startBtn) {
+          e.preventDefault();
+          startGame();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
