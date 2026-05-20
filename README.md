@@ -1,6 +1,6 @@
 # Sloppy Games
 
-A small family-run website for free-to-play browser games, built by Marley (age 8) and his dad.
+A small family-run website for free-to-play browser games, built by Marley and his dad.
 
 ## What's here
 
