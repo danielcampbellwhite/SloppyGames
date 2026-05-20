@@ -308,6 +308,92 @@ a.game-card:hover h3 { text-decoration: underline; text-decoration-thickness: 3p
   40%, 60% { transform: translateY(-10%); }
 }
 
+/* Sloppy Snake thumbnail — head + body chasing a splat */
+.game-thumb--snake {
+  background: linear-gradient(180deg, #d9f99d 0%, #bef264 60%, #84cc16 100%);
+  position: relative;
+  overflow: hidden;
+}
+.snake-body {
+  position: absolute;
+  width: 16%;
+  aspect-ratio: 1;
+  background: #9333ea;
+  border: 3px solid var(--ink);
+  border-radius: 25%;
+  box-shadow: 0 3px 0 var(--ink);
+  bottom: 38%;
+}
+.snake-body--1 { left: 14%; }
+.snake-body--2 { left: 32%; }
+.snake-body--3 { left: 50%; }
+.snake-head {
+  position: absolute;
+  width: 19%;
+  aspect-ratio: 1;
+  bottom: 36%;
+  left: 67%;
+  filter: drop-shadow(0 3px 0 rgba(0,0,0,0.2));
+  animation: snakeWobble 1.6s ease-in-out infinite;
+}
+.snake-head svg { width: 100%; height: 100%; display: block; }
+@keyframes snakeWobble {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50%      { transform: translateY(-6%) rotate(3deg); }
+}
+.snake-food {
+  position: absolute;
+  width: 17%;
+  bottom: 18%;
+  right: 8%;
+  filter: drop-shadow(0 3px 0 rgba(0,0,0,0.2));
+  animation: snakeFood 1.6s ease-in-out infinite;
+}
+.snake-food svg { width: 100%; height: 100%; display: block; }
+@keyframes snakeFood {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.1); }
+}
+
+/* Splat Flap thumbnail — splat between two slime towers */
+.game-thumb--flap {
+  background: linear-gradient(180deg, #93c5fd 0%, #bfdbfe 60%, #dbeafe 100%);
+  position: relative;
+  overflow: hidden;
+}
+.flap-tower {
+  position: absolute;
+  width: 22%;
+  background: linear-gradient(90deg, #7e22ce 0%, #a855f7 50%, #7e22ce 100%);
+  border: 3px solid var(--ink);
+  right: 16%;
+}
+.flap-tower--top {
+  top: -4%;
+  height: 38%;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 4px 0 var(--ink);
+}
+.flap-tower--bottom {
+  bottom: -4%;
+  height: 38%;
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -2px 0 var(--ink);
+}
+.flap-splat {
+  position: absolute;
+  width: 22%;
+  left: 22%;
+  top: 38%;
+  filter: drop-shadow(0 3px 0 rgba(0,0,0,0.25));
+  animation: flapBob 1.4s ease-in-out infinite;
+}
+.flap-splat svg { width: 100%; height: 100%; display: block; }
+@keyframes flapBob {
+  0%, 100% { transform: translateY(0) rotate(8deg); }
+  50%      { transform: translateY(-18%) rotate(-12deg); }
+}
+
 .badge {
   align-self: flex-start;
   font-family: 'Baloo 2', sans-serif;

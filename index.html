@@ -41,7 +41,7 @@
 
     <section id="games" class="games">
       <h2 class="section-title">Our Games</h2>
-      <p class="section-sub">Two games to play and more on the way. Have a go!</p>
+      <p class="section-sub">Four games to play and more on the way. Have a go!</p>
 
       <div class="game-grid">
         <a class="game-card game-card--live" href="games/memory/index.html">
@@ -77,14 +77,50 @@
           <span class="badge badge--play">Play Now ▶</span>
         </a>
 
-        <article class="game-card game-card--coming">
-          <div class="game-thumb game-thumb--3" aria-hidden="true">
-            <span class="thumb-emoji">👾</span>
+        <a class="game-card game-card--live" href="games/snake/index.html">
+          <div class="game-thumb game-thumb--snake" aria-hidden="true">
+            <span class="snake-body snake-body--1"></span>
+            <span class="snake-body snake-body--2"></span>
+            <span class="snake-body snake-body--3"></span>
+            <span class="snake-head" aria-hidden="true">
+              <svg viewBox="0 0 100 100">
+                <rect x="6" y="6" width="88" height="88" rx="26" fill="#a855f7" stroke="#1a1a1a" stroke-width="5"/>
+                <circle cx="68" cy="40" r="11" fill="#fff" stroke="#1a1a1a" stroke-width="3"/>
+                <circle cx="68" cy="68" r="11" fill="#fff" stroke="#1a1a1a" stroke-width="3"/>
+                <circle cx="72" cy="40" r="5" fill="#1a1a1a"/>
+                <circle cx="72" cy="68" r="5" fill="#1a1a1a"/>
+                <path d="M 94 54 L 110 54" stroke="#ec4899" stroke-width="5" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="snake-food" aria-hidden="true">
+              <svg viewBox="0 0 100 100">
+                <path d="M 50 6 C 70 6, 78 18, 80 30 C 92 32, 96 46, 90 56 C 96 66, 90 80, 78 80 C 74 92, 56 96, 50 88 C 42 96, 26 90, 22 80 C 10 80, 4 66, 10 56 C 4 46, 8 32, 20 30 C 22 18, 30 6, 50 6 Z" fill="#9333ea" stroke="#1a1a1a" stroke-width="5" stroke-linejoin="round"/>
+              </svg>
+            </span>
           </div>
-          <h3>Mystery Game #3</h3>
-          <p>We haven't even decided what this one is yet.</p>
-          <span class="badge">Coming Soon</span>
-        </article>
+          <h3>Sloppy Snake</h3>
+          <p>Steer the snake, gobble up splats, grow longer. Don't bite yourself!</p>
+          <span class="badge badge--play">Play Now ▶</span>
+        </a>
+
+        <a class="game-card game-card--live" href="games/flap/index.html">
+          <div class="game-thumb game-thumb--flap" aria-hidden="true">
+            <span class="flap-tower flap-tower--top"></span>
+            <span class="flap-tower flap-tower--bottom"></span>
+            <span class="flap-splat" aria-hidden="true">
+              <svg viewBox="0 0 100 100">
+                <path d="M 50 6 C 70 6, 78 18, 80 30 C 92 32, 96 46, 90 56 C 96 66, 90 80, 78 80 C 74 92, 56 96, 50 88 C 42 96, 26 90, 22 80 C 10 80, 4 66, 10 56 C 4 46, 8 32, 20 30 C 22 18, 30 6, 50 6 Z" fill="#9333ea" stroke="#1a1a1a" stroke-width="5" stroke-linejoin="round"/>
+                <ellipse cx="22" cy="50" rx="14" ry="7" fill="#c084fc" stroke="#1a1a1a" stroke-width="3" transform="rotate(-20 22 50)"/>
+                <circle cx="58" cy="44" r="9" fill="#fff" stroke="#1a1a1a" stroke-width="3"/>
+                <circle cx="62" cy="46" r="4" fill="#1a1a1a"/>
+                <path d="M 46 62 Q 56 70, 66 62" stroke="#1a1a1a" stroke-width="4" fill="none" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </div>
+          <h3>Splat Flap</h3>
+          <p>Tap to flap. Fly through gaps in growing slime towers. Easy to learn, ruthless to master.</p>
+          <span class="badge badge--play">Play Now ▶</span>
+        </a>
       </div>
     </section>
 
