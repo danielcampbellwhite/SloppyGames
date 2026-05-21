@@ -117,14 +117,6 @@ const GAMES = [
     thumb: 'patterns',
   },
   {
-    slug: 'solar',
-    title: 'Solar Splats',
-    description: 'Drag the planets into order from the sun. Tap any planet for a fun space fact.',
-    href: '/games/solar/',
-    category: 'learn',
-    thumb: 'solar',
-  },
-  {
     slug: 'tunes',
     title: 'Splat Tunes',
     description: 'Watch the notes light up, then play the melody back. Each round adds one more note.',
@@ -198,9 +190,6 @@ function thumbHTML(slug) {
     case 'code': return `<span class="thumb-board"></span><span class="thumb-splat-code" aria-hidden="true">${splatSVG('#9333ea')}</span><span class="thumb-star-code">★</span>`;
     case 'patterns': return `<span class="thumb-pattern">
       <span class="pp pp--purple"></span><span class="pp pp--lime"></span><span class="pp pp--purple"></span><span class="pp pp--lime"></span><span class="pp pp--q">?</span>
-    </span>`;
-    case 'solar': return `<span class="thumb-solar">
-      <span class="ps ps--sun"></span><span class="ps ps--p1"></span><span class="ps ps--p2"></span><span class="ps ps--p3"></span><span class="ps ps--p4"></span>
     </span>`;
     case 'tunes': return `<span class="thumb-tunes">
       <span class="pk pk--c"></span><span class="pk pk--d"></span><span class="pk pk--e"></span><span class="pk pk--f"></span><span class="pk pk--g"></span><span class="pk pk--a"></span><span class="pk pk--b"></span>

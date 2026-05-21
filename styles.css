@@ -883,29 +883,6 @@ a.game-card:hover h3 { text-decoration: underline; text-decoration-thickness: 3p
   .pp, .pp--q { width: 28px; height: 28px; font-size: 1.1rem; }
 }
 
-.game-thumb--solar {
-  background: linear-gradient(180deg, #1e1b4b 0%, #4c1d95 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-.thumb-solar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.ps {
-  border: 2.5px solid var(--ink);
-  border-radius: 50%;
-  box-shadow: 1px 2px 0 var(--ink);
-}
-.ps--sun  { width: 32px; height: 32px; background: #facc15; }
-.ps--p1   { width: 14px; height: 14px; background: #9ca3af; }
-.ps--p2   { width: 18px; height: 18px; background: #fbbf24; }
-.ps--p3   { width: 18px; height: 18px; background: #3b82f6; }
-.ps--p4   { width: 16px; height: 16px; background: #dc2626; }
-
 .game-thumb--tunes {
   background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
   display: flex;
