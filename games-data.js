@@ -132,6 +132,22 @@ const GAMES = [
     category: 'puzzles',
     thumb: 'battleships',
   },
+  {
+    slug: 'mathsdash',
+    title: 'Maths Dash',
+    description: 'Endless-runner maths game. Steer the splat into the lane with the right answer — the road gets faster and trickier the further you go.',
+    href: '/games/mathsdash/',
+    category: 'maths',
+    thumb: 'mathsdash',
+  },
+  {
+    slug: 'worddefender',
+    title: 'Word Defender',
+    description: 'Words fall from space — type each letter to blast them. A type-to-shoot defence game disguised as a typing trainer.',
+    href: '/games/worddefender/',
+    category: 'puzzles',
+    thumb: 'worddefender',
+  },
 ];
 
 // ---------- Render helpers ----------
@@ -208,6 +224,21 @@ function thumbHTML(slug) {
       <span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell hit"></span><span class="bs-cell"></span>
       <span class="bs-cell ship"></span><span class="bs-cell ship"></span><span class="bs-cell"></span><span class="bs-cell hit"></span><span class="bs-cell"></span>
       <span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell miss"></span>
+    </span>`;
+    case 'mathsdash': return `<span class="thumb-md">
+      <span class="md-question">7 × 8 = ?</span>
+      <span class="md-lane md-lane--1"><span class="md-ans">54</span></span>
+      <span class="md-lane md-lane--2"><span class="md-ans md-ans--correct">56</span></span>
+      <span class="md-lane md-lane--3"><span class="md-ans">63</span></span>
+      <span class="md-splat" aria-hidden="true">${splatSVG('#9333ea')}</span>
+    </span>`;
+    case 'worddefender': return `<span class="thumb-wd">
+      <span class="wd-stars"></span>
+      <span class="wd-word wd-word--1">SPLAT</span>
+      <span class="wd-word wd-word--2">ROCKET</span>
+      <span class="wd-word wd-word--3">JUMP</span>
+      <span class="wd-laser"></span>
+      <span class="wd-ship"></span>
     </span>`;
     default: return '';
   }

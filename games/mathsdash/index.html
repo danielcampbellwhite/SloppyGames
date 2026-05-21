@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Maths Dash — Sloppy Games</title>
+  <meta name="description" content="Endless-runner maths game: swerve into the lane with the right answer. Faster and harder the further you get." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --purple: #9333ea; --purple-dark: #6b21a8; --lime: #84cc16; --lime-dark: #65a30d; --pink: #ec4899; --cyan: #06b6d4; --yellow: #facc15; --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6; --road: #4b5563; --road-dark: #1f2937; --shadow: rgba(26, 26, 26, 0.2); }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 540px; color: #444; margin: -0.25rem 0 0.5rem; }
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(440px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 90px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); line-height: 1; color: var(--ink); }
+
+    .stage { position: relative; width: min(440px, 95vw); aspect-ratio: 0.65; max-height: calc(100dvh - 280px); min-height: 360px; border: 4px solid var(--ink); border-radius: 24px; box-shadow: 0 8px 0 var(--ink); overflow: hidden; user-select: none; touch-action: none; background: linear-gradient(180deg, #93c5fd 0%, #bfdbfe 40%, #d9f99d 100%); }
+    canvas#road { display: block; width: 100%; height: 100%; }
+
+    .curtain { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.45); backdrop-filter: blur(1px); -webkit-backdrop-filter: blur(1px); text-align: center; padding: 1rem; transition: opacity 0.2s ease; z-index: 10; }
+    .curtain.hidden { opacity: 0; pointer-events: none; }
+    .curtain > div { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 6px 6px 0 var(--ink); padding: 1rem 1.25rem; max-width: 90%; }
+    .curtain h2 { font-size: clamp(1.3rem, 4.5vw, 1.8rem); margin-bottom: 0.4rem; }
+    .curtain p { margin: 0.25rem 0 0.75rem; color: #333; font-size: 0.95rem; }
+    .diff-row { display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; margin: 0.4rem 0 0.7rem; }
+    .diff-row button { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.7rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
+    .diff-row button.active { background: var(--lime); }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; padding: 0.6rem 1.2rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+
+    .dpad { display: none; grid-template-columns: 1fr 1fr; gap: 0.5rem; width: min(280px, 80vw); margin-top: 0.25rem; }
+    .dpad button { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.6rem; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); cursor: pointer; padding: 0.6rem; }
+    .dpad button:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); background: var(--lime); }
+    @media (hover: none) and (pointer: coarse) { .dpad { display: grid; } }
+
+    .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 540px; }
+    kbd { font-family: 'Baloo 2', sans-serif; font-weight: 700; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; padding: 0 0.4rem; box-shadow: 2px 2px 0 var(--ink); }
+    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">← Back</a>
+    <a href="../../index.html"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Maths Dash <span class="accent">Pick the right lane</span></h1>
+    <p class="subtitle">A maths question appears at the top. Steer the splat into the lane with the right answer. The road gets faster the longer you survive.</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Score</div><div class="value" id="score">0</div></div>
+      <div class="hud-pill"><div class="label">Distance</div><div class="value" id="dist">0m</div></div>
+      <div class="hud-pill"><div class="label">Lives</div><div class="value" id="lives">3</div></div>
+      <div class="hud-pill"><div class="label">Best</div><div class="value" id="best">0</div></div>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="road"></canvas>
+      <div class="curtain" id="curtain">
+        <div>
+          <h2 id="curtainTitle">Ready to dash?</h2>
+          <p id="curtainSub">Steer left and right. Drive into the lane with the right answer.</p>
+          <div class="diff-row" id="diffRow">
+            <button data-diff="easy">Easy (+ −)</button>
+            <button data-diff="normal" class="active">Normal (× ÷)</button>
+            <button data-diff="hard">Hard (mix)</button>
+          </div>
+          <button class="btn" id="startBtn">Start</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dpad" aria-label="On-screen controls">
+      <button data-dir="left" aria-label="Left">◀</button>
+      <button data-dir="right" aria-label="Right">▶</button>
+    </div>
+
+    <p class="hint">Arrows or <kbd>A</kbd> <kbd>D</kbd> to steer. <kbd>Space</kbd> to start/restart. <kbd>P</kbd> to pause.</p>
+  </main>
+
+  <script>
+    // ---------- Audio ----------
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function env(g, t, a, h, r, peak = 0.22) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.setValueAtTime(peak, t + a + h); g.gain.linearRampToValueAtTime(0, t + a + h + r); }
+    function playGood() { const c = ensureAudio(), t = c.currentTime; [659.25, 880].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.05, 0.005, 0.04, 0.12, 0.22); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.05); o.stop(t+i*0.05+0.18); }); }
+    function playBad() { const c = ensureAudio(), t = c.currentTime; const bufSize = Math.floor(c.sampleRate * 0.25); const buf = c.createBuffer(1, bufSize, c.sampleRate); const data = buf.getChannelData(0); for (let i = 0; i < bufSize; i++) data[i] = (Math.random()*2-1)*(1-i/bufSize); const n = c.createBufferSource(); n.buffer = buf; const gN = c.createGain(); env(gN, t, 0.005, 0.02, 0.22, 0.32); n.connect(gN); gN.connect(c.destination); n.start(t); n.stop(t+0.25); const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.2, 0.32); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(60, t+0.22); o.connect(g); o.start(t); o.stop(t+0.24); }
+    function playSwerve() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.002, 0.005, 0.04, 0.1); const o = c.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(560, t); o.frequency.exponentialRampToValueAtTime(900, t+0.05); o.connect(g); o.start(t); o.stop(t+0.06); }
+    function playGameOver() { const c = ensureAudio(), t = c.currentTime; [600, 480, 380, 260].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.12, 0.01, 0.05, 0.15, 0.22); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.12); o.stop(t+i*0.12+0.22); }); }
+
+    // ---------- Config ----------
+    const VW = 400, VH = 600;
+    const LANES = 3;
+    const LANE_X = [VW * 0.2, VW * 0.5, VW * 0.8];
+    const PLAYER_Y = VH - 90;
+    const PLAYER_R = 22;
+    const GATE_H = 70;
+    const BEST_KEY = 'sloppy.mathsdash.best';
+
+    // ---------- DOM ----------
+    const $ = id => document.getElementById(id);
+    const canvas = $('road'), ctx = canvas.getContext('2d'), stageEl = $('stage');
+
+    // ---------- Sizing ----------
+    let scale = 1;
+    function resize() {
+      const cssW = stageEl.clientWidth, cssH = stageEl.clientHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      canvas.style.width = cssW + 'px';
+      canvas.style.height = cssH + 'px';
+      scale = canvas.width / VW;
+    }
+    window.addEventListener('resize', resize);
+
+    // ---------- Game state ----------
+    let state = 'idle';     // 'idle' | 'playing' | 'paused' | 'gameover'
+    let diff = 'normal';
+    let score = 0, distance = 0, lives = 3;
+    let best = Number(localStorage.getItem(BEST_KEY) || 0);
+    let player = { lane: 1, x: LANE_X[1], targetX: LANE_X[1] };
+    let speed = 240;        // px / sec (world scrolls down at this speed)
+    let speedMin = 240, speedMax = 720;
+    let gates = [];         // [{ y, question, answer, choices, passed }]
+    let nextGateAt = 0;
+    let lastFrame = 0;
+    let bgOff = 0;
+    let invincibleUntil = 0;
+    $('best').textContent = best;
+
+    // ---------- Question generation ----------
+    function rand(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+    function makeQuestion() {
+      let a, b, op, answer, text;
+      if (diff === 'easy') {
+        op = Math.random() < 0.6 ? '+' : '−';
+        if (op === '+') { a = rand(1, 12); b = rand(1, 12); answer = a + b; }
+        else            { a = rand(2, 20); b = rand(1, a); answer = a - b; }
+      } else if (diff === 'normal') {
+        op = Math.random() < 0.65 ? '×' : '÷';
+        if (op === '×') { a = rand(2, 10); b = rand(2, 10); answer = a * b; }
+        else            { b = rand(2, 10); answer = rand(2, 10); a = b * answer; }
+      } else {
+        const ops = ['+','−','×','÷'];
+        op = ops[Math.floor(Math.random() * ops.length)];
+        if (op === '+') { a = rand(10, 50); b = rand(5, 50); answer = a + b; }
+        else if (op === '−') { a = rand(20, 80); b = rand(5, a - 1); answer = a - b; }
+        else if (op === '×') { a = rand(2, 12); b = rand(2, 12); answer = a * b; }
+        else                  { b = rand(2, 12); answer = rand(2, 12); a = b * answer; }
+      }
+      text = `${a} ${op} ${b}`;
+      return { text, answer };
+    }
+    function makeDistractors(answer) {
+      const pool = new Set();
+      const variance = diff === 'easy' ? 4 : diff === 'normal' ? 6 : 10;
+      while (pool.size < 6) {
+        const d = answer + (Math.floor(Math.random() * (variance * 2 + 1)) - variance);
+        if (d === answer || d < 0) continue;
+        pool.add(d);
+      }
+      const arr = Array.from(pool);
+      const shuffled = arr.sort(() => Math.random() - 0.5).slice(0, 2);
+      return shuffled;
+    }
+    function makeGate() {
+      const q = makeQuestion();
+      const distractors = makeDistractors(q.answer);
+      const choices = [q.answer, ...distractors];
+      // shuffle
+      for (let i = choices.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [choices[i], choices[j]] = [choices[j], choices[i]]; }
+      return { y: -GATE_H, question: q.text, answer: q.answer, choices, passed: false };
+    }
+
+    // ---------- Game loop ----------
+    function startGame() {
+      ensureAudio();
+      hideCurtain();
+      state = 'playing';
+      score = 0; distance = 0; lives = 3;
+      speed = speedMin;
+      player.lane = 1; player.x = LANE_X[1]; player.targetX = LANE_X[1];
+      gates = [];
+      nextGateAt = 0;
+      bgOff = 0;
+      invincibleUntil = 0;
+      lastFrame = performance.now();
+      updateHud();
+    }
+    function gameOver() {
+      state = 'gameover';
+      playGameOver();
+      if (score > best) { best = score; localStorage.setItem(BEST_KEY, String(best)); $('best').textContent = best; }
+      showCurtain(
+        score > 0 && score >= best ? `New best — ${score}!` : 'Game over!',
+        `You scored ${score} and ran ${Math.floor(distance)}m. Best: ${best}.`,
+        'Play again'
+      );
+    }
+    function showCurtain(title, sub, btn) {
+      $('curtainTitle').textContent = title;
+      $('curtainSub').textContent = sub;
+      $('startBtn').textContent = btn;
+      $('curtain').classList.remove('hidden');
+      // ensure diff row visible
+      $('diffRow').style.display = 'flex';
+    }
+    function hideCurtain() { $('curtain').classList.add('hidden'); }
+
+    function updateHud() {
+      $('score').textContent = score;
+      $('dist').textContent = Math.floor(distance) + 'm';
+      $('lives').textContent = lives;
+    }
+
+    function loop(now) {
+      const dt = Math.min(0.05, (now - lastFrame) / 1000);
+      lastFrame = now;
+
+      if (state === 'playing') update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function update(dt) {
+      // smooth lane steering
+      const dx = player.targetX - player.x;
+      player.x += dx * Math.min(1, 12 * dt);
+
+      // distance and speed up
+      distance += speed * dt / 30; // scale so units feel like meters
+      speed = Math.min(speedMax, speed + 12 * dt); // gentle ramp
+      bgOff = (bgOff + speed * dt) % 40;
+
+      // spawn gates at intervals based on speed (closer when fast for challenge)
+      nextGateAt -= dt;
+      if (nextGateAt <= 0) {
+        gates.push(makeGate());
+        // gap shrinks with speed
+        const gap = Math.max(0.8, 2.4 - (speed - speedMin) / 200);
+        nextGateAt = gap;
+      }
+
+      // move gates
+      for (const g of gates) g.y += speed * dt;
+
+      // collision: when gate Y is near player Y
+      for (const g of gates) {
+        if (g.passed) continue;
+        if (g.y > PLAYER_Y - GATE_H * 0.4 && g.y < PLAYER_Y + GATE_H * 0.6) {
+          // determine which lane the player is in
+          const pLane = nearestLane(player.x);
+          const choice = g.choices[pLane];
+          g.passed = true;
+          if (choice === g.answer) {
+            score += 1;
+            playGood();
+          } else {
+            lives -= 1;
+            invincibleUntil = performance.now() + 1000;
+            playBad();
+            if (lives <= 0) { updateHud(); return gameOver(); }
+          }
+          updateHud();
+        }
+      }
+
+      // cull off-screen gates
+      gates = gates.filter(g => g.y < VH + 50);
+    }
+
+    function nearestLane(x) {
+      let best = 0, bd = Infinity;
+      for (let i = 0; i < LANES; i++) {
+        const d = Math.abs(x - LANE_X[i]);
+        if (d < bd) { bd = d; best = i; }
+      }
+      return best;
+    }
+
+    function setLane(i) {
+      i = Math.max(0, Math.min(LANES - 1, i));
+      if (i !== player.lane) {
+        player.lane = i;
+        player.targetX = LANE_X[i];
+        playSwerve();
+      }
+    }
+
+    // ---------- Drawing ----------
+    function draw() {
+      ctx.save();
+      ctx.scale(scale, scale);
+      ctx.clearRect(0, 0, VW, VH);
+
+      drawScenery();
+      drawRoad();
+      drawGates();
+      drawPlayer();
+      drawQuestionBanner();
+
+      ctx.restore();
+    }
+
+    function drawScenery() {
+      // Sky already drawn by stage gradient; add a horizon strip
+      // hills
+      ctx.fillStyle = '#86efac';
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const hY = VH * 0.18;
+      ctx.moveTo(-10, hY + 10);
+      let x = 0;
+      while (x < VW + 10) {
+        const r = 30 + (x % 70);
+        ctx.arc(x, hY + 10, r, Math.PI, 0);
+        x += r * 2;
+      }
+      ctx.lineTo(VW + 10, hY + 10);
+      ctx.stroke();
+      ctx.fill();
+    }
+
+    function drawRoad() {
+      const top = VH * 0.18;
+      // road body
+      ctx.fillStyle = '#4b5563';
+      ctx.fillRect(VW * 0.06, top, VW * 0.88, VH - top);
+      // outer edge stripes
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(VW * 0.06, top, 3, VH - top);
+      ctx.fillRect(VW * 0.94 - 3, top, 3, VH - top);
+      // lane dividers (scrolling dashes)
+      ctx.strokeStyle = '#fde68a';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([20, 20]);
+      ctx.lineDashOffset = -bgOff;
+      for (let i = 1; i < LANES; i++) {
+        const lx = VW * 0.06 + (VW * 0.88) * (i / LANES);
+        ctx.beginPath();
+        ctx.moveTo(lx, top);
+        ctx.lineTo(lx, VH);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
+    function drawGates() {
+      ctx.font = 'bold 22px "Baloo 2", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const g of gates) {
+        // each lane has a panel showing the choice
+        for (let i = 0; i < LANES; i++) {
+          const cx = LANE_X[i];
+          const w = (VW * 0.88) / LANES - 8;
+          const x = cx - w / 2, y = g.y;
+          ctx.fillStyle = g.passed ? (g.choices[i] === g.answer ? 'rgba(132,204,22,0.4)' : 'rgba(236,72,153,0.35)') : 'rgba(255,255,255,0.92)';
+          ctx.strokeStyle = '#1a1a1a';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          // rounded rect
+          const rr = 10;
+          ctx.moveTo(x + rr, y);
+          ctx.lineTo(x + w - rr, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+          ctx.lineTo(x + w, y + GATE_H - rr);
+          ctx.quadraticCurveTo(x + w, y + GATE_H, x + w - rr, y + GATE_H);
+          ctx.lineTo(x + rr, y + GATE_H);
+          ctx.quadraticCurveTo(x, y + GATE_H, x, y + GATE_H - rr);
+          ctx.lineTo(x, y + rr);
+          ctx.quadraticCurveTo(x, y, x + rr, y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          // number
+          ctx.fillStyle = '#1a1a1a';
+          ctx.fillText(String(g.choices[i]), cx, y + GATE_H / 2);
+        }
+      }
+    }
+
+    function drawPlayer() {
+      const x = player.x, y = PLAYER_Y;
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + PLAYER_R + 6, PLAYER_R * 0.9, PLAYER_R * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // bobbing
+      const bob = Math.sin(performance.now() / 90) * 2;
+      // body — sloppy blob
+      const blink = (performance.now() < invincibleUntil) && (Math.floor(performance.now() / 80) % 2 === 0);
+      ctx.fillStyle = blink ? '#fecaca' : '#9333ea';
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      const cy = y - 6 - bob;
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2;
+        const rr = PLAYER_R * (0.88 + 0.12 * Math.sin(i * 1.7));
+        const px = x + Math.cos(a) * rr;
+        const py = cy + Math.sin(a) * rr;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // eyes
+      for (const ex of [-7, 7]) {
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(x + ex, cy - 4, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(x + ex + 1, cy - 3, 2.2, 0, Math.PI * 2); ctx.fill();
+      }
+      // smile
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(x, cy + 4, 7, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+      // little dust trail
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      const tt = performance.now() / 60;
+      for (let i = 0; i < 4; i++) {
+        const dy = i * 8 + (tt % 8);
+        ctx.beginPath();
+        ctx.arc(x - 10, y + PLAYER_R + 10 + dy, 4 - i * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 10, y + PLAYER_R + 10 + dy, 4 - i * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawQuestionBanner() {
+      // pick the closest unpassed gate's question
+      let q = null;
+      for (const g of gates) if (!g.passed && (q === null || g.y > q.y)) q = g;
+      if (!q) return;
+      const text = q.question + ' = ?';
+      ctx.font = 'bold 26px "Baloo 2", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const w = ctx.measureText(text).width + 28;
+      const h = 38;
+      const x = VW / 2 - w / 2, y = 14;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      const rr = 12;
+      ctx.moveTo(x + rr, y);
+      ctx.lineTo(x + w - rr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(x + rr, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr);
+      ctx.quadraticCurveTo(x, y, x + rr, y);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillText(text, VW / 2, y + h / 2);
+    }
+
+    // ---------- Input ----------
+    document.querySelectorAll('.diff-row button').forEach(b => {
+      b.addEventListener('click', () => {
+        diff = b.dataset.diff;
+        document.querySelectorAll('.diff-row button').forEach(x => x.classList.toggle('active', x.dataset.diff === diff));
+      });
+    });
+    $('startBtn').addEventListener('click', startGame);
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { if (state === 'playing') { setLane(player.lane - 1); e.preventDefault(); } }
+      else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { if (state === 'playing') { setLane(player.lane + 1); e.preventDefault(); } }
+      else if (e.key === ' ' || e.key === 'Enter') {
+        if (state !== 'playing') { e.preventDefault(); startGame(); }
+      } else if (e.key === 'p' || e.key === 'P') {
+        if (state === 'playing') { state = 'paused'; showCurtain('Paused', 'Press P or tap Resume.', 'Resume'); }
+        else if (state === 'paused') { hideCurtain(); state = 'playing'; lastFrame = performance.now(); }
+      }
+    });
+    document.querySelectorAll('.dpad button').forEach(b => {
+      const handler = (e) => { e.preventDefault(); if (state === 'playing') setLane(player.lane + (b.dataset.dir === 'left' ? -1 : 1)); };
+      b.addEventListener('click', handler);
+      b.addEventListener('touchstart', handler, { passive: false });
+    });
+    // Tap left/right halves of stage to steer
+    stageEl.addEventListener('pointerdown', (e) => {
+      if (state !== 'playing') return;
+      const r = stageEl.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      if (x < r.width / 2) setLane(player.lane - 1);
+      else setLane(player.lane + 1);
+    });
+
+    // ---------- Boot ----------
+    resize();
+    requestAnimationFrame(function frame(now) { lastFrame = now; requestAnimationFrame(loop); });
+  </script>
+</body>
+</html>
