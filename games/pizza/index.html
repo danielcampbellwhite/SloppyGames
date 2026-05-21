@@ -128,10 +128,19 @@
     window.addEventListener('resize', () => { sizeCanvas(); draw(); });
 
     // ---------- Level ----------
+    // Difficulty tiers — denominators grow with level, so higher levels
+    // get into trickier fractions like 7/12, 9/16, 13/20.
+    const TIERS = [
+      { maxLevel: 3,        denoms: [2, 3, 4] },
+      { maxLevel: 6,        denoms: [4, 5, 6, 8] },
+      { maxLevel: 10,       denoms: [6, 8, 10, 12] },
+      { maxLevel: 15,       denoms: [10, 12, 16] },
+      { maxLevel: Infinity, denoms: [12, 16, 20] },
+    ];
     function newLevel() {
-      // Vary denom and choose num so fraction isn't 0/n or n/n
-      const denomChoices = level < 3 ? [2,3,4] : level < 6 ? [3,4,5,6] : [4,5,6,8];
-      denom = denomChoices[Math.floor(Math.random() * denomChoices.length)];
+      // Vary denom by level tier and choose num so fraction isn't 0/n or n/n
+      const tier = TIERS.find(t => level <= t.maxLevel) || TIERS[TIERS.length - 1];
+      denom = tier.denoms[Math.floor(Math.random() * tier.denoms.length)];
       num = 1 + Math.floor(Math.random() * (denom - 1));
       slices = new Array(denom).fill(false);
       toppingKind = TOPPINGS[Math.floor(Math.random() * TOPPINGS.length)].id;
@@ -214,13 +223,16 @@
       // distribute several topping marks within the slice wedge
       const a0 = (i / denom) * Math.PI * 2 - Math.PI / 2;
       const a1 = ((i + 1) / denom) * Math.PI * 2 - Math.PI / 2;
-      const count = denom <= 4 ? 5 : denom <= 6 ? 4 : 3;
+      // Thinner slices get fewer toppings so they don't overflow the wedge
+      const count = denom <= 4 ? 5 : denom <= 6 ? 4 : denom <= 10 ? 3 : denom <= 16 ? 2 : 1;
       const t = TOPPINGS.find(x => x.id === toppingKind);
       for (let k = 0; k < count; k++) {
         const a = a0 + (a1 - a0) * (0.25 + 0.5 * Math.random());
         const r = R * (0.25 + 0.6 * Math.random());
         const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-        const px = 16 + Math.random() * 8;
+        // Scale topping size down as slices get thinner
+        const base = Math.max(8, 22 - denom * 0.7);
+        const px = base + Math.random() * 6;
         drawTopping(x, y, px, t.id);
       }
     }
