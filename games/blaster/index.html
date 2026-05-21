@@ -280,13 +280,13 @@
       <div class="curtain" id="curtain">
         <div>
           <h2 id="curtainTitle">Ready to blast?</h2>
-          <p id="curtainSub">Move with arrows / WASD or drag on the screen. Your blaster fires automatically.</p>
+          <p id="curtainSub">Slide left and right with arrows / A &amp; D or drag on the screen. Your blaster fires automatically.</p>
           <button class="btn" id="startBtn">Start</button>
         </div>
       </div>
     </div>
 
-    <p class="hint">Arrows or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> to move. <kbd>Space</kbd> to drop a bomb (if you have one). <kbd>P</kbd> to pause.</p>
+    <p class="hint"><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> to slide. <kbd>Space</kbd> drops a bomb (if you have one). <kbd>P</kbd> to pause.</p>
   </main>
 
   <script>
@@ -1122,28 +1122,19 @@
     // ---------- Player physics ----------
     function updatePlayer(dt) {
       if (!player) return;
-      // keyboard
-      let mx = 0, my = 0;
+      // Horizontal-only movement: ignore vertical input, lock y to bottom row
+      let mx = 0;
       if (keys['arrowleft'] || keys['a']) mx -= 1;
       if (keys['arrowright'] || keys['d']) mx += 1;
-      if (keys['arrowup'] || keys['w']) my -= 1;
-      if (keys['arrowdown'] || keys['s']) my += 1;
 
       if (touchPt) {
         const dx = touchPt.x - player.x;
-        const dy = touchPt.y - player.y;
-        const len = Math.hypot(dx, dy);
-        if (len > 4) {
-          mx = dx / len;
-          my = dy / len;
-        }
+        if (Math.abs(dx) > 4) mx = Math.sign(dx);
       }
-      const len = Math.hypot(mx, my) || 1;
-      const speed = PLAYER_SPEED;
-      player.x += (mx / len) * speed * dt * (len > 0 ? 1 : 0);
-      player.y += (my / len) * speed * dt * (len > 0 ? 1 : 0);
+      player.x += mx * PLAYER_SPEED * dt;
       player.x = Math.max(player.r, Math.min(VW - player.r, player.x));
-      player.y = Math.max(VH * 0.45, Math.min(VH - player.r - 10, player.y));
+      // Keep the ship pinned near the bottom — always 90px above the floor
+      player.y = VH - 90;
     }
 
     function damagePlayer(amount) {
