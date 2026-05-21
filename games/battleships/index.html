@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Sloppy Battleships — Sloppy Games</title>
+  <meta name="description" content="Classic Battleships against a smart Splat Bot. Place your fleet, fire shots, sink theirs first." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple: #9333ea; --purple-dark: #6b21a8;
+      --lime: #84cc16; --lime-dark: #65a30d;
+      --pink: #ec4899; --cyan: #06b6d4;
+      --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6;
+      --water: #cffafe; --water-dark: #67e8f9;
+      --shadow: rgba(26, 26, 26, 0.2);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    h1, h2, h3 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 600px; color: #444; margin: -0.25rem 0 0.5rem; }
+
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(700px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 120px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.1rem, 3vw, 1.5rem); line-height: 1; color: var(--ink); }
+
+    .status-card { width: min(700px, 95vw); background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); padding: 0.7rem 1rem; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 700; }
+    .status-card.bad { background: #fce7f3; }
+    .status-card.good { background: #d9f99d; }
+    .status-card em { color: var(--purple-dark); font-style: normal; }
+
+    .boards { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; width: 100%; }
+    .board {
+      background: var(--paper); border: 3px solid var(--ink); border-radius: 16px;
+      box-shadow: 0 6px 0 var(--ink);
+      padding: 0.5rem;
+      display: inline-block;
+    }
+    .board h3 { text-align: center; font-size: 0.9rem; color: #666; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: 14px repeat(10, 1fr);
+      grid-template-rows: 14px repeat(10, 1fr);
+      gap: 2px;
+      width: min(360px, calc(95vw - 2.5rem));
+      aspect-ratio: 1.04;
+    }
+    .grid .lbl { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.55rem; color: #666; display: flex; align-items: center; justify-content: center; }
+    .grid .cell {
+      background: var(--water);
+      border: 1.5px solid #1a1a1a33;
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: filter 0.06s ease, background 0.06s ease, transform 0.06s ease;
+    }
+    .grid .cell.ship { background: var(--purple-dark); }
+    .grid.opponent .cell.ship { background: var(--water); }   /* hide opponent ships unless hit */
+    .grid .cell.preview-ok { background: #d9f99d; }
+    .grid .cell.preview-bad { background: #fecaca; }
+    .grid .cell.miss::after { content: ''; position: absolute; width: 30%; height: 30%; background: #fff; border: 1.5px solid #1a1a1a; border-radius: 50%; }
+    .grid .cell.hit { background: var(--pink) !important; }
+    .grid .cell.hit::after { content: '✖'; font-family: 'Baloo 2', sans-serif; font-weight: 800; color: #fff; font-size: 0.9rem; }
+    .grid .cell.sunk { background: #b91c1c !important; }
+    .grid .cell.sunk::after { color: #fee2e2; }
+    .grid .cell.last-shot { outline: 2px solid var(--lime); outline-offset: -2px; }
+    .grid .cell:not(:disabled):hover { filter: brightness(1.05); }
+    .grid.opponent .cell:not(.disabled):not(.hit):not(.miss):not(.sunk):hover { background: #a5f3fc; cursor: crosshair; }
+    .grid .cell:active { transform: scale(0.94); }
+
+    .fleet-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      min-width: 180px;
+    }
+    .ship-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.55rem;
+      border: 2.5px solid var(--ink);
+      border-radius: 10px;
+      background: var(--paper);
+      box-shadow: 2px 2px 0 var(--ink);
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .ship-pill .blocks {
+      display: flex;
+      gap: 1px;
+    }
+    .ship-pill .b {
+      width: 12px; height: 12px;
+      background: var(--purple-dark);
+      border: 1.5px solid #1a1a1a;
+      border-radius: 2px;
+    }
+    .ship-pill.placed { background: #d9f99d; }
+    .ship-pill.placed .b { background: var(--lime-dark); }
+    .ship-pill.sunk { background: #fecaca; text-decoration: line-through; }
+    .ship-pill.sunk .b { background: #b91c1c; }
+    .ship-pill.active { outline: 3px dashed var(--lime); outline-offset: 2px; }
+
+    .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; padding: 0.55rem 1rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .btn:hover { background: #a3e635; }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .btn.ghost { background: var(--paper); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .diff { display: inline-flex; align-items: center; gap: 0.35rem; font-family: 'Baloo 2', sans-serif; font-weight: 700; }
+    .diff select { font-family: inherit; font-weight: 700; padding: 0.35rem 0.6rem; border-radius: 10px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
+
+    .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 600px; }
+    kbd { font-family: 'Baloo 2', sans-serif; font-weight: 700; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; padding: 0 0.4rem; box-shadow: 2px 2px 0 var(--ink); }
+
+    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } .fleet-row { width: 100%; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">← Back</a>
+    <a href="../../index.html"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Sloppy Battleships <span class="accent">Sink the fleet</span></h1>
+    <p class="subtitle">Place your ships, then take turns firing with Splat Bot. First to sink all five wins.</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Wins</div><div class="value" id="wins">0</div></div>
+      <div class="hud-pill"><div class="label">Losses</div><div class="value" id="losses">0</div></div>
+      <div class="hud-pill"><div class="label">Turn</div><div class="value" id="turn">—</div></div>
+      <div class="hud-pill"><div class="label">Shots</div><div class="value" id="shots">0</div></div>
+    </div>
+
+    <div class="status-card" id="status">Place your fleet below, then tap Start Battle.</div>
+
+    <div class="boards">
+      <div class="board">
+        <h3>Your fleet</h3>
+        <div class="grid" id="playerGrid"></div>
+      </div>
+
+      <div class="fleet-row" id="fleetRow"></div>
+
+      <div class="board">
+        <h3>Splat Bot's waters</h3>
+        <div class="grid opponent" id="cpuGrid"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="rotateBtn">Rotate (R)</button>
+      <button class="btn ghost" id="autoBtn">Auto-place</button>
+      <button class="btn ghost" id="clearBtn">Clear board</button>
+      <button class="btn" id="startBtn" disabled>Start Battle</button>
+      <button class="btn ghost" id="resetBtn" style="display:none">New game</button>
+      <label class="diff">Bot
+        <select id="diff">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
+    </div>
+
+    <p class="hint">Place each ship by tapping the start cell on your grid. Press <kbd>R</kbd> or the Rotate button to flip between horizontal and vertical.</p>
+  </main>
+
+  <script>
+    // ---------- Audio ----------
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function env(g, t, a, h, r, peak = 0.22) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.setValueAtTime(peak, t + a + h); g.gain.linearRampToValueAtTime(0, t + a + h + r); }
+    function playMiss() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.02, 0.15, 0.2); const o = c.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(80, t+0.15); o.connect(g); o.start(t); o.stop(t+0.18); }
+    function playHit() { const c = ensureAudio(), t = c.currentTime; const bufSize = Math.floor(c.sampleRate * 0.25); const buf = c.createBuffer(1, bufSize, c.sampleRate); const data = buf.getChannelData(0); for (let i = 0; i < bufSize; i++) data[i] = (Math.random()*2-1)*(1-i/bufSize); const n = c.createBufferSource(); n.buffer = buf; const gN = c.createGain(); env(gN, t, 0.005, 0.02, 0.25, 0.32); n.connect(gN); gN.connect(c.destination); n.start(t); n.stop(t+0.28); const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.2, 0.34); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(60, t+0.2); o.connect(g); o.start(t); o.stop(t+0.22); }
+    function playSunk() { const c = ensureAudio(), t = c.currentTime; [392, 261.63, 196].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.1, 0.005, 0.06, 0.18, 0.28); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.1); o.stop(t+i*0.1+0.24); }); }
+    function playWin() { const c = ensureAudio(), t = c.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.1, 0.005, 0.05, 0.2, 0.28); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.1); o.stop(t+i*0.1+0.26); }); }
+    function playLose() { const c = ensureAudio(), t = c.currentTime; [600, 480, 380, 260].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.12, 0.01, 0.05, 0.15, 0.22); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.12); o.stop(t+i*0.12+0.22); }); }
+
+    // ---------- Game config ----------
+    const N = 10;
+    const FLEET = [
+      { name: 'Carrier',    size: 5 },
+      { name: 'Battleship', size: 4 },
+      { name: 'Cruiser',    size: 3 },
+      { name: 'Submarine',  size: 3 },
+      { name: 'Destroyer',  size: 2 },
+    ];
+    const STATS_KEY = 'sloppy.battleships.stats';
+
+    // ---------- State ----------
+    let phase = 'placing';      // 'placing' | 'playing' | 'gameover'
+    let playerGrid, cpuGrid;    // 2D: null or ship index. shot cells stored elsewhere
+    let playerShots, cpuShots;  // 2D booleans (we've shot here)
+    let playerFleet, cpuFleet;  // [{ name, size, cells: [[r,c]], hits: 0, sunk: false }]
+    let placingIdx = 0;
+    let orientation = 'h';      // 'h' or 'v'
+    let turn = 'player';        // 'player' | 'cpu'
+    let shots = 0;
+    let cpuAI = null;           // hunt/track state
+    let diff = 'normal';
+    let stats = (() => { try { return JSON.parse(localStorage.getItem(STATS_KEY)||'{"wins":0,"losses":0}'); } catch { return {wins:0, losses:0}; } })();
+
+    // ---------- DOM ----------
+    const $ = id => document.getElementById(id);
+    const playerGridEl = $('playerGrid');
+    const cpuGridEl    = $('cpuGrid');
+    const fleetRowEl   = $('fleetRow');
+    const statusEl     = $('status');
+
+    function setStatus(msg, cls = '') {
+      statusEl.innerHTML = msg;
+      statusEl.className = 'status-card' + (cls ? ' ' + cls : '');
+    }
+    function emptyGrid() { return Array.from({length: N}, () => Array(N).fill(null)); }
+    function emptyShots() { return Array.from({length: N}, () => Array(N).fill(false)); }
+
+    function buildGridDom(host, kind) {
+      host.innerHTML = '';
+      // top-left corner blank
+      host.appendChild(spacer());
+      // top header 1..10
+      for (let c = 0; c < N; c++) { const s = document.createElement('div'); s.className='lbl'; s.textContent=(c+1); host.appendChild(s); }
+      // rows
+      for (let r = 0; r < N; r++) {
+        const lbl = document.createElement('div'); lbl.className='lbl'; lbl.textContent = String.fromCharCode(65 + r); host.appendChild(lbl);
+        for (let c = 0; c < N; c++) {
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'cell';
+          cell.dataset.r = r;
+          cell.dataset.c = c;
+          cell.dataset.kind = kind;
+          host.appendChild(cell);
+        }
+      }
+    }
+    function spacer() { const s = document.createElement('div'); s.className='lbl'; return s; }
+    function cellEl(host, r, c) {
+      // First N+1 children are corner + 10 number headers, then rows of [letter + 10 cells]
+      const idx = (N + 1) + r * (N + 1) + 1 + c;
+      return host.children[idx];
+    }
+    function repaint() {
+      // Player grid: show ships + cpu shots (hits, misses, sunk overlay)
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        const el = cellEl(playerGridEl, r, c);
+        el.className = 'cell';
+        if (playerGrid[r][c] !== null) el.classList.add('ship');
+        if (cpuShots[r][c]) {
+          if (playerGrid[r][c] !== null) el.classList.add('hit');
+          else el.classList.add('miss');
+        }
+      }
+      // Mark sunk ships on player board
+      for (const ship of playerFleet) if (ship && ship.sunk) for (const [r,c] of ship.cells) cellEl(playerGridEl, r, c).classList.add('sunk');
+
+      // Opponent grid: show only our shots
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        const el = cellEl(cpuGridEl, r, c);
+        el.className = 'cell';
+        if (playerShots[r][c]) {
+          if (cpuGrid[r][c] !== null) el.classList.add('hit');
+          else el.classList.add('miss');
+        }
+      }
+      for (const ship of cpuFleet) if (ship && ship.sunk) for (const [r,c] of ship.cells) cellEl(cpuGridEl, r, c).classList.add('sunk');
+    }
+
+    function renderFleet() {
+      fleetRowEl.innerHTML = '';
+      const h = document.createElement('h3'); h.textContent = phase === 'placing' ? 'Place your fleet' : 'Your fleet';
+      h.style.fontFamily = "'Baloo 2', sans-serif"; h.style.fontSize = '0.85rem'; h.style.color = '#666'; h.style.textAlign = 'center'; h.style.margin = '0 0 0.2rem';
+      fleetRowEl.appendChild(h);
+      FLEET.forEach((s, i) => {
+        const pill = document.createElement('div');
+        pill.className = 'ship-pill';
+        const placed = playerFleet[i];
+        if (placed && placed.cells.length) pill.classList.add('placed');
+        if (placed && placed.sunk) pill.classList.add('sunk');
+        if (phase === 'placing' && i === placingIdx) pill.classList.add('active');
+        const blocks = document.createElement('div'); blocks.className = 'blocks';
+        for (let k = 0; k < s.size; k++) { const b = document.createElement('div'); b.className='b'; blocks.appendChild(b); }
+        const label = document.createElement('span');
+        label.textContent = `${s.name} (${s.size})`;
+        pill.appendChild(blocks);
+        pill.appendChild(label);
+        fleetRowEl.appendChild(pill);
+      });
+      // Score line for sunk count
+      const cpuHeader = document.createElement('h3'); cpuHeader.textContent = "Splat Bot's fleet";
+      cpuHeader.style.fontFamily = "'Baloo 2', sans-serif"; cpuHeader.style.fontSize = '0.85rem'; cpuHeader.style.color = '#666'; cpuHeader.style.textAlign = 'center'; cpuHeader.style.margin = '0.4rem 0 0.2rem';
+      fleetRowEl.appendChild(cpuHeader);
+      FLEET.forEach((s, i) => {
+        const pill = document.createElement('div');
+        pill.className = 'ship-pill';
+        if (cpuFleet[i] && cpuFleet[i].sunk) pill.classList.add('sunk');
+        const blocks = document.createElement('div'); blocks.className = 'blocks';
+        for (let k = 0; k < s.size; k++) { const b = document.createElement('div'); b.className='b'; blocks.appendChild(b); }
+        const label = document.createElement('span');
+        label.textContent = `${s.name} (${s.size})`;
+        pill.appendChild(blocks);
+        pill.appendChild(label);
+        fleetRowEl.appendChild(pill);
+      });
+    }
+
+    // ---------- Placement ----------
+    function canPlace(grid, r, c, size, orient) {
+      const dr = orient === 'v' ? 1 : 0;
+      const dc = orient === 'h' ? 1 : 0;
+      for (let i = 0; i < size; i++) {
+        const rr = r + dr * i, cc = c + dc * i;
+        if (rr < 0 || rr >= N || cc < 0 || cc >= N) return false;
+        if (grid[rr][cc] !== null) return false;
+      }
+      return true;
+    }
+    function place(grid, fleet, idx, r, c, orient) {
+      const size = FLEET[idx].size;
+      const dr = orient === 'v' ? 1 : 0;
+      const dc = orient === 'h' ? 1 : 0;
+      const cells = [];
+      for (let i = 0; i < size; i++) {
+        const rr = r + dr * i, cc = c + dc * i;
+        grid[rr][cc] = idx;
+        cells.push([rr, cc]);
+      }
+      fleet[idx] = { name: FLEET[idx].name, size, cells, hits: 0, sunk: false, idx };
+    }
+    function unplaceAll() {
+      playerGrid = emptyGrid();
+      playerFleet = FLEET.map(() => null);
+      placingIdx = 0;
+      repaint();
+      renderFleet();
+      $('startBtn').disabled = true;
+    }
+    function autoPlace(grid, fleet) {
+      for (let i = 0; i < FLEET.length; i++) {
+        for (let t = 0; t < 200; t++) {
+          const r = Math.floor(Math.random() * N);
+          const c = Math.floor(Math.random() * N);
+          const o = Math.random() < 0.5 ? 'h' : 'v';
+          if (canPlace(grid, r, c, FLEET[i].size, o)) {
+            place(grid, fleet, i, r, c, o);
+            break;
+          }
+        }
+      }
+    }
+
+    // Hover preview during placement
+    function clearPreview() {
+      playerGridEl.querySelectorAll('.preview-ok, .preview-bad').forEach(e => e.classList.remove('preview-ok','preview-bad'));
+    }
+    function showPreview(r, c) {
+      clearPreview();
+      if (phase !== 'placing') return;
+      if (placingIdx >= FLEET.length) return;
+      const size = FLEET[placingIdx].size;
+      const ok = canPlace(playerGrid, r, c, size, orientation);
+      const dr = orientation === 'v' ? 1 : 0;
+      const dc = orientation === 'h' ? 1 : 0;
+      for (let i = 0; i < size; i++) {
+        const rr = r + dr * i, cc = c + dc * i;
+        if (rr >= 0 && rr < N && cc >= 0 && cc < N) {
+          cellEl(playerGridEl, rr, cc).classList.add(ok ? 'preview-ok' : 'preview-bad');
+        }
+      }
+    }
+
+    playerGridEl.addEventListener('mouseover', (e) => {
+      const t = e.target.closest('.cell');
+      if (!t) return;
+      showPreview(Number(t.dataset.r), Number(t.dataset.c));
+    });
+    playerGridEl.addEventListener('mouseout', (e) => {
+      if (e.target.closest('.grid') === playerGridEl) clearPreview();
+    });
+    playerGridEl.addEventListener('click', (e) => {
+      const t = e.target.closest('.cell');
+      if (!t) return;
+      ensureAudio();
+      const r = Number(t.dataset.r), c = Number(t.dataset.c);
+      if (phase === 'placing' && placingIdx < FLEET.length) {
+        const size = FLEET[placingIdx].size;
+        if (!canPlace(playerGrid, r, c, size, orientation)) {
+          setStatus(`Can't place ${FLEET[placingIdx].name} there. Try another spot or Rotate.`, 'bad');
+          return;
+        }
+        place(playerGrid, playerFleet, placingIdx, r, c, orientation);
+        placingIdx += 1;
+        if (placingIdx >= FLEET.length) {
+          setStatus('Fleet ready! Tap Start Battle when you are.', 'good');
+          $('startBtn').disabled = false;
+        } else {
+          setStatus(`Place your <em>${FLEET[placingIdx].name}</em> (${FLEET[placingIdx].size} cells).`);
+        }
+        repaint();
+        renderFleet();
+      }
+    });
+
+    // ---------- Battle ----------
+    cpuGridEl.addEventListener('click', (e) => {
+      const t = e.target.closest('.cell');
+      if (!t) return;
+      if (phase !== 'playing' || turn !== 'player') return;
+      ensureAudio();
+      const r = Number(t.dataset.r), c = Number(t.dataset.c);
+      if (playerShots[r][c]) return;
+      playerShots[r][c] = true;
+      const hitIdx = cpuGrid[r][c];
+      if (hitIdx !== null) {
+        const ship = cpuFleet[hitIdx];
+        ship.hits += 1;
+        playHit();
+        if (ship.hits === ship.size) {
+          ship.sunk = true;
+          playSunk();
+          setStatus(`Hit! You sank Splat Bot's <em>${ship.name}</em>.`, 'good');
+        } else {
+          setStatus('Direct hit! Take another shot.', 'good');
+        }
+        shots += 1;
+        $('shots').textContent = shots;
+        repaint();
+        renderFleet();
+        if (cpuFleet.every(s => s.sunk)) return endGame(true);
+        // player hits again
+        return;
+      } else {
+        playMiss();
+        setStatus("Miss. Splat Bot's turn…");
+        shots += 1;
+        $('shots').textContent = shots;
+        repaint();
+        turn = 'cpu';
+        $('turn').textContent = 'Bot';
+        setTimeout(cpuTurn, 700);
+      }
+    });
+
+    // ---------- CPU AI ----------
+    function cpuTurn() {
+      if (phase !== 'playing') return;
+      // pick target based on diff + AI state
+      const target = pickCpuTarget();
+      cpuShots[target.r][target.c] = true;
+      const hitIdx = playerGrid[target.r][target.c];
+      if (hitIdx !== null) {
+        const ship = playerFleet[hitIdx];
+        ship.hits += 1;
+        playHit();
+        if (ship.hits === ship.size) {
+          ship.sunk = true;
+          playSunk();
+          setStatus(`Splat Bot hit ${cellName(target.r, target.c)} and sank your <em>${ship.name}</em>!`, 'bad');
+          // remove pending targets adjacent to this ship from queue
+          cpuAI.recent = [];
+        } else {
+          setStatus(`Splat Bot hit your ship at ${cellName(target.r, target.c)}!`, 'bad');
+          // Track this hit for adjacency
+          cpuAI.recent.push([target.r, target.c]);
+        }
+        repaint();
+        renderFleet();
+        if (playerFleet.every(s => s.sunk)) return endGame(false);
+        // CPU goes again on hit
+        setTimeout(cpuTurn, 700);
+      } else {
+        playMiss();
+        setStatus("Splat Bot missed. Your shot.");
+        repaint();
+        turn = 'player';
+        $('turn').textContent = 'You';
+      }
+    }
+
+    function pickCpuTarget() {
+      // Easy: random
+      if (diff === 'easy') {
+        return randomUntried();
+      }
+      // Normal & Hard: hunt + track using recent hits
+      const recent = cpuAI.recent;
+      if (recent.length >= 2) {
+        // try to continue line
+        const [r0, c0] = recent[0];
+        const [r1, c1] = recent[recent.length - 1];
+        const dr = Math.sign(r1 - r0);
+        const dc = Math.sign(c1 - c0);
+        if (dr !== 0 || dc !== 0) {
+          // try forward
+          let r = r1 + dr, c = c1 + dc;
+          if (inBounds(r, c) && !cpuShots[r][c]) return { r, c };
+          // try backward
+          r = r0 - dr; c = c0 - dc;
+          if (inBounds(r, c) && !cpuShots[r][c]) return { r, c };
+        }
+      }
+      if (recent.length >= 1) {
+        // try adjacent cells to most recent hit
+        const [r, c] = recent[recent.length - 1];
+        const adj = [[-1,0],[1,0],[0,-1],[0,1]];
+        for (const [dr, dc] of adj.sort(() => Math.random() - 0.5)) {
+          const rr = r + dr, cc = c + dc;
+          if (inBounds(rr, cc) && !cpuShots[rr][cc]) return { r: rr, c: cc };
+        }
+      }
+      // Hard: checkerboard search
+      if (diff === 'hard') {
+        const candidates = [];
+        for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+          if (!cpuShots[r][c] && (r + c) % 2 === 0) candidates.push([r, c]);
+        }
+        if (candidates.length) {
+          const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
+          return { r, c };
+        }
+      }
+      return randomUntried();
+    }
+
+    function randomUntried() {
+      const free = [];
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!cpuShots[r][c]) free.push([r, c]);
+      const [r, c] = free[Math.floor(Math.random() * free.length)];
+      return { r, c };
+    }
+    function inBounds(r, c) { return r >= 0 && r < N && c >= 0 && c < N; }
+    function cellName(r, c) { return String.fromCharCode(65 + r) + (c + 1); }
+
+    function endGame(playerWon) {
+      phase = 'gameover';
+      $('startBtn').style.display = 'none';
+      $('resetBtn').style.display = '';
+      $('turn').textContent = playerWon ? 'You won!' : 'Bot won';
+      if (playerWon) {
+        stats.wins += 1;
+        playWin();
+        setStatus(`🏆 You sank Splat Bot's fleet in ${shots} shots! Tap New Game to play again.`, 'good');
+      } else {
+        stats.losses += 1;
+        playLose();
+        setStatus(`💥 Splat Bot sank your fleet. Tap New Game to take revenge.`, 'bad');
+      }
+      localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+      $('wins').textContent = stats.wins;
+      $('losses').textContent = stats.losses;
+      // reveal cpu ships
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        if (cpuGrid[r][c] !== null && !playerShots[r][c]) {
+          cellEl(cpuGridEl, r, c).classList.add('ship');
+          // override hidden background by re-enabling ship style
+          cellEl(cpuGridEl, r, c).style.background = '#6b21a8';
+        }
+      }
+    }
+
+    // ---------- Buttons ----------
+    $('rotateBtn').addEventListener('click', () => {
+      orientation = orientation === 'h' ? 'v' : 'h';
+      if (phase === 'placing') setStatus(`Rotated. Place your <em>${FLEET[placingIdx].name}</em> (${FLEET[placingIdx].size} cells) — orientation ${orientation === 'h' ? 'horizontal' : 'vertical'}.`);
+    });
+    $('autoBtn').addEventListener('click', () => {
+      if (phase !== 'placing') return;
+      ensureAudio();
+      unplaceAll();
+      autoPlace(playerGrid, playerFleet);
+      placingIdx = FLEET.length;
+      setStatus('Fleet auto-placed. Tap Start Battle.', 'good');
+      $('startBtn').disabled = false;
+      repaint(); renderFleet();
+    });
+    $('clearBtn').addEventListener('click', () => { ensureAudio(); unplaceAll(); setStatus('Place your <em>Carrier</em> (5 cells) by tapping a cell on your grid.'); });
+    $('startBtn').addEventListener('click', () => {
+      if (placingIdx < FLEET.length) return;
+      ensureAudio();
+      phase = 'playing';
+      turn = 'player';
+      $('turn').textContent = 'You';
+      $('startBtn').disabled = true;
+      $('startBtn').style.display = 'none';
+      $('resetBtn').style.display = '';
+      $('autoBtn').disabled = true;
+      $('clearBtn').disabled = true;
+      $('rotateBtn').disabled = true;
+      setStatus("Battle on! Click a cell on Splat Bot's grid to fire.");
+      renderFleet();
+    });
+    $('resetBtn').addEventListener('click', () => { newGame(); });
+    $('diff').addEventListener('change', (e) => { diff = e.target.value; });
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.key === 'r' || e.key === 'R') && phase === 'placing') {
+        e.preventDefault();
+        $('rotateBtn').click();
+      }
+    });
+
+    // ---------- New game ----------
+    function newGame() {
+      phase = 'placing';
+      playerGrid = emptyGrid();
+      cpuGrid = emptyGrid();
+      playerShots = emptyShots();
+      cpuShots = emptyShots();
+      playerFleet = FLEET.map(() => null);
+      cpuFleet = FLEET.map(() => null);
+      placingIdx = 0;
+      shots = 0;
+      $('shots').textContent = 0;
+      $('turn').textContent = '—';
+      orientation = 'h';
+      diff = $('diff').value;
+      autoPlace(cpuGrid, cpuFleet);
+      cpuAI = { recent: [] };
+      $('startBtn').disabled = true;
+      $('startBtn').style.display = '';
+      $('resetBtn').style.display = 'none';
+      $('autoBtn').disabled = false;
+      $('clearBtn').disabled = false;
+      $('rotateBtn').disabled = false;
+      buildGridDom(playerGridEl, 'player');
+      buildGridDom(cpuGridEl, 'cpu');
+      repaint();
+      renderFleet();
+      setStatus('Place your <em>Carrier</em> (5 cells) by tapping a cell on your grid. Press R or Rotate to change orientation.');
+    }
+
+    // Boot
+    $('wins').textContent = stats.wins;
+    $('losses').textContent = stats.losses;
+    newGame();
+  </script>
+</body>
+</html>

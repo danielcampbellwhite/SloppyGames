@@ -946,6 +946,7 @@ a.game-card:hover h3 { text-decoration: underline; text-decoration-thickness: 3p
   padding: 12px;
   gap: 3px;
 }
+.thumb-tunes { display: contents; }
 .pk {
   flex: 1;
   height: 80%;
@@ -973,3 +974,36 @@ a.game-card:hover h3 { text-decoration: underline; text-decoration-thickness: 3p
   font-size: 0.95rem;
 }
 .about-note strong { color: var(--purple-dark); }
+
+/* Sloppy Battleships thumbnail */
+.game-thumb--battleships {
+  background: linear-gradient(180deg, #cffafe 0%, #a5f3fc 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.thumb-bs-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  width: 80%;
+  aspect-ratio: 1;
+}
+.bs-cell {
+  background: #cffafe;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+}
+.bs-cell.ship { background: #6b21a8; }
+.bs-cell.miss { background: #fff; position: relative; }
+.bs-cell.miss::after {
+  content: ''; position: absolute; inset: 25%;
+  background: #cffafe; border: 1.5px solid var(--ink); border-radius: 50%;
+}
+.bs-cell.hit { background: #ec4899; position: relative; }
+.bs-cell.hit::after {
+  content: '✖'; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 0.9rem;
+}

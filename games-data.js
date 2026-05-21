@@ -124,6 +124,14 @@ const GAMES = [
     category: 'learn',
     thumb: 'tunes',
   },
+  {
+    slug: 'battleships',
+    title: 'Sloppy Battleships',
+    description: 'Classic Battleships against a smart Splat Bot. Place your fleet, take turns firing — first to sink them all wins.',
+    href: '/games/battleships/',
+    category: 'puzzles',
+    thumb: 'battleships',
+  },
 ];
 
 // ---------- Render helpers ----------
@@ -193,6 +201,13 @@ function thumbHTML(slug) {
     </span>`;
     case 'tunes': return `<span class="thumb-tunes">
       <span class="pk pk--c"></span><span class="pk pk--d"></span><span class="pk pk--e"></span><span class="pk pk--f"></span><span class="pk pk--g"></span><span class="pk pk--a"></span><span class="pk pk--b"></span>
+    </span>`;
+    case 'battleships': return `<span class="thumb-bs-grid">
+      <span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell ship"></span><span class="bs-cell ship"></span><span class="bs-cell ship"></span>
+      <span class="bs-cell"></span><span class="bs-cell miss"></span><span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell"></span>
+      <span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell hit"></span><span class="bs-cell"></span>
+      <span class="bs-cell ship"></span><span class="bs-cell ship"></span><span class="bs-cell"></span><span class="bs-cell hit"></span><span class="bs-cell"></span>
+      <span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell"></span><span class="bs-cell miss"></span>
     </span>`;
     default: return '';
   }
