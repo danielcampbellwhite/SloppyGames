@@ -6,7 +6,7 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
   <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
   <title>Sloppy Battleships — Sloppy Games</title>
-  <meta name="description" content="Classic Battleships against a smart Splat Bot. Place your fleet, fire shots, sink theirs first." />
+  <meta name="description" content="Classic Battleships against a smart Splat Bot. Drag ships into place, rotate each one, then sink the fleet." />
   <link rel="icon" type="image/png" href="../../assets/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -34,46 +34,57 @@
     .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
     .subtitle { text-align: center; max-width: 600px; color: #444; margin: -0.25rem 0 0.5rem; }
 
-    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(700px, 95vw); }
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(820px, 95vw); }
     .hud-pill { flex: 1 1 0; min-width: 120px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
     .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
     .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.1rem, 3vw, 1.5rem); line-height: 1; color: var(--ink); }
 
-    .status-card { width: min(700px, 95vw); background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); padding: 0.7rem 1rem; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 700; }
+    .status-card { width: min(820px, 95vw); background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); padding: 0.7rem 1rem; text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 700; }
     .status-card.bad { background: #fce7f3; }
     .status-card.good { background: #d9f99d; }
     .status-card em { color: var(--purple-dark); font-style: normal; }
 
-    .boards { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; width: 100%; }
+    /* Stage holds the boards + draggable ships overlay */
+    .stage {
+      position: relative;
+      width: min(820px, 100%);
+    }
+
+    .boards-row {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
     .board {
       background: var(--paper); border: 3px solid var(--ink); border-radius: 16px;
       box-shadow: 0 6px 0 var(--ink);
       padding: 0.5rem;
-      display: inline-block;
     }
-    .board h3 { text-align: center; font-size: 0.9rem; color: #666; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; }
+    .board h3 { text-align: center; font-size: 0.85rem; color: #666; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; }
     .grid {
       display: grid;
       grid-template-columns: 14px repeat(10, 1fr);
       grid-template-rows: 14px repeat(10, 1fr);
       gap: 2px;
-      width: min(360px, calc(95vw - 2.5rem));
+      width: min(380px, calc((100vw - 4rem) / 2));
       aspect-ratio: 1.04;
+    }
+    @media (max-width: 720px) {
+      .grid { width: min(380px, calc(95vw - 1.25rem)); }
     }
     .grid .lbl { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.55rem; color: #666; display: flex; align-items: center; justify-content: center; }
     .grid .cell {
       background: var(--water);
       border: 1.5px solid #1a1a1a33;
       border-radius: 4px;
-      cursor: pointer;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: filter 0.06s ease, background 0.06s ease, transform 0.06s ease;
+      cursor: pointer;
     }
-    .grid .cell.ship { background: var(--purple-dark); }
-    .grid.opponent .cell.ship { background: var(--water); }   /* hide opponent ships unless hit */
     .grid .cell.preview-ok { background: #d9f99d; }
     .grid .cell.preview-bad { background: #fecaca; }
     .grid .cell.miss::after { content: ''; position: absolute; width: 30%; height: 30%; background: #fff; border: 1.5px solid #1a1a1a; border-radius: 50%; }
@@ -81,48 +92,142 @@
     .grid .cell.hit::after { content: '✖'; font-family: 'Baloo 2', sans-serif; font-weight: 800; color: #fff; font-size: 0.9rem; }
     .grid .cell.sunk { background: #b91c1c !important; }
     .grid .cell.sunk::after { color: #fee2e2; }
-    .grid .cell.last-shot { outline: 2px solid var(--lime); outline-offset: -2px; }
-    .grid .cell:not(:disabled):hover { filter: brightness(1.05); }
     .grid.opponent .cell:not(.disabled):not(.hit):not(.miss):not(.sunk):hover { background: #a5f3fc; cursor: crosshair; }
-    .grid .cell:active { transform: scale(0.94); }
+    .grid .cell.reveal-ship { background: #6b21a8; }
 
-    .fleet-row {
+    /* Shipyard — appears below boards during placement */
+    .shipyard {
+      width: min(820px, 95vw);
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      box-shadow: 0 6px 0 var(--ink);
+      padding: 0.85rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      min-width: 180px;
+      gap: 0.5rem;
     }
-    .ship-pill {
+    .shipyard h3 { font-family: 'Baloo 2', sans-serif; font-size: 0.85rem; color: #666; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; }
+    .shipyard__hint { text-align: center; font-size: 0.85rem; color: #666; }
+    .ship-slots {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .ship-slot {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.35rem 0.55rem;
-      border: 2.5px solid var(--ink);
-      border-radius: 10px;
-      background: var(--paper);
-      box-shadow: 2px 2px 0 var(--ink);
+    }
+    .ship-slot__label {
+      width: 110px;
+      text-align: right;
       font-family: 'Baloo 2', sans-serif;
       font-weight: 700;
       font-size: 0.9rem;
     }
-    .ship-pill .blocks {
+    .ship-slot.placed .ship-slot__label { color: #16a34a; }
+    .ship-slot__home {
+      /* the visible "home" cell row for a ship in its slot — also drop-back target */
       display: flex;
-      gap: 1px;
+      gap: 2px;
+      padding: 3px;
+      background: #f3f3f3;
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
     }
-    .ship-pill .b {
-      width: 12px; height: 12px;
-      background: var(--purple-dark);
-      border: 1.5px solid #1a1a1a;
-      border-radius: 2px;
+    .ship-slot__home .home-cell {
+      width: var(--cell);
+      height: var(--cell);
+      border-radius: 4px;
+      background: #fff;
     }
-    .ship-pill.placed { background: #d9f99d; }
-    .ship-pill.placed .b { background: var(--lime-dark); }
+    .ship-slot.placed .ship-slot__home { opacity: 0.45; }
+
+    /* Ship piece — absolute over the stage, freely positioned */
+    .ship-piece {
+      position: absolute;
+      top: 0; left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 3px solid var(--ink);
+      border-radius: 7px;
+      background: linear-gradient(180deg, #7e22ce 0%, #6b21a8 100%);
+      box-shadow: 0 3px 0 var(--ink);
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      transition: box-shadow 0.1s ease, transform 0.1s ease;
+      z-index: 5;
+    }
+    .ship-piece.placed { z-index: 4; }
+    .ship-piece.dragging {
+      cursor: grabbing;
+      z-index: 20;
+      box-shadow: 0 6px 0 var(--ink), 0 10px 24px rgba(0,0,0,0.2);
+      transform: rotate(-1deg);
+    }
+    .ship-piece.invalid {
+      background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+    }
+    .ship-piece.sunk {
+      background: linear-gradient(180deg, #4a044e 0%, #1a1a1a 100%);
+      cursor: default;
+    }
+    .ship-piece__name {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      color: #fff;
+      text-shadow: 1px 1px 0 #1a1a1a;
+      pointer-events: none;
+    }
+    .ship-piece__rotate {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 22px;
+      height: 22px;
+      background: var(--lime);
+      border: 2.5px solid var(--ink);
+      border-radius: 50%;
+      box-shadow: 1px 2px 0 var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: var(--ink);
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    .ship-piece.sunk .ship-piece__rotate { display: none; }
+
+    /* Fleet status pills, used during battle */
+    .fleet-status {
+      width: min(820px, 95vw);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .fleet-status__group {
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      box-shadow: 0 4px 0 var(--ink);
+      padding: 0.5rem 0.7rem;
+    }
+    .fleet-status h4 { font-family: 'Baloo 2', sans-serif; font-size: 0.75rem; color: #666; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; margin-bottom: 0.35rem; }
+    .ship-pill { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.45rem; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.78rem; margin-bottom: 0.25rem; }
+    .ship-pill .blocks { display: flex; gap: 1px; }
+    .ship-pill .b { width: 10px; height: 10px; background: var(--purple-dark); border: 1.5px solid #1a1a1a; border-radius: 2px; }
     .ship-pill.sunk { background: #fecaca; text-decoration: line-through; }
     .ship-pill.sunk .b { background: #b91c1c; }
-    .ship-pill.active { outline: 3px dashed var(--lime); outline-offset: 2px; }
 
     .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
-    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; padding: 0.55rem 1rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; padding: 0.55rem 1.2rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
     .btn:hover { background: #a3e635; }
     .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
     .btn.ghost { background: var(--paper); }
@@ -130,10 +235,14 @@
     .diff { display: inline-flex; align-items: center; gap: 0.35rem; font-family: 'Baloo 2', sans-serif; font-weight: 700; }
     .diff select { font-family: inherit; font-weight: 700; padding: 0.35rem 0.6rem; border-radius: 10px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
 
-    .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 600px; }
-    kbd { font-family: 'Baloo 2', sans-serif; font-weight: 700; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; padding: 0 0.4rem; box-shadow: 2px 2px 0 var(--ink); }
+    .hint { font-size: 0.85rem; color: #666; text-align: center; max-width: 700px; }
 
-    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } .fleet-row { width: 100%; } }
+    @media (max-width: 540px) {
+      .topbar { padding: 0.75rem 1rem; }
+      .topbar img { height: 38px; }
+      .ship-slot__label { width: 80px; font-size: 0.8rem; }
+      .fleet-status { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -144,7 +253,7 @@
 
   <main>
     <h1 class="title">Sloppy Battleships <span class="accent">Sink the fleet</span></h1>
-    <p class="subtitle">Place your ships, then take turns firing with Splat Bot. First to sink all five wins.</p>
+    <p class="subtitle">Drag each ship onto your grid. Tap the green button on a ship to rotate it. Re-arrange any time before Start.</p>
 
     <div class="hud">
       <div class="hud-pill"><div class="label">Wins</div><div class="value" id="wins">0</div></div>
@@ -153,25 +262,40 @@
       <div class="hud-pill"><div class="label">Shots</div><div class="value" id="shots">0</div></div>
     </div>
 
-    <div class="status-card" id="status">Place your fleet below, then tap Start Battle.</div>
+    <div class="status-card" id="status">Drag your ships onto your grid. Tap the green dot to rotate. Press Start when ready.</div>
 
-    <div class="boards">
-      <div class="board">
-        <h3>Your fleet</h3>
-        <div class="grid" id="playerGrid"></div>
+    <div class="stage" id="stage">
+      <div class="boards-row">
+        <div class="board">
+          <h3>Your fleet</h3>
+          <div class="grid" id="playerGrid"></div>
+        </div>
+        <div class="board">
+          <h3>Splat Bot's waters</h3>
+          <div class="grid opponent" id="cpuGrid"></div>
+        </div>
       </div>
+    </div>
 
-      <div class="fleet-row" id="fleetRow"></div>
+    <div class="shipyard" id="shipyard">
+      <h3>Your shipyard</h3>
+      <div class="ship-slots" id="shipSlots"></div>
+      <p class="shipyard__hint">Drag a ship onto your grid. Drag it back off to remove. Tap the green dot to rotate.</p>
+    </div>
 
-      <div class="board">
-        <h3>Splat Bot's waters</h3>
-        <div class="grid opponent" id="cpuGrid"></div>
+    <div class="fleet-status" id="fleetStatus" style="display:none">
+      <div class="fleet-status__group">
+        <h4>Your fleet</h4>
+        <div id="playerFleetStatus"></div>
+      </div>
+      <div class="fleet-status__group">
+        <h4>Splat Bot's fleet</h4>
+        <div id="cpuFleetStatus"></div>
       </div>
     </div>
 
     <div class="controls">
-      <button class="btn" id="rotateBtn">Rotate (R)</button>
-      <button class="btn ghost" id="autoBtn">Auto-place</button>
+      <button class="btn ghost" id="randomBtn">Randomise</button>
       <button class="btn ghost" id="clearBtn">Clear board</button>
       <button class="btn" id="startBtn" disabled>Start Battle</button>
       <button class="btn ghost" id="resetBtn" style="display:none">New game</button>
@@ -184,7 +308,7 @@
       </label>
     </div>
 
-    <p class="hint">Place each ship by tapping the start cell on your grid. Press <kbd>R</kbd> or the Rotate button to flip between horizontal and vertical.</p>
+    <p class="hint">During battle, click any cell on Splat Bot's grid to fire.</p>
   </main>
 
   <script>
@@ -195,10 +319,12 @@
     function playMiss() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.02, 0.15, 0.2); const o = c.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(80, t+0.15); o.connect(g); o.start(t); o.stop(t+0.18); }
     function playHit() { const c = ensureAudio(), t = c.currentTime; const bufSize = Math.floor(c.sampleRate * 0.25); const buf = c.createBuffer(1, bufSize, c.sampleRate); const data = buf.getChannelData(0); for (let i = 0; i < bufSize; i++) data[i] = (Math.random()*2-1)*(1-i/bufSize); const n = c.createBufferSource(); n.buffer = buf; const gN = c.createGain(); env(gN, t, 0.005, 0.02, 0.25, 0.32); n.connect(gN); gN.connect(c.destination); n.start(t); n.stop(t+0.28); const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.2, 0.34); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(60, t+0.2); o.connect(g); o.start(t); o.stop(t+0.22); }
     function playSunk() { const c = ensureAudio(), t = c.currentTime; [392, 261.63, 196].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.1, 0.005, 0.06, 0.18, 0.28); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.1); o.stop(t+i*0.1+0.24); }); }
+    function playPlace() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.002, 0.01, 0.06, 0.16); const o = c.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(440, t); o.frequency.exponentialRampToValueAtTime(880, t+0.08); o.connect(g); o.start(t); o.stop(t+0.1); }
+    function playRotate() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.002, 0.005, 0.04, 0.14); const o = c.createOscillator(); o.type='sine'; o.frequency.value=900; o.connect(g); o.start(t); o.stop(t+0.06); }
     function playWin() { const c = ensureAudio(), t = c.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.1, 0.005, 0.05, 0.2, 0.28); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.1); o.stop(t+i*0.1+0.26); }); }
     function playLose() { const c = ensureAudio(), t = c.currentTime; [600, 480, 380, 260].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.12, 0.01, 0.05, 0.15, 0.22); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.12); o.stop(t+i*0.12+0.22); }); }
 
-    // ---------- Game config ----------
+    // ---------- Config ----------
     const N = 10;
     const FLEET = [
       { name: 'Carrier',    size: 5 },
@@ -210,319 +336,587 @@
     const STATS_KEY = 'sloppy.battleships.stats';
 
     // ---------- State ----------
-    let phase = 'placing';      // 'placing' | 'playing' | 'gameover'
-    let playerGrid, cpuGrid;    // 2D: null or ship index. shot cells stored elsewhere
-    let playerShots, cpuShots;  // 2D booleans (we've shot here)
-    let playerFleet, cpuFleet;  // [{ name, size, cells: [[r,c]], hits: 0, sunk: false }]
-    let placingIdx = 0;
-    let orientation = 'h';      // 'h' or 'v'
-    let turn = 'player';        // 'player' | 'cpu'
+    let phase = 'placing';
+    let playerGrid, cpuGrid;
+    let playerShots, cpuShots;
+    let playerFleet, cpuFleet;   // [{ name, size, cells, hits, sunk, idx }]
+    let ships = [];               // draggable ship UI pieces
+    let turn = 'player';
     let shots = 0;
-    let cpuAI = null;           // hunt/track state
+    let cpuAI = null;
     let diff = 'normal';
     let stats = (() => { try { return JSON.parse(localStorage.getItem(STATS_KEY)||'{"wins":0,"losses":0}'); } catch { return {wins:0, losses:0}; } })();
 
     // ---------- DOM ----------
     const $ = id => document.getElementById(id);
-    const playerGridEl = $('playerGrid');
-    const cpuGridEl    = $('cpuGrid');
-    const fleetRowEl   = $('fleetRow');
-    const statusEl     = $('status');
+    const playerGridEl = $('playerGrid'), cpuGridEl = $('cpuGrid');
+    const stageEl = $('stage'), statusEl = $('status'), shipSlotsEl = $('shipSlots');
 
-    function setStatus(msg, cls = '') {
-      statusEl.innerHTML = msg;
-      statusEl.className = 'status-card' + (cls ? ' ' + cls : '');
-    }
+    function setStatus(msg, cls = '') { statusEl.innerHTML = msg; statusEl.className = 'status-card' + (cls ? ' ' + cls : ''); }
     function emptyGrid() { return Array.from({length: N}, () => Array(N).fill(null)); }
     function emptyShots() { return Array.from({length: N}, () => Array(N).fill(false)); }
+    function inBounds(r, c) { return r >= 0 && r < N && c >= 0 && c < N; }
+    function cellName(r, c) { return String.fromCharCode(65 + r) + (c + 1); }
 
-    function buildGridDom(host, kind) {
+    function buildGridDom(host) {
       host.innerHTML = '';
-      // top-left corner blank
       host.appendChild(spacer());
-      // top header 1..10
       for (let c = 0; c < N; c++) { const s = document.createElement('div'); s.className='lbl'; s.textContent=(c+1); host.appendChild(s); }
-      // rows
       for (let r = 0; r < N; r++) {
         const lbl = document.createElement('div'); lbl.className='lbl'; lbl.textContent = String.fromCharCode(65 + r); host.appendChild(lbl);
         for (let c = 0; c < N; c++) {
-          const cell = document.createElement('button');
-          cell.type = 'button';
+          const cell = document.createElement('div');
           cell.className = 'cell';
           cell.dataset.r = r;
           cell.dataset.c = c;
-          cell.dataset.kind = kind;
           host.appendChild(cell);
         }
       }
     }
     function spacer() { const s = document.createElement('div'); s.className='lbl'; return s; }
     function cellEl(host, r, c) {
-      // First N+1 children are corner + 10 number headers, then rows of [letter + 10 cells]
       const idx = (N + 1) + r * (N + 1) + 1 + c;
       return host.children[idx];
     }
-    function repaint() {
-      // Player grid: show ships + cpu shots (hits, misses, sunk overlay)
-      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-        const el = cellEl(playerGridEl, r, c);
-        el.className = 'cell';
-        if (playerGrid[r][c] !== null) el.classList.add('ship');
-        if (cpuShots[r][c]) {
-          if (playerGrid[r][c] !== null) el.classList.add('hit');
-          else el.classList.add('miss');
-        }
-      }
-      // Mark sunk ships on player board
-      for (const ship of playerFleet) if (ship && ship.sunk) for (const [r,c] of ship.cells) cellEl(playerGridEl, r, c).classList.add('sunk');
 
-      // Opponent grid: show only our shots
-      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-        const el = cellEl(cpuGridEl, r, c);
-        el.className = 'cell';
-        if (playerShots[r][c]) {
-          if (cpuGrid[r][c] !== null) el.classList.add('hit');
-          else el.classList.add('miss');
-        }
-      }
-      for (const ship of cpuFleet) if (ship && ship.sunk) for (const [r,c] of ship.cells) cellEl(cpuGridEl, r, c).classList.add('sunk');
+    function getCellPx(host) {
+      const cell = cellEl(host, 0, 0);
+      return cell ? cell.getBoundingClientRect().width : 30;
     }
 
-    function renderFleet() {
-      fleetRowEl.innerHTML = '';
-      const h = document.createElement('h3'); h.textContent = phase === 'placing' ? 'Place your fleet' : 'Your fleet';
-      h.style.fontFamily = "'Baloo 2', sans-serif"; h.style.fontSize = '0.85rem'; h.style.color = '#666'; h.style.textAlign = 'center'; h.style.margin = '0 0 0.2rem';
-      fleetRowEl.appendChild(h);
+    // ---------- Ship pieces (draggable) ----------
+    function buildShips() {
+      // Remove any prior ship pieces and slots
+      stageEl.querySelectorAll('.ship-piece').forEach(el => el.remove());
+      shipSlotsEl.innerHTML = '';
+      ships = [];
+      // Slots
       FLEET.forEach((s, i) => {
-        const pill = document.createElement('div');
-        pill.className = 'ship-pill';
-        const placed = playerFleet[i];
-        if (placed && placed.cells.length) pill.classList.add('placed');
-        if (placed && placed.sunk) pill.classList.add('sunk');
-        if (phase === 'placing' && i === placingIdx) pill.classList.add('active');
-        const blocks = document.createElement('div'); blocks.className = 'blocks';
-        for (let k = 0; k < s.size; k++) { const b = document.createElement('div'); b.className='b'; blocks.appendChild(b); }
+        const slot = document.createElement('div');
+        slot.className = 'ship-slot';
+        slot.dataset.idx = i;
         const label = document.createElement('span');
+        label.className = 'ship-slot__label';
         label.textContent = `${s.name} (${s.size})`;
-        pill.appendChild(blocks);
-        pill.appendChild(label);
-        fleetRowEl.appendChild(pill);
+        const home = document.createElement('div');
+        home.className = 'ship-slot__home';
+        home.dataset.idx = i;
+        for (let k = 0; k < s.size; k++) {
+          const c = document.createElement('div');
+          c.className = 'home-cell';
+          home.appendChild(c);
+        }
+        slot.appendChild(label);
+        slot.appendChild(home);
+        shipSlotsEl.appendChild(slot);
       });
-      // Score line for sunk count
-      const cpuHeader = document.createElement('h3'); cpuHeader.textContent = "Splat Bot's fleet";
-      cpuHeader.style.fontFamily = "'Baloo 2', sans-serif"; cpuHeader.style.fontSize = '0.85rem'; cpuHeader.style.color = '#666'; cpuHeader.style.textAlign = 'center'; cpuHeader.style.margin = '0.4rem 0 0.2rem';
-      fleetRowEl.appendChild(cpuHeader);
+      // Pieces — start in their slots, horizontal orientation
       FLEET.forEach((s, i) => {
-        const pill = document.createElement('div');
-        pill.className = 'ship-pill';
-        if (cpuFleet[i] && cpuFleet[i].sunk) pill.classList.add('sunk');
-        const blocks = document.createElement('div'); blocks.className = 'blocks';
-        for (let k = 0; k < s.size; k++) { const b = document.createElement('div'); b.className='b'; blocks.appendChild(b); }
-        const label = document.createElement('span');
-        label.textContent = `${s.name} (${s.size})`;
-        pill.appendChild(blocks);
-        pill.appendChild(label);
-        fleetRowEl.appendChild(pill);
+        const el = document.createElement('div');
+        el.className = 'ship-piece';
+        el.dataset.idx = i;
+        const name = document.createElement('span');
+        name.className = 'ship-piece__name';
+        name.textContent = s.name;
+        const rot = document.createElement('button');
+        rot.type = 'button';
+        rot.className = 'ship-piece__rotate';
+        rot.innerHTML = '↻';
+        rot.setAttribute('aria-label', 'Rotate ' + s.name);
+        el.appendChild(name);
+        el.appendChild(rot);
+        stageEl.appendChild(el);
+        ships.push({ idx: i, size: s.size, orient: 'h', placedR: null, placedC: null, el, rotEl: rot });
+      });
+      // Slot widths drive home-cell sizes — set CSS var from a probe cell once grids are in DOM
+      requestAnimationFrame(updateCellSizeVar);
+    }
+
+    function updateCellSizeVar() {
+      const px = getCellPx(playerGridEl);
+      document.documentElement.style.setProperty('--cell', px + 'px');
+      layoutAllShips();
+    }
+
+    function layoutShipPiece(ship) {
+      const cellPx = getCellPx(playerGridEl);
+      const w = (ship.orient === 'h' ? ship.size : 1) * cellPx;
+      const h = (ship.orient === 'v' ? ship.size : 1) * cellPx;
+      ship.el.style.width = (w - 2) + 'px';
+      ship.el.style.height = (h - 2) + 'px';
+      ship.el.classList.toggle('placed', ship.placedR !== null);
+      const stageRect = stageEl.getBoundingClientRect();
+      if (ship.placedR !== null) {
+        const cell = cellEl(playerGridEl, ship.placedR, ship.placedC);
+        const r = cell.getBoundingClientRect();
+        ship.el.style.left = (r.left - stageRect.left) + 'px';
+        ship.el.style.top  = (r.top - stageRect.top) + 'px';
+      } else {
+        const homeEl = shipSlotsEl.querySelector(`.ship-slot__home[data-idx="${ship.idx}"]`);
+        if (!homeEl) return;
+        const r = homeEl.getBoundingClientRect();
+        // Display ship as horizontal in slot
+        const sw = ship.size * cellPx;
+        const slotLeft = r.left + (r.width - sw) / 2;
+        const slotTop = r.top + (r.height - cellPx) / 2;
+        // Place at slot pos but in current orientation (the orient affects in-grid only; in slot, always horizontal for visual sanity)
+        ship.el.style.width = (sw - 2) + 'px';
+        ship.el.style.height = (cellPx - 2) + 'px';
+        ship.el.style.left = (slotLeft - stageRect.left) + 'px';
+        ship.el.style.top  = (slotTop - stageRect.top) + 'px';
+      }
+    }
+    function layoutAllShips() {
+      ships.forEach(layoutShipPiece);
+      updateSlotPlaced();
+    }
+    function updateSlotPlaced() {
+      ships.forEach(s => {
+        const slot = shipSlotsEl.querySelector(`.ship-slot[data-idx="${s.idx}"]`);
+        if (slot) slot.classList.toggle('placed', s.placedR !== null);
       });
     }
 
-    // ---------- Placement ----------
-    function canPlace(grid, r, c, size, orient) {
+    // ---------- Placement helpers ----------
+    function canPlaceShip(ship, r, c, orient) {
       const dr = orient === 'v' ? 1 : 0;
       const dc = orient === 'h' ? 1 : 0;
-      for (let i = 0; i < size; i++) {
+      for (let i = 0; i < ship.size; i++) {
         const rr = r + dr * i, cc = c + dc * i;
-        if (rr < 0 || rr >= N || cc < 0 || cc >= N) return false;
-        if (grid[rr][cc] !== null) return false;
+        if (!inBounds(rr, cc)) return false;
+        // collision with ANOTHER placed ship
+        for (const other of ships) {
+          if (other.idx === ship.idx) continue;
+          if (other.placedR === null) continue;
+          if (shipCovers(other, rr, cc)) return false;
+        }
       }
       return true;
     }
-    function place(grid, fleet, idx, r, c, orient) {
-      const size = FLEET[idx].size;
-      const dr = orient === 'v' ? 1 : 0;
-      const dc = orient === 'h' ? 1 : 0;
-      const cells = [];
-      for (let i = 0; i < size; i++) {
-        const rr = r + dr * i, cc = c + dc * i;
-        grid[rr][cc] = idx;
-        cells.push([rr, cc]);
+    function shipCovers(ship, r, c) {
+      if (ship.placedR === null) return false;
+      const dr = ship.orient === 'v' ? 1 : 0;
+      const dc = ship.orient === 'h' ? 1 : 0;
+      for (let i = 0; i < ship.size; i++) {
+        if (ship.placedR + dr * i === r && ship.placedC + dc * i === c) return true;
       }
-      fleet[idx] = { name: FLEET[idx].name, size, cells, hits: 0, sunk: false, idx };
+      return false;
     }
-    function unplaceAll() {
+    function clearShipFromGrid(ship) {
+      if (ship.placedR === null) return;
+      const dr = ship.orient === 'v' ? 1 : 0;
+      const dc = ship.orient === 'h' ? 1 : 0;
+      for (let i = 0; i < ship.size; i++) {
+        playerGrid[ship.placedR + dr * i][ship.placedC + dc * i] = null;
+      }
+    }
+    function writeShipToGrid(ship) {
+      const dr = ship.orient === 'v' ? 1 : 0;
+      const dc = ship.orient === 'h' ? 1 : 0;
+      for (let i = 0; i < ship.size; i++) {
+        playerGrid[ship.placedR + dr * i][ship.placedC + dc * i] = ship.idx;
+      }
+    }
+
+    // ---------- Drag-and-drop ----------
+    let dragging = null;
+    let dragStart = null;
+    let dragMoved = false;
+
+    function attachShipDrag(ship) {
+      ship.el.addEventListener('pointerdown', (e) => onPieceDown(e, ship));
+      ship.rotEl.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
+      ship.rotEl.addEventListener('click', (e) => { e.stopPropagation(); rotateShip(ship); });
+    }
+    // Attach document-level pointer handlers ONCE
+    document.addEventListener('pointermove', onPieceMove);
+    document.addEventListener('pointerup', onPieceUp);
+    document.addEventListener('pointercancel', onPieceUp);
+
+    function onPieceDown(e, ship) {
+      if (phase !== 'placing') return;
+      e.preventDefault();
+      ensureAudio();
+      dragging = ship;
+      dragMoved = false;
+      const stageRect = stageEl.getBoundingClientRect();
+      const rect = ship.el.getBoundingClientRect();
+      dragStart = {
+        pointerX: e.clientX,
+        pointerY: e.clientY,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top,
+        stageRect,
+        wasPlaced: ship.placedR !== null,
+        origR: ship.placedR,
+        origC: ship.placedC,
+        origOrient: ship.orient,
+      };
+      // remove from grid logically (so canPlace doesn't count it against itself when previewing)
+      if (ship.placedR !== null) clearShipFromGrid(ship);
+      ship.placedR = null; ship.placedC = null;
+      ship.el.classList.add('dragging');
+      try { ship.el.setPointerCapture(e.pointerId); } catch {}
+    }
+
+    function onPieceMove(e) {
+      if (!dragging) return;
+      const ship = dragging;
+      const dx = e.clientX - dragStart.pointerX;
+      const dy = e.clientY - dragStart.pointerY;
+      if (Math.hypot(dx, dy) > 3) dragMoved = true;
+      // Position ship at pointer minus offset
+      const x = e.clientX - dragStart.offsetX - dragStart.stageRect.left;
+      const y = e.clientY - dragStart.offsetY - dragStart.stageRect.top;
+      ship.el.style.left = x + 'px';
+      ship.el.style.top  = y + 'px';
+      // Highlight target cell on player grid
+      clearPreview();
+      const cell = hitTestCell(e.clientX, e.clientY);
+      if (cell) {
+        const r = Number(cell.dataset.r), c = Number(cell.dataset.c);
+        // determine where the ship would land based on nearest origin cell to pointer
+        const target = computeDropTarget(ship, e.clientX, e.clientY);
+        if (target) {
+          const ok = canPlaceShip(ship, target.r, target.c, ship.orient);
+          const dr = ship.orient === 'v' ? 1 : 0;
+          const dc = ship.orient === 'h' ? 1 : 0;
+          for (let i = 0; i < ship.size; i++) {
+            const rr = target.r + dr * i, cc = target.c + dc * i;
+            if (inBounds(rr, cc)) cellEl(playerGridEl, rr, cc).classList.add(ok ? 'preview-ok' : 'preview-bad');
+          }
+          ship.el.classList.toggle('invalid', !ok);
+        }
+      } else {
+        ship.el.classList.remove('invalid');
+      }
+    }
+
+    function onPieceUp(e) {
+      if (!dragging) return;
+      const ship = dragging;
+      ship.el.classList.remove('dragging');
+      ship.el.classList.remove('invalid');
+      try { ship.el.releasePointerCapture(e.pointerId); } catch {}
+      clearPreview();
+      // If it was just a tap (no move), do nothing here (rotate uses its own button)
+      if (!dragMoved) {
+        // restore prior placement
+        ship.placedR = dragStart.origR;
+        ship.placedC = dragStart.origC;
+        if (ship.placedR !== null) writeShipToGrid(ship);
+        layoutShipPiece(ship);
+        finalizeDrag();
+        return;
+      }
+      const target = computeDropTarget(ship, e.clientX, e.clientY);
+      if (target && canPlaceShip(ship, target.r, target.c, ship.orient)) {
+        ship.placedR = target.r;
+        ship.placedC = target.c;
+        writeShipToGrid(ship);
+        playPlace();
+      } else {
+        // outside grid or invalid — return ship to shipyard
+        ship.placedR = null;
+        ship.placedC = null;
+      }
+      layoutShipPiece(ship);
+      finalizeDrag();
+    }
+
+    function finalizeDrag() {
+      dragging = null;
+      dragStart = null;
+      dragMoved = false;
+      updateSlotPlaced();
+      updateStartButton();
+    }
+
+    function clearPreview() {
+      playerGridEl.querySelectorAll('.preview-ok, .preview-bad').forEach(e => e.classList.remove('preview-ok', 'preview-bad'));
+    }
+
+    function hitTestCell(clientX, clientY) {
+      const el = document.elementFromPoint(clientX, clientY);
+      if (!el) return null;
+      // Could be a cell, or an ancestor / overlay; look for a .cell on the player grid
+      // Use closest, but our ship-piece is on top, so temporarily hide it during hit-test is overkill.
+      // Compute manually instead using bounding boxes:
+      const gridRect = playerGridEl.getBoundingClientRect();
+      if (clientX < gridRect.left || clientX > gridRect.right || clientY < gridRect.top || clientY > gridRect.bottom) return null;
+      const cellPx = getCellPx(playerGridEl);
+      const offset = 14 + 2; // 14 = label col width + 2 gap
+      const localX = clientX - gridRect.left - offset;
+      const localY = clientY - gridRect.top - offset;
+      const c = Math.floor(localX / (cellPx + 2));
+      const r = Math.floor(localY / (cellPx + 2));
+      if (!inBounds(r, c)) return null;
+      return cellEl(playerGridEl, r, c);
+    }
+    function computeDropTarget(ship, clientX, clientY) {
+      // The pointer offset within the ship at drag start tells us how many cells in from origin the pointer is.
+      // We use it to figure out which cell becomes the ship's origin.
+      const cellPx = getCellPx(playerGridEl);
+      const gridRect = playerGridEl.getBoundingClientRect();
+      const offset = 14 + 2;
+      // Pointer cell (row, col) on the grid
+      const px = clientX - gridRect.left - offset;
+      const py = clientY - gridRect.top  - offset;
+      const pc = Math.floor(px / (cellPx + 2));
+      const pr = Math.floor(py / (cellPx + 2));
+      // How many cells from ship's origin is the pointer? Use dragStart offset.
+      let cellsFromOriginX = Math.floor(dragStart.offsetX / cellPx);
+      let cellsFromOriginY = Math.floor(dragStart.offsetY / cellPx);
+      cellsFromOriginX = Math.max(0, Math.min(ship.size - 1, cellsFromOriginX));
+      cellsFromOriginY = Math.max(0, Math.min(ship.size - 1, cellsFromOriginY));
+      let originR, originC;
+      if (ship.orient === 'h') { originR = pr; originC = pc - cellsFromOriginX; }
+      else                      { originR = pr - cellsFromOriginY; originC = pc; }
+      // clamp so the ship stays within bounds
+      if (ship.orient === 'h') {
+        originC = Math.max(0, Math.min(N - ship.size, originC));
+        if (originR < 0 || originR >= N) return null;
+      } else {
+        originR = Math.max(0, Math.min(N - ship.size, originR));
+        if (originC < 0 || originC >= N) return null;
+      }
+      return { r: originR, c: originC };
+    }
+
+    function rotateShip(ship) {
+      if (phase !== 'placing') return;
+      ensureAudio();
+      playRotate();
+      const newOrient = ship.orient === 'h' ? 'v' : 'h';
+      const origR = ship.placedR, origC = ship.placedC;
+      if (ship.placedR !== null) {
+        clearShipFromGrid(ship);
+        ship.placedR = null; ship.placedC = null;
+      }
+      ship.orient = newOrient;
+      if (origR !== null) {
+        // try to fit the ship at the same origin (clamped within bounds) with new orient
+        let r = origR, c = origC;
+        if (newOrient === 'h') c = Math.max(0, Math.min(N - ship.size, c));
+        if (newOrient === 'v') r = Math.max(0, Math.min(N - ship.size, r));
+        if (canPlaceShip(ship, r, c, newOrient)) {
+          ship.placedR = r; ship.placedC = c;
+          writeShipToGrid(ship);
+        }
+      }
+      layoutShipPiece(ship);
+      updateSlotPlaced();
+      updateStartButton();
+    }
+    function lastOriginBeforeRotate(ship) {
+      const gridRect = playerGridEl.getBoundingClientRect();
+      const rect = ship.el.getBoundingClientRect();
+      const offset = 14 + 2;
+      const cellPx = getCellPx(playerGridEl);
+      if (rect.left < gridRect.left + offset - 4 || rect.top < gridRect.top + offset - 4) return null;
+      const c = Math.round((rect.left - gridRect.left - offset) / (cellPx + 2));
+      const r = Math.round((rect.top - gridRect.top - offset) / (cellPx + 2));
+      if (!inBounds(r, c)) return null;
+      return { r, c };
+    }
+
+    function updateStartButton() {
+      const allPlaced = ships.every(s => s.placedR !== null);
+      $('startBtn').disabled = !allPlaced;
+      if (allPlaced) setStatus('Fleet ready! Tap <em>Start Battle</em>.', 'good');
+      else if (phase === 'placing') setStatus('Drag your ships onto your grid. Tap the green dot on a ship to rotate.');
+    }
+
+    // ---------- Randomise / Clear ----------
+    function randomisePlayer() {
+      // Reset grid
       playerGrid = emptyGrid();
-      playerFleet = FLEET.map(() => null);
-      placingIdx = 0;
-      repaint();
-      renderFleet();
-      $('startBtn').disabled = true;
-    }
-    function autoPlace(grid, fleet) {
-      for (let i = 0; i < FLEET.length; i++) {
+      ships.forEach(s => { s.placedR = null; s.placedC = null; s.orient = 'h'; });
+      // Place randomly
+      for (const ship of ships) {
         for (let t = 0; t < 200; t++) {
+          const orient = Math.random() < 0.5 ? 'h' : 'v';
           const r = Math.floor(Math.random() * N);
           const c = Math.floor(Math.random() * N);
-          const o = Math.random() < 0.5 ? 'h' : 'v';
-          if (canPlace(grid, r, c, FLEET[i].size, o)) {
-            place(grid, fleet, i, r, c, o);
+          ship.orient = orient;
+          if (canPlaceShip(ship, r, c, orient)) {
+            ship.placedR = r; ship.placedC = c;
+            writeShipToGrid(ship);
+            break;
+          }
+        }
+      }
+      layoutAllShips();
+      updateStartButton();
+    }
+    function clearAll() {
+      playerGrid = emptyGrid();
+      ships.forEach(s => { s.placedR = null; s.placedC = null; s.orient = 'h'; });
+      layoutAllShips();
+      updateStartButton();
+    }
+
+    // ---------- CPU fleet (random) ----------
+    function buildCpuFleet() {
+      cpuGrid = emptyGrid();
+      cpuFleet = FLEET.map(() => null);
+      for (let i = 0; i < FLEET.length; i++) {
+        for (let t = 0; t < 200; t++) {
+          const orient = Math.random() < 0.5 ? 'h' : 'v';
+          const r = Math.floor(Math.random() * N);
+          const c = Math.floor(Math.random() * N);
+          if (canPlaceOnGrid(cpuGrid, r, c, FLEET[i].size, orient)) {
+            const dr = orient === 'v' ? 1 : 0;
+            const dc = orient === 'h' ? 1 : 0;
+            const cells = [];
+            for (let k = 0; k < FLEET[i].size; k++) {
+              const rr = r + dr * k, cc = c + dc * k;
+              cpuGrid[rr][cc] = i;
+              cells.push([rr, cc]);
+            }
+            cpuFleet[i] = { name: FLEET[i].name, size: FLEET[i].size, cells, hits: 0, sunk: false, idx: i };
             break;
           }
         }
       }
     }
-
-    // Hover preview during placement
-    function clearPreview() {
-      playerGridEl.querySelectorAll('.preview-ok, .preview-bad').forEach(e => e.classList.remove('preview-ok','preview-bad'));
-    }
-    function showPreview(r, c) {
-      clearPreview();
-      if (phase !== 'placing') return;
-      if (placingIdx >= FLEET.length) return;
-      const size = FLEET[placingIdx].size;
-      const ok = canPlace(playerGrid, r, c, size, orientation);
-      const dr = orientation === 'v' ? 1 : 0;
-      const dc = orientation === 'h' ? 1 : 0;
+    function canPlaceOnGrid(g, r, c, size, orient) {
+      const dr = orient === 'v' ? 1 : 0;
+      const dc = orient === 'h' ? 1 : 0;
       for (let i = 0; i < size; i++) {
         const rr = r + dr * i, cc = c + dc * i;
-        if (rr >= 0 && rr < N && cc >= 0 && cc < N) {
-          cellEl(playerGridEl, rr, cc).classList.add(ok ? 'preview-ok' : 'preview-bad');
-        }
+        if (!inBounds(rr, cc)) return false;
+        if (g[rr][cc] !== null) return false;
       }
+      return true;
     }
 
-    playerGridEl.addEventListener('mouseover', (e) => {
-      const t = e.target.closest('.cell');
-      if (!t) return;
-      showPreview(Number(t.dataset.r), Number(t.dataset.c));
-    });
-    playerGridEl.addEventListener('mouseout', (e) => {
-      if (e.target.closest('.grid') === playerGridEl) clearPreview();
-    });
-    playerGridEl.addEventListener('click', (e) => {
-      const t = e.target.closest('.cell');
-      if (!t) return;
-      ensureAudio();
-      const r = Number(t.dataset.r), c = Number(t.dataset.c);
-      if (phase === 'placing' && placingIdx < FLEET.length) {
-        const size = FLEET[placingIdx].size;
-        if (!canPlace(playerGrid, r, c, size, orientation)) {
-          setStatus(`Can't place ${FLEET[placingIdx].name} there. Try another spot or Rotate.`, 'bad');
-          return;
-        }
-        place(playerGrid, playerFleet, placingIdx, r, c, orientation);
-        placingIdx += 1;
-        if (placingIdx >= FLEET.length) {
-          setStatus('Fleet ready! Tap Start Battle when you are.', 'good');
-          $('startBtn').disabled = false;
-        } else {
-          setStatus(`Place your <em>${FLEET[placingIdx].name}</em> (${FLEET[placingIdx].size} cells).`);
-        }
-        repaint();
-        renderFleet();
-      }
-    });
+    // ---------- Battle phase ----------
+    function startBattle() {
+      // Lock placement; build the player fleet object from ships
+      playerFleet = ships.map(s => ({ name: FLEET[s.idx].name, size: s.size, cells: shipCells(s), hits: 0, sunk: false, idx: s.idx }));
+      phase = 'playing'; turn = 'player'; shots = 0;
+      $('turn').textContent = 'You';
+      $('shots').textContent = 0;
+      $('shipyard').style.display = 'none';
+      $('fleetStatus').style.display = '';
+      $('startBtn').style.display = 'none';
+      $('randomBtn').style.display = 'none';
+      $('clearBtn').style.display = 'none';
+      $('resetBtn').style.display = '';
+      // Lock ship pieces
+      ships.forEach(s => { s.el.style.cursor = 'default'; s.rotEl.style.display = 'none'; });
+      renderFleetStatus();
+      setStatus("Battle on! Click a cell on Splat Bot's grid to fire.");
+    }
+    function shipCells(s) {
+      const dr = s.orient === 'v' ? 1 : 0;
+      const dc = s.orient === 'h' ? 1 : 0;
+      const out = [];
+      for (let i = 0; i < s.size; i++) out.push([s.placedR + dr * i, s.placedC + dc * i]);
+      return out;
+    }
 
-    // ---------- Battle ----------
+    function renderFleetStatus() {
+      const p = $('playerFleetStatus'), cp = $('cpuFleetStatus');
+      p.innerHTML = ''; cp.innerHTML = '';
+      playerFleet.forEach(s => p.appendChild(pill(s)));
+      cpuFleet.forEach(s => cp.appendChild(pill(s)));
+    }
+    function pill(s) {
+      const div = document.createElement('div');
+      div.className = 'ship-pill' + (s.sunk ? ' sunk' : '');
+      const blocks = document.createElement('div'); blocks.className='blocks';
+      for (let k = 0; k < s.size; k++) { const b = document.createElement('div'); b.className='b'; blocks.appendChild(b); }
+      const lbl = document.createElement('span'); lbl.textContent = `${s.name} (${s.size})`;
+      div.appendChild(blocks); div.appendChild(lbl);
+      return div;
+    }
+
+    function repaintShots() {
+      // Player grid: shots received from CPU
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        const el = cellEl(playerGridEl, r, c);
+        el.classList.remove('hit','miss','sunk');
+        if (cpuShots[r][c]) {
+          if (playerGrid[r][c] !== null) el.classList.add('hit');
+          else el.classList.add('miss');
+        }
+      }
+      for (const ship of playerFleet || []) if (ship.sunk) for (const [r,c] of ship.cells) cellEl(playerGridEl, r, c).classList.add('sunk');
+      // CPU grid: our shots
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        const el = cellEl(cpuGridEl, r, c);
+        el.classList.remove('hit','miss','sunk','reveal-ship');
+        if (playerShots[r][c]) {
+          if (cpuGrid[r][c] !== null) el.classList.add('hit');
+          else el.classList.add('miss');
+        }
+      }
+      for (const ship of cpuFleet || []) if (ship.sunk) for (const [r,c] of ship.cells) cellEl(cpuGridEl, r, c).classList.add('sunk');
+    }
+
     cpuGridEl.addEventListener('click', (e) => {
       const t = e.target.closest('.cell');
-      if (!t) return;
-      if (phase !== 'playing' || turn !== 'player') return;
+      if (!t || phase !== 'playing' || turn !== 'player') return;
       ensureAudio();
       const r = Number(t.dataset.r), c = Number(t.dataset.c);
       if (playerShots[r][c]) return;
       playerShots[r][c] = true;
       const hitIdx = cpuGrid[r][c];
+      shots += 1; $('shots').textContent = shots;
       if (hitIdx !== null) {
         const ship = cpuFleet[hitIdx];
         ship.hits += 1;
         playHit();
-        if (ship.hits === ship.size) {
-          ship.sunk = true;
-          playSunk();
-          setStatus(`Hit! You sank Splat Bot's <em>${ship.name}</em>.`, 'good');
-        } else {
-          setStatus('Direct hit! Take another shot.', 'good');
-        }
-        shots += 1;
-        $('shots').textContent = shots;
-        repaint();
-        renderFleet();
+        if (ship.hits === ship.size) { ship.sunk = true; playSunk(); setStatus(`Hit! You sank Splat Bot's <em>${ship.name}</em>.`, 'good'); }
+        else setStatus('Direct hit! Take another shot.', 'good');
+        repaintShots(); renderFleetStatus();
         if (cpuFleet.every(s => s.sunk)) return endGame(true);
-        // player hits again
-        return;
       } else {
         playMiss();
         setStatus("Miss. Splat Bot's turn…");
-        shots += 1;
-        $('shots').textContent = shots;
-        repaint();
-        turn = 'cpu';
-        $('turn').textContent = 'Bot';
+        repaintShots();
+        turn = 'cpu'; $('turn').textContent = 'Bot';
         setTimeout(cpuTurn, 700);
       }
     });
 
-    // ---------- CPU AI ----------
     function cpuTurn() {
       if (phase !== 'playing') return;
-      // pick target based on diff + AI state
-      const target = pickCpuTarget();
-      cpuShots[target.r][target.c] = true;
-      const hitIdx = playerGrid[target.r][target.c];
+      const tgt = pickCpuTarget();
+      cpuShots[tgt.r][tgt.c] = true;
+      const hitIdx = playerGrid[tgt.r][tgt.c];
       if (hitIdx !== null) {
         const ship = playerFleet[hitIdx];
         ship.hits += 1;
         playHit();
-        if (ship.hits === ship.size) {
-          ship.sunk = true;
-          playSunk();
-          setStatus(`Splat Bot hit ${cellName(target.r, target.c)} and sank your <em>${ship.name}</em>!`, 'bad');
-          // remove pending targets adjacent to this ship from queue
-          cpuAI.recent = [];
-        } else {
-          setStatus(`Splat Bot hit your ship at ${cellName(target.r, target.c)}!`, 'bad');
-          // Track this hit for adjacency
-          cpuAI.recent.push([target.r, target.c]);
-        }
-        repaint();
-        renderFleet();
+        if (ship.hits === ship.size) { ship.sunk = true; playSunk(); setStatus(`Splat Bot sank your <em>${ship.name}</em>!`, 'bad'); cpuAI.recent = []; }
+        else { setStatus(`Splat Bot hit your ship at ${cellName(tgt.r, tgt.c)}!`, 'bad'); cpuAI.recent.push([tgt.r, tgt.c]); }
+        repaintShots(); renderFleetStatus();
         if (playerFleet.every(s => s.sunk)) return endGame(false);
-        // CPU goes again on hit
         setTimeout(cpuTurn, 700);
       } else {
-        playMiss();
-        setStatus("Splat Bot missed. Your shot.");
-        repaint();
-        turn = 'player';
-        $('turn').textContent = 'You';
+        playMiss(); setStatus("Splat Bot missed. Your shot.");
+        repaintShots();
+        turn = 'player'; $('turn').textContent = 'You';
       }
     }
 
     function pickCpuTarget() {
-      // Easy: random
-      if (diff === 'easy') {
-        return randomUntried();
-      }
-      // Normal & Hard: hunt + track using recent hits
+      if (diff === 'easy') return randomUntried();
       const recent = cpuAI.recent;
       if (recent.length >= 2) {
-        // try to continue line
-        const [r0, c0] = recent[0];
-        const [r1, c1] = recent[recent.length - 1];
-        const dr = Math.sign(r1 - r0);
-        const dc = Math.sign(c1 - c0);
+        const [r0, c0] = recent[0], [r1, c1] = recent[recent.length - 1];
+        const dr = Math.sign(r1 - r0), dc = Math.sign(c1 - c0);
         if (dr !== 0 || dc !== 0) {
-          // try forward
           let r = r1 + dr, c = c1 + dc;
           if (inBounds(r, c) && !cpuShots[r][c]) return { r, c };
-          // try backward
           r = r0 - dr; c = c0 - dc;
           if (inBounds(r, c) && !cpuShots[r][c]) return { r, c };
         }
       }
       if (recent.length >= 1) {
-        // try adjacent cells to most recent hit
         const [r, c] = recent[recent.length - 1];
         const adj = [[-1,0],[1,0],[0,-1],[0,1]];
         for (const [dr, dc] of adj.sort(() => Math.random() - 0.5)) {
@@ -530,125 +924,72 @@
           if (inBounds(rr, cc) && !cpuShots[rr][cc]) return { r: rr, c: cc };
         }
       }
-      // Hard: checkerboard search
       if (diff === 'hard') {
         const candidates = [];
-        for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
           if (!cpuShots[r][c] && (r + c) % 2 === 0) candidates.push([r, c]);
-        }
-        if (candidates.length) {
-          const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
-          return { r, c };
-        }
+        if (candidates.length) { const [r, c] = candidates[Math.floor(Math.random() * candidates.length)]; return { r, c }; }
       }
       return randomUntried();
     }
-
     function randomUntried() {
       const free = [];
       for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!cpuShots[r][c]) free.push([r, c]);
       const [r, c] = free[Math.floor(Math.random() * free.length)];
       return { r, c };
     }
-    function inBounds(r, c) { return r >= 0 && r < N && c >= 0 && c < N; }
-    function cellName(r, c) { return String.fromCharCode(65 + r) + (c + 1); }
 
     function endGame(playerWon) {
       phase = 'gameover';
-      $('startBtn').style.display = 'none';
-      $('resetBtn').style.display = '';
       $('turn').textContent = playerWon ? 'You won!' : 'Bot won';
-      if (playerWon) {
-        stats.wins += 1;
-        playWin();
-        setStatus(`🏆 You sank Splat Bot's fleet in ${shots} shots! Tap New Game to play again.`, 'good');
-      } else {
-        stats.losses += 1;
-        playLose();
-        setStatus(`💥 Splat Bot sank your fleet. Tap New Game to take revenge.`, 'bad');
-      }
+      if (playerWon) { stats.wins += 1; playWin(); setStatus(`🏆 You sank Splat Bot's fleet in ${shots} shots! Tap New Game to play again.`, 'good'); }
+      else           { stats.losses += 1; playLose(); setStatus(`💥 Splat Bot sank your fleet. Tap New Game to take revenge.`, 'bad'); }
       localStorage.setItem(STATS_KEY, JSON.stringify(stats));
       $('wins').textContent = stats.wins;
       $('losses').textContent = stats.losses;
-      // reveal cpu ships
+      // Reveal CPU ships
       for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-        if (cpuGrid[r][c] !== null && !playerShots[r][c]) {
-          cellEl(cpuGridEl, r, c).classList.add('ship');
-          // override hidden background by re-enabling ship style
-          cellEl(cpuGridEl, r, c).style.background = '#6b21a8';
-        }
+        if (cpuGrid[r][c] !== null && !playerShots[r][c]) cellEl(cpuGridEl, r, c).classList.add('reveal-ship');
       }
     }
 
     // ---------- Buttons ----------
-    $('rotateBtn').addEventListener('click', () => {
-      orientation = orientation === 'h' ? 'v' : 'h';
-      if (phase === 'placing') setStatus(`Rotated. Place your <em>${FLEET[placingIdx].name}</em> (${FLEET[placingIdx].size} cells) — orientation ${orientation === 'h' ? 'horizontal' : 'vertical'}.`);
-    });
-    $('autoBtn').addEventListener('click', () => {
-      if (phase !== 'placing') return;
-      ensureAudio();
-      unplaceAll();
-      autoPlace(playerGrid, playerFleet);
-      placingIdx = FLEET.length;
-      setStatus('Fleet auto-placed. Tap Start Battle.', 'good');
-      $('startBtn').disabled = false;
-      repaint(); renderFleet();
-    });
-    $('clearBtn').addEventListener('click', () => { ensureAudio(); unplaceAll(); setStatus('Place your <em>Carrier</em> (5 cells) by tapping a cell on your grid.'); });
-    $('startBtn').addEventListener('click', () => {
-      if (placingIdx < FLEET.length) return;
-      ensureAudio();
-      phase = 'playing';
-      turn = 'player';
-      $('turn').textContent = 'You';
-      $('startBtn').disabled = true;
-      $('startBtn').style.display = 'none';
-      $('resetBtn').style.display = '';
-      $('autoBtn').disabled = true;
-      $('clearBtn').disabled = true;
-      $('rotateBtn').disabled = true;
-      setStatus("Battle on! Click a cell on Splat Bot's grid to fire.");
-      renderFleet();
-    });
+    $('randomBtn').addEventListener('click', () => { ensureAudio(); randomisePlayer(); });
+    $('clearBtn').addEventListener('click', () => { ensureAudio(); clearAll(); });
+    $('startBtn').addEventListener('click', () => { ensureAudio(); startBattle(); });
     $('resetBtn').addEventListener('click', () => { newGame(); });
     $('diff').addEventListener('change', (e) => { diff = e.target.value; });
 
-    window.addEventListener('keydown', (e) => {
-      if ((e.key === 'r' || e.key === 'R') && phase === 'placing') {
-        e.preventDefault();
-        $('rotateBtn').click();
-      }
+    window.addEventListener('resize', () => {
+      requestAnimationFrame(updateCellSizeVar);
     });
 
     // ---------- New game ----------
     function newGame() {
       phase = 'placing';
       playerGrid = emptyGrid();
-      cpuGrid = emptyGrid();
       playerShots = emptyShots();
       cpuShots = emptyShots();
-      playerFleet = FLEET.map(() => null);
-      cpuFleet = FLEET.map(() => null);
-      placingIdx = 0;
+      playerFleet = null;
       shots = 0;
-      $('shots').textContent = 0;
-      $('turn').textContent = '—';
-      orientation = 'h';
       diff = $('diff').value;
-      autoPlace(cpuGrid, cpuFleet);
+      buildCpuFleet();
       cpuAI = { recent: [] };
-      $('startBtn').disabled = true;
+      $('turn').textContent = '—';
+      $('shots').textContent = 0;
+      $('shipyard').style.display = '';
+      $('fleetStatus').style.display = 'none';
       $('startBtn').style.display = '';
+      $('randomBtn').style.display = '';
+      $('clearBtn').style.display = '';
       $('resetBtn').style.display = 'none';
-      $('autoBtn').disabled = false;
-      $('clearBtn').disabled = false;
-      $('rotateBtn').disabled = false;
-      buildGridDom(playerGridEl, 'player');
-      buildGridDom(cpuGridEl, 'cpu');
-      repaint();
-      renderFleet();
-      setStatus('Place your <em>Carrier</em> (5 cells) by tapping a cell on your grid. Press R or Rotate to change orientation.');
+      buildGridDom(playerGridEl);
+      buildGridDom(cpuGridEl);
+      buildShips();
+      ships.forEach(attachShipDrag);
+      // Reset all cells visuals
+      requestAnimationFrame(() => { updateCellSizeVar(); updateStartButton(); });
+      setStatus('Drag your ships onto your grid. Tap the green dot on a ship to rotate. Press Start when ready.');
     }
 
     // Boot
