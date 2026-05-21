@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Splat Wizard — Sloppy Games</title>
+  <meta name="description" content="An RPG-lite where you cast spells by solving maths, spelling and pattern puzzles. Level up, defeat splat monsters, keep going." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --purple: #9333ea; --purple-dark: #6b21a8; --lime: #84cc16; --lime-dark: #65a30d; --pink: #ec4899; --cyan: #06b6d4; --yellow: #facc15; --orange: #f97316; --red: #ef4444; --blue: #3b82f6; --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6; --dungeon-top: #4338ca; --dungeon-bot: #1e1b4b; --shadow: rgba(26, 26, 26, 0.2); }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    h1, h2, h3 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 600px; color: #444; margin: -0.25rem 0 0.5rem; }
+
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(640px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 100px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.1rem, 3vw, 1.5rem); line-height: 1; color: var(--ink); }
+
+    .arena {
+      position: relative;
+      width: min(640px, 95vw);
+      aspect-ratio: 1.5;
+      max-height: calc(100dvh - 360px);
+      min-height: 200px;
+      border: 4px solid var(--ink); border-radius: 20px;
+      box-shadow: 0 8px 0 var(--ink);
+      overflow: hidden;
+      background: linear-gradient(180deg, var(--dungeon-top) 0%, var(--dungeon-bot) 100%);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: end;
+      padding: 1rem;
+      gap: 1rem;
+    }
+    .arena .stars {
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(1.5px 1.5px at 12% 15%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 30% 30%, #fff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 55% 18%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 78% 25%, #fff 50%, transparent 51%),
+        radial-gradient(2px 2px at 88% 12%, #fff 50%, transparent 51%);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .fighter { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; pointer-events: none; }
+    .fighter__name { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 0.95rem; color: #fff; text-shadow: 2px 2px 0 var(--ink); }
+    .fighter__sprite { width: clamp(70px, 16vw, 120px); height: clamp(70px, 16vw, 120px); position: relative; }
+    .fighter__sprite svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.3)); }
+    .fighter__hp { width: 90%; height: 14px; background: rgba(0,0,0,0.4); border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; }
+    .fighter__hp .fill { height: 100%; transition: width 0.3s ease; }
+    .fighter.player .fill { background: linear-gradient(90deg, #a3e635, #65a30d); }
+    .fighter.enemy .fill { background: linear-gradient(90deg, #f87171, #b91c1c); }
+    .fighter.player { animation: idleBob 2s ease-in-out infinite; }
+    .fighter.enemy  { animation: idleBob 2.4s ease-in-out infinite 0.4s; }
+    @keyframes idleBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    .fighter.attack { animation: attack 0.3s ease; }
+    @keyframes attack { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(20px); } }
+    .fighter.enemy.attack { animation: attackR 0.3s ease; }
+    @keyframes attackR { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-20px); } }
+    .fighter.hurt { animation: hurt 0.3s ease; }
+    @keyframes hurt { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+    .damage-pop { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.3rem; color: #facc15; text-shadow: 2px 2px 0 var(--ink); pointer-events: none; animation: popUp 0.9s ease-out forwards; }
+    .damage-pop.enemy { color: #f87171; }
+    @keyframes popUp { 0%{transform:translate(-50%,0) scale(0.6);opacity:0;} 20%{transform:translate(-50%,-10px) scale(1.2);opacity:1;} 100%{transform:translate(-50%,-50px) scale(1);opacity:0;} }
+
+    .spellbar {
+      width: min(640px, 95vw);
+      background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink);
+      padding: 0.85rem 1rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .spell-prompt { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); text-align: center; }
+    .spell-school { text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.78rem; color: #666; letter-spacing: 0.08em; text-transform: uppercase; }
+    .spell-school .icon { display: inline-block; vertical-align: middle; margin-right: 0.3rem; font-size: 1rem; }
+    .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    @media (min-width: 540px) { .answers.four { grid-template-columns: repeat(4, 1fr); } }
+    .answer { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.05rem, 3vw, 1.3rem); padding: 0.7rem 0.4rem; border-radius: 14px; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; transition: transform 0.08s, box-shadow 0.08s, background 0.08s; }
+    .answer:hover:not(:disabled) { background: #f3f3f3; }
+    .answer:active:not(:disabled) { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .answer.good { background: var(--lime); animation: goodFlash 0.4s ease; }
+    .answer.bad { background: var(--pink); color: var(--paper); animation: shake 0.3s ease; }
+    @keyframes goodFlash { 0%{transform:scale(1);} 40%{transform:scale(1.1);} 100%{transform:scale(1);} }
+    @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
+    .answer:disabled { cursor: default; }
+
+    .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; padding: 0.55rem 1.1rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .btn.ghost { background: var(--paper); }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+
+    .curtain { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); text-align: center; padding: 1rem; z-index: 10; transition: opacity 0.2s ease; }
+    .curtain.hidden { opacity: 0; pointer-events: none; }
+    .curtain > div { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 6px 6px 0 var(--ink); padding: 1.25rem 1.5rem; max-width: 90%; }
+    .curtain h2 { font-size: clamp(1.4rem, 4.5vw, 2rem); margin-bottom: 0.4rem; }
+    .curtain p { margin: 0.25rem 0 0.75rem; color: #333; }
+
+    .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 600px; }
+    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">← Back</a>
+    <a href="../../index.html"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Splat Wizard <span class="accent">Cast to fight</span></h1>
+    <p class="subtitle">Cast spells by solving maths, spelling and pattern puzzles. Get it right to damage your enemy; get it wrong and they hit you back.</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Level</div><div class="value" id="level">1</div></div>
+      <div class="hud-pill"><div class="label">XP</div><div class="value" id="xp">0 / 10</div></div>
+      <div class="hud-pill"><div class="label">Monsters slain</div><div class="value" id="kills">0</div></div>
+      <div class="hud-pill"><div class="label">Best level</div><div class="value" id="best">1</div></div>
+    </div>
+
+    <div class="arena" id="arena">
+      <div class="stars" aria-hidden="true"></div>
+      <div class="fighter player" id="playerEl">
+        <div class="fighter__name" id="playerName">Splat Wizard</div>
+        <div class="fighter__sprite" id="playerSprite"></div>
+        <div class="fighter__hp"><div class="fill" id="playerHpFill" style="width:100%"></div></div>
+      </div>
+      <div class="fighter enemy" id="enemyEl">
+        <div class="fighter__name" id="enemyName">—</div>
+        <div class="fighter__sprite" id="enemySprite"></div>
+        <div class="fighter__hp"><div class="fill" id="enemyHpFill" style="width:100%"></div></div>
+      </div>
+      <div class="curtain hidden" id="curtain">
+        <div>
+          <h2 id="curtainTitle">Game Over</h2>
+          <p id="curtainSub">Your wizard has fallen!</p>
+          <button class="btn" id="restartBtn">Try again</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="spellbar" id="spellbar">
+      <div class="spell-school" id="school"><span class="icon">🔮</span>Spell</div>
+      <div class="spell-prompt" id="prompt">Loading…</div>
+      <div class="answers" id="answers"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn ghost" id="newBtn">Reset run</button>
+    </div>
+
+    <p class="hint">Each kill grants XP. Level up to gain HP. Press <kbd>1</kbd>–<kbd>4</kbd> for answer choices.</p>
+  </main>
+
+  <script>
+    // ---------- Audio ----------
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function env(g, t, a, h, r, peak = 0.22) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.setValueAtTime(peak, t + a + h); g.gain.linearRampToValueAtTime(0, t + a + h + r); }
+    function playSpell() { const c = ensureAudio(), t = c.currentTime; [523.25, 783.99, 1046.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.04, 0.005, 0.04, 0.12, 0.22); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.04); o.stop(t+i*0.04+0.18); }); }
+    function playMiss() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.2, 0.32); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(240, t); o.frequency.exponentialRampToValueAtTime(110, t+0.22); o.connect(g); o.start(t); o.stop(t+0.24); }
+    function playHurt() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.22, 0.36); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(60, t+0.25); o.connect(g); o.start(t); o.stop(t+0.26); }
+    function playKill() { const c = ensureAudio(), t = c.currentTime; [392, 523.25, 659.25, 1046.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.08, 0.005, 0.05, 0.18, 0.28); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.08); o.stop(t+i*0.08+0.24); }); }
+    function playLevelUp() { const c = ensureAudio(), t = c.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.1, 0.005, 0.05, 0.2, 0.28); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.1); o.stop(t+i*0.1+0.26); }); }
+    function playLose() { const c = ensureAudio(), t = c.currentTime; [600, 480, 380, 260].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.12, 0.01, 0.05, 0.15, 0.22); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.12); o.stop(t+i*0.12+0.22); }); }
+
+    // ---------- Sprites ----------
+    function wizardSVG() {
+      return `<svg viewBox="0 0 120 120">
+        <!-- shadow -->
+        <ellipse cx="60" cy="112" rx="28" ry="5" fill="rgba(0,0,0,0.35)"/>
+        <!-- body (splat) -->
+        <path d="M 60 40 C 80 40, 88 52, 90 64 C 102 66, 106 80, 100 90 C 106 100, 100 112, 88 112 C 84 122, 76 124, 60 116 C 44 124, 36 122, 32 112 C 20 112, 14 100, 20 90 C 14 80, 18 66, 30 64 C 32 52, 40 40, 60 40 Z" fill="#9333ea" stroke="#1a1a1a" stroke-width="4" stroke-linejoin="round"/>
+        <!-- eyes -->
+        <circle cx="48" cy="78" r="7" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+        <circle cx="72" cy="78" r="7" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+        <circle cx="49" cy="80" r="3" fill="#1a1a1a"/>
+        <circle cx="73" cy="80" r="3" fill="#1a1a1a"/>
+        <!-- determined eyebrows -->
+        <path d="M 40 70 L 56 73" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 80 70 L 64 73" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+        <!-- mouth -->
+        <path d="M 50 96 Q 60 102 70 96" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- wizard hat -->
+        <path d="M 36 50 L 60 4 L 84 50 Z" fill="#4338ca" stroke="#1a1a1a" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="32" y="48" width="56" height="8" fill="#312e81" stroke="#1a1a1a" stroke-width="3" rx="3"/>
+        <circle cx="60" cy="14" r="4" fill="#facc15" stroke="#1a1a1a" stroke-width="2"/>
+        <!-- stars on hat -->
+        <text x="60" y="38" text-anchor="middle" font-size="14" fill="#facc15">★</text>
+        <!-- wand -->
+        <line x1="92" y1="76" x2="112" y2="56" stroke="#a16207" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="112" cy="56" r="6" fill="#facc15" stroke="#1a1a1a" stroke-width="2"/>
+      </svg>`;
+    }
+    // Monster sprites — vary by level tier
+    function monsterSVG(kind, color) {
+      const eyes = `
+        <circle cx="44" cy="68" r="7" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+        <circle cx="76" cy="68" r="7" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+        <circle cx="45" cy="70" r="3" fill="#1a1a1a"/>
+        <circle cx="77" cy="70" r="3" fill="#1a1a1a"/>`;
+      const angryBrows = `
+        <path d="M 36 60 L 52 65" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 84 60 L 68 65" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>`;
+      const teeth = `<path d="M 50 92 L 70 92 L 67 100 L 62 95 L 60 100 L 58 95 L 53 100 Z" fill="#fff" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>`;
+      const shape = kind === 'spike'
+        ? `<path d="M 60 28 L 96 60 L 98 90 L 78 116 L 42 116 L 22 90 L 24 60 Z" fill="${color}" stroke="#1a1a1a" stroke-width="4" stroke-linejoin="round"/>`
+        : kind === 'cube'
+        ? `<rect x="22" y="40" width="76" height="76" rx="14" fill="${color}" stroke="#1a1a1a" stroke-width="4"/>`
+        : `<path d="M 60 30 C 88 30, 96 50, 96 70 C 96 92, 80 116, 60 116 C 40 116, 24 92, 24 70 C 24 50, 32 30, 60 30 Z" fill="${color}" stroke="#1a1a1a" stroke-width="4" stroke-linejoin="round"/>`;
+      const extras = kind === 'spike'
+        ? `<path d="M 32 30 L 24 60 M 88 30 L 96 60" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>`
+        : '';
+      return `<svg viewBox="0 0 120 120">
+        <ellipse cx="60" cy="118" rx="32" ry="5" fill="rgba(0,0,0,0.35)"/>
+        ${shape}
+        ${extras}
+        ${eyes}
+        ${angryBrows}
+        ${teeth}
+      </svg>`;
+    }
+
+    // ---------- Game data ----------
+    const MONSTERS = [
+      { kind: 'blob',  color: '#22c55e', name: 'Grass Splat' },
+      { kind: 'cube',  color: '#facc15', name: 'Cheese Cube' },
+      { kind: 'blob',  color: '#ef4444', name: 'Lava Blob' },
+      { kind: 'spike', color: '#ec4899', name: 'Pink Spikepad' },
+      { kind: 'cube',  color: '#06b6d4', name: 'Frostbox' },
+      { kind: 'blob',  color: '#f97316', name: 'Pumpkin Goop' },
+      { kind: 'spike', color: '#a855f7', name: 'Voidthorn' },
+      { kind: 'blob',  color: '#3b82f6', name: 'Tide Blob' },
+      { kind: 'cube',  color: '#84cc16', name: 'Limecube' },
+      { kind: 'spike', color: '#7f1d1d', name: 'Shadow Spike' },
+    ];
+
+    const SCHOOLS = [
+      { id: 'math',    icon: '🔢', name: 'Arithmetic' },
+      { id: 'spell',   icon: '🔤', name: 'Anagram' },
+      { id: 'pattern', icon: '🔀', name: 'Pattern' },
+    ];
+
+    const SPELL_WORDS = [
+      'CAT','DOG','OWL','BAT','SUN','MOON','STAR','SNOW','RAIN','TREE','LEAF','FROG',
+      'WAND','POTION','DRAGON','WIZARD','CASTLE','SPELL','MAGIC','GHOST','SLIME','GIANT',
+      'FOREST','MEADOW','RUNE','TROLL','GOBLIN','SHIELD','ARROW','SWORD','RIDDLE','TOWER',
+      'PHOENIX','BASILISK','GRIMOIRE','ENCHANT','CONJURE','ALCHEMY','SORCERY','GUARDIAN'
+    ];
+
+    // ---------- Helpers ----------
+    function rand(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+    function shuffleArr(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+    // ---------- Puzzles ----------
+    function makeMathPuzzle(lvl) {
+      let a, b, op, answer, text;
+      if (lvl <= 3) { op = '+'; a = rand(1, 9); b = rand(1, 9); answer = a + b; }
+      else if (lvl <= 6) { op = pick(['+','−']); a = rand(5, 25); b = rand(1, lvl <= 4 ? 9 : 15); if (op === '−') { if (b > a) [a,b] = [b,a]; answer = a - b; } else answer = a + b; }
+      else if (lvl <= 12) { op = pick(['×','+','−']); if (op === '×') { a = rand(2, 9); b = rand(2, 9); answer = a*b; } else if (op === '+') { a = rand(10, 50); b = rand(5, 40); answer = a+b; } else { a = rand(20, 60); b = rand(1, a-1); answer = a-b; } }
+      else { op = pick(['×','÷','+','−']); if (op === '×') { a = rand(2, 12); b = rand(2, 12); answer = a*b; } else if (op === '÷') { b = rand(2, 12); answer = rand(2, 12); a = b * answer; } else if (op === '+') { a = rand(30, 90); b = rand(10, 60); answer = a+b; } else { a = rand(40, 99); b = rand(1, a-1); answer = a-b; } }
+      text = `${a} ${op} ${b} = ?`;
+      const distractors = new Set();
+      const variance = lvl <= 5 ? 3 : lvl <= 10 ? 6 : 10;
+      while (distractors.size < 5) {
+        const d = answer + (Math.floor(Math.random()*(variance*2+1)) - variance);
+        if (d === answer || d < 0) continue;
+        distractors.add(d);
+      }
+      const choices = shuffleArr([answer, ...Array.from(distractors).slice(0, 3)]);
+      return { school: 'math', prompt: text, answer, choices };
+    }
+    function makeSpellPuzzle(lvl) {
+      // anagram: scramble a word, choices are the original + 3 similar words
+      const minLen = lvl <= 3 ? 3 : lvl <= 6 ? 4 : lvl <= 10 ? 5 : 6;
+      const maxLen = minLen + 4;
+      const candidates = SPELL_WORDS.filter(w => w.length >= minLen && w.length <= maxLen);
+      const word = pick(candidates);
+      const scrambled = shuffleArr(word.split('')).join('');
+      const ensureDiff = scrambled === word ? word.split('').reverse().join('') : scrambled;
+      const distractors = shuffleArr(SPELL_WORDS.filter(w => w !== word && Math.abs(w.length - word.length) <= 1)).slice(0, 3);
+      const choices = shuffleArr([word, ...distractors]);
+      return { school: 'spell', prompt: ensureDiff, answer: word, choices, isText: true };
+    }
+    function makePatternPuzzle(lvl) {
+      const k = pick([1, 2, 3, 5, lvl <= 5 ? 1 : 10]);
+      const start = rand(1, lvl <= 5 ? 6 : 20);
+      const seq = [];
+      for (let i = 0; i < 4; i++) seq.push(start + i * k);
+      const answer = start + 4 * k;
+      const distractors = new Set([answer + k, answer - k, answer + 1, answer - 1]);
+      distractors.delete(answer);
+      const choices = shuffleArr([answer, ...Array.from(distractors).slice(0, 3)]);
+      const prompt = seq.join(', ') + ', ?';
+      return { school: 'pattern', prompt, answer, choices };
+    }
+    function makePuzzleFor(level) {
+      const r = Math.random();
+      if (r < 0.5) return makeMathPuzzle(level);
+      if (r < 0.8) return makeSpellPuzzle(level);
+      return makePatternPuzzle(level);
+    }
+
+    // ---------- State ----------
+    const SAVE_KEY = 'sloppy.wizard.save';
+    const BEST_KEY = 'sloppy.wizard.best';
+    let level = 1;
+    let xp = 0;
+    let kills = 0;
+    let best = Number(localStorage.getItem(BEST_KEY) || 1);
+    let player = { name: 'Splat Wizard', hp: 30, maxHp: 30, atk: 6 };
+    let enemy = null;
+    let currentPuzzle = null;
+    let acceptingInput = false;
+
+    function xpForLevel(lvl) { return 10 + (lvl - 1) * 6; }
+    function spawnEnemy() {
+      const idx = Math.min(MONSTERS.length - 1, Math.floor((level - 1) / 1.5));
+      const base = MONSTERS[idx];
+      const hp = 6 + level * 4;
+      enemy = { kind: base.kind, color: base.color, name: base.name, hp, maxHp: hp, atk: 3 + Math.floor(level * 1.2) };
+    }
+    function startRun() {
+      level = 1; xp = 0; kills = 0;
+      player.maxHp = 30; player.hp = 30; player.atk = 6;
+      hideCurtain();
+      spawnEnemy();
+      newPuzzle();
+      updateHud();
+      renderSprites();
+    }
+    function newPuzzle() {
+      currentPuzzle = makePuzzleFor(level);
+      renderPuzzle();
+    }
+
+    // ---------- DOM ----------
+    const $ = id => document.getElementById(id);
+
+    function renderSprites() {
+      $('playerSprite').innerHTML = wizardSVG();
+      $('playerName').textContent = `${player.name} (Lv ${level})`;
+      if (enemy) {
+        $('enemySprite').innerHTML = monsterSVG(enemy.kind, enemy.color);
+        $('enemyName').textContent = enemy.name;
+        $('enemyEl').style.display = '';
+      } else {
+        $('enemyEl').style.display = 'none';
+      }
+      $('playerHpFill').style.width = (player.hp / player.maxHp * 100) + '%';
+      if (enemy) $('enemyHpFill').style.width = (enemy.hp / enemy.maxHp * 100) + '%';
+    }
+    function renderPuzzle() {
+      if (!currentPuzzle) return;
+      const school = SCHOOLS.find(s => s.id === currentPuzzle.school);
+      $('school').innerHTML = `<span class="icon">${school.icon}</span>${school.name} spell — pick the right one to cast`;
+      if (currentPuzzle.school === 'spell') {
+        $('prompt').textContent = 'Unscramble: ' + currentPuzzle.prompt;
+      } else if (currentPuzzle.school === 'pattern') {
+        $('prompt').textContent = 'Next number: ' + currentPuzzle.prompt;
+      } else {
+        $('prompt').textContent = currentPuzzle.prompt;
+      }
+      const ansEl = $('answers');
+      ansEl.innerHTML = '';
+      ansEl.className = 'answers four';
+      currentPuzzle.choices.forEach((c, i) => {
+        const b = document.createElement('button');
+        b.className = 'answer';
+        b.textContent = c;
+        b.dataset.idx = i;
+        b.addEventListener('click', () => onAnswer(c, b));
+        ansEl.appendChild(b);
+      });
+      acceptingInput = true;
+    }
+
+    function updateHud() {
+      $('level').textContent = level;
+      $('xp').textContent = `${xp} / ${xpForLevel(level)}`;
+      $('kills').textContent = kills;
+      $('best').textContent = best;
+    }
+    function showCurtain(title, sub, btn) {
+      $('curtainTitle').textContent = title;
+      $('curtainSub').textContent = sub;
+      $('restartBtn').textContent = btn;
+      $('curtain').classList.remove('hidden');
+    }
+    function hideCurtain() { $('curtain').classList.add('hidden'); }
+
+    function popDamage(targetEl, amount, kind) {
+      const p = document.createElement('div');
+      p.className = 'damage-pop' + (kind === 'enemy' ? '' : ' enemy');
+      p.textContent = '-' + amount;
+      targetEl.appendChild(p);
+      setTimeout(() => p.remove(), 900);
+    }
+
+    function attack(attacker, defender, defenderEl) {
+      const dmg = attacker.atk + Math.floor(Math.random() * 3) - 1;
+      defender.hp = Math.max(0, defender.hp - dmg);
+      popDamage(defenderEl, dmg, defender === enemy ? 'player' : 'enemy');
+      defenderEl.classList.add('hurt');
+      setTimeout(() => defenderEl.classList.remove('hurt'), 300);
+      return dmg;
+    }
+    function attackAnim(el) {
+      el.classList.add('attack');
+      setTimeout(() => el.classList.remove('attack'), 300);
+    }
+
+    function onAnswer(choice, btn) {
+      if (!acceptingInput) return;
+      ensureAudio();
+      acceptingInput = false;
+      const correct = choice === currentPuzzle.answer;
+      if (correct) {
+        btn.classList.add('good');
+        playSpell();
+        attackAnim($('playerEl'));
+        const dmg = attack(player, enemy, $('enemyEl'));
+        $('enemyHpFill').style.width = (enemy.hp / enemy.maxHp * 100) + '%';
+        if (enemy.hp <= 0) {
+          // Kill
+          playKill();
+          kills += 1;
+          xp += level + 2;
+          $('enemyEl').style.opacity = '0.3';
+          updateHud();
+          // Level up
+          while (xp >= xpForLevel(level)) {
+            xp -= xpForLevel(level);
+            level += 1;
+            player.maxHp += 8;
+            player.hp = player.maxHp;
+            player.atk += 1;
+            playLevelUp();
+            if (level > best) { best = level; localStorage.setItem(BEST_KEY, String(best)); }
+          }
+          if (player.hp < player.maxHp) player.hp = Math.min(player.maxHp, player.hp + 5); // small heal between fights
+          setTimeout(() => {
+            $('enemyEl').style.opacity = '';
+            spawnEnemy();
+            renderSprites();
+            updateHud();
+            newPuzzle();
+          }, 900);
+        } else {
+          setTimeout(() => { newPuzzle(); renderSprites(); updateHud(); }, 700);
+        }
+      } else {
+        btn.classList.add('bad');
+        playMiss();
+        // also flash the correct answer
+        const ansEl = $('answers');
+        ansEl.querySelectorAll('.answer').forEach(b => {
+          if (b.textContent == currentPuzzle.answer) b.classList.add('good');
+          b.disabled = true;
+        });
+        // monster attacks
+        attackAnim($('enemyEl'));
+        playHurt();
+        setTimeout(() => {
+          const dmg = attack(enemy, player, $('playerEl'));
+          $('playerHpFill').style.width = (player.hp / player.maxHp * 100) + '%';
+          if (player.hp <= 0) return gameOver();
+          setTimeout(() => { newPuzzle(); }, 800);
+        }, 300);
+      }
+    }
+
+    function gameOver() {
+      playLose();
+      acceptingInput = false;
+      const reachedLevel = level;
+      if (reachedLevel > best) { best = reachedLevel; localStorage.setItem(BEST_KEY, String(best)); }
+      showCurtain(
+        '💀 Wizard Fallen',
+        `Your splat wizard reached level ${level} with ${kills} monster${kills===1?'':'s'} slain. Best ever: level ${best}.`,
+        'Try again'
+      );
+    }
+
+    // ---------- Wire-up ----------
+    $('restartBtn').addEventListener('click', startRun);
+    $('newBtn').addEventListener('click', () => { if (confirm('Reset the current run?')) startRun(); });
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (/^[1-4]$/.test(e.key)) {
+        const ans = document.getElementById('answers').children[Number(e.key) - 1];
+        if (ans && !ans.disabled) ans.click();
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        if ($('curtain').classList.contains('hidden') === false) { e.preventDefault(); startRun(); }
+      }
+    });
+
+    // ---------- Boot ----------
+    startRun();
+  </script>
+</body>
+</html>

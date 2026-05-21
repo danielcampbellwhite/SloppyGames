@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Sloppy Sudoku — Sloppy Games</title>
+  <meta name="description" content="Classic 9x9 Sudoku with the Sloppy Games aesthetic. Four difficulties, pencil marks, hints and a best-time tracker." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --purple: #9333ea; --purple-dark: #6b21a8; --lime: #84cc16; --lime-dark: #65a30d; --pink: #ec4899; --cyan: #06b6d4; --yellow: #facc15; --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6; --shadow: rgba(26, 26, 26, 0.2); --given: #1a1a1a; --user: #6b21a8; --conflict: #be185d; --hint: #65a30d; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 540px; color: #444; margin: -0.25rem 0 0.5rem; }
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(540px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 110px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); line-height: 1; color: var(--ink); }
+
+    .toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .diff-row { display: inline-flex; gap: 0.3rem; }
+    .diff-row button { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.85rem; padding: 0.35rem 0.75rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
+    .diff-row button.active { background: var(--lime); }
+    .toolbar .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 0.95rem; padding: 0.5rem 1rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .toolbar .btn:hover { background: #f3f3f3; }
+    .toolbar .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .toolbar .btn.active { background: var(--cyan); color: var(--paper); }
+    .toolbar .btn.primary { background: var(--lime); }
+
+    .board-wrap {
+      position: relative;
+      width: min(540px, 95vw);
+      aspect-ratio: 1;
+      max-height: calc(100dvh - 280px);
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(9, 1fr);
+      width: 100%;
+      height: 100%;
+      background: var(--ink);
+      border: 4px solid var(--ink);
+      border-radius: 14px;
+      box-shadow: 0 6px 0 var(--ink);
+      overflow: hidden;
+      gap: 1px;
+    }
+    .cell {
+      background: var(--paper);
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.1rem, 3vw, 1.6rem);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      color: var(--user);
+      user-select: none;
+      transition: background 0.06s ease;
+    }
+    .cell.given { color: var(--given); background: #f3f4f6; cursor: default; }
+    .cell.selected { background: #ddd6fe; }
+    .cell.same-num { background: #ede9fe; }
+    .cell.same-row, .cell.same-col, .cell.same-box { background: #f5f3ff; }
+    .cell.given.same-row, .cell.given.same-col, .cell.given.same-box { background: #e5e7eb; }
+    .cell.given.selected { background: #d8b4fe; }
+    .cell.conflict { color: var(--conflict) !important; }
+    .cell.complete { background: #d9f99d; }
+    /* Bold box dividers via thicker virtual borders using inline pseudo-element approach */
+    .board { gap: 0; }
+    .cell { border: 1px solid #d1d5db; }
+    .cell[data-c="2"], .cell[data-c="5"] { border-right: 3px solid var(--ink); }
+    .cell[data-r="2"], .cell[data-r="5"] { border-bottom: 3px solid var(--ink); }
+
+    .pencil { position: absolute; inset: 4px; display: grid; grid-template-columns: 1fr 1fr 1fr; font-size: clamp(0.55rem, 1.4vw, 0.75rem); font-weight: 700; color: #6b7280; font-family: 'Baloo 2', sans-serif; pointer-events: none; }
+    .pencil span { display: flex; align-items: center; justify-content: center; }
+
+    .numpad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; width: min(540px, 95vw); }
+    .numpad button {
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem);
+      padding: 0.65rem 0.4rem; border-radius: 14px; border: 3px solid var(--ink); background: var(--paper);
+      box-shadow: 3px 3px 0 var(--ink); cursor: pointer; color: var(--ink);
+    }
+    .numpad button:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); }
+    .numpad button.clear { background: var(--pink); color: var(--paper); }
+    .numpad button.done { background: rgba(132, 204, 22, 0.25); }
+
+    .status { font-family: 'Baloo 2', sans-serif; font-weight: 700; min-height: 1.4em; text-align: center; }
+    .status.win { color: var(--lime-dark); }
+    .status.bad { color: var(--pink); }
+    .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 540px; }
+    kbd { font-family: 'Baloo 2', sans-serif; font-weight: 700; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; padding: 0 0.4rem; box-shadow: 2px 2px 0 var(--ink); }
+
+    @media (max-width: 540px) {
+      .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; }
+      .pencil { inset: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">← Back</a>
+    <a href="../../index.html"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Sloppy Sudoku <span class="accent">Fill the grid</span></h1>
+    <p class="subtitle">Each row, column, and 3×3 box must contain every number from 1 to 9. Tap a cell, then tap a number to fill it in.</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Time</div><div class="value" id="time">0:00</div></div>
+      <div class="hud-pill"><div class="label">Mistakes</div><div class="value" id="mistakes">0</div></div>
+      <div class="hud-pill"><div class="label">Hints</div><div class="value" id="hints">0</div></div>
+      <div class="hud-pill"><div class="label">Best</div><div class="value" id="best">—</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="diff-row" id="diffRow">
+        <button data-diff="easy" class="active">Easy</button>
+        <button data-diff="medium">Medium</button>
+        <button data-diff="hard">Hard</button>
+        <button data-diff="expert">Expert</button>
+      </div>
+      <button class="btn" id="newBtn">New puzzle</button>
+      <button class="btn" id="pencilBtn">Pencil ✏️</button>
+      <button class="btn" id="hintBtn">Hint 💡</button>
+      <button class="btn" id="undoBtn">↶ Undo</button>
+    </div>
+
+    <div class="board-wrap"><div class="board" id="board"></div></div>
+
+    <div id="status" class="status">Pick a difficulty and start filling.</div>
+
+    <div class="numpad" id="numpad">
+      <button data-n="1">1</button>
+      <button data-n="2">2</button>
+      <button data-n="3">3</button>
+      <button data-n="4">4</button>
+      <button data-n="5">5</button>
+      <button data-n="6">6</button>
+      <button data-n="7">7</button>
+      <button data-n="8">8</button>
+      <button data-n="9">9</button>
+      <button data-n="0" class="clear">✕</button>
+    </div>
+
+    <p class="hint">Use number keys <kbd>1</kbd>–<kbd>9</kbd>, <kbd>Backspace</kbd> to clear, <kbd>P</kbd> for pencil mode, arrows to move.</p>
+  </main>
+
+  <script>
+    // ---------- Audio ----------
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function env(g, t, a, h, r, peak = 0.22) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.setValueAtTime(peak, t + a + h); g.gain.linearRampToValueAtTime(0, t + a + h + r); }
+    function playTap() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.002, 0.005, 0.04, 0.16); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=900; o.connect(g); o.start(t); o.stop(t+0.06); }
+    function playBad() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.18, 0.28); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(240, t); o.frequency.exponentialRampToValueAtTime(110, t+0.22); o.connect(g); o.start(t); o.stop(t+0.24); }
+    function playWin() { const c = ensureAudio(), t = c.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.1, 0.005, 0.05, 0.2, 0.28); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.1); o.stop(t+i*0.1+0.26); }); }
+
+    // ---------- Sudoku generation ----------
+    const N = 9;
+    const BASE = [
+      [1,2,3,4,5,6,7,8,9],
+      [4,5,6,7,8,9,1,2,3],
+      [7,8,9,1,2,3,4,5,6],
+      [2,3,4,5,6,7,8,9,1],
+      [5,6,7,8,9,1,2,3,4],
+      [8,9,1,2,3,4,5,6,7],
+      [3,4,5,6,7,8,9,1,2],
+      [6,7,8,9,1,2,3,4,5],
+      [9,1,2,3,4,5,6,7,8],
+    ];
+    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+    function makeSolved() {
+      // start from base and shuffle digits + rows within bands + cols within stacks + bands + stacks
+      const board = BASE.map(r => r.slice());
+      // shuffle digits 1..9
+      const perm = shuffle([1,2,3,4,5,6,7,8,9]);
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) board[r][c] = perm[board[r][c] - 1];
+      // shuffle rows within each band
+      for (let band = 0; band < 3; band++) {
+        const rows = shuffle([0,1,2]).map(x => x + band * 3);
+        const copy = rows.map(r => board[r].slice());
+        for (let i = 0; i < 3; i++) board[band * 3 + i] = copy[i];
+      }
+      // shuffle cols within each stack
+      for (let stack = 0; stack < 3; stack++) {
+        const cols = shuffle([0,1,2]).map(x => x + stack * 3);
+        for (let r = 0; r < N; r++) {
+          const original = cols.map(c => board[r][c]);
+          for (let i = 0; i < 3; i++) board[r][stack * 3 + i] = original[i];
+        }
+      }
+      // shuffle bands
+      const bands = shuffle([0,1,2]);
+      const bandRows = bands.map(b => [board[b*3], board[b*3+1], board[b*3+2]]);
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) board[i*3+j] = bandRows[i][j];
+      // shuffle stacks
+      const stacks = shuffle([0,1,2]);
+      for (let r = 0; r < N; r++) {
+        const newRow = [];
+        for (const st of stacks) for (let k = 0; k < 3; k++) newRow.push(board[r][st*3+k]);
+        board[r] = newRow;
+      }
+      return board;
+    }
+    function makePuzzle(solved, cluesNeeded) {
+      const puzzle = solved.map(r => r.slice());
+      const positions = [];
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) positions.push([r, c]);
+      shuffle(positions);
+      let removed = 0;
+      const totalRemove = 81 - cluesNeeded;
+      for (const [r, c] of positions) {
+        if (removed >= totalRemove) break;
+        puzzle[r][c] = 0;
+        removed += 1;
+      }
+      return puzzle;
+    }
+
+    // ---------- DOM ----------
+    const $ = id => document.getElementById(id);
+    const boardEl = $('board');
+
+    // ---------- State ----------
+    const DIFFS = { easy: 42, medium: 34, hard: 28, expert: 24 };
+    let diff = 'easy';
+    let solved, puzzle, given, pencils;
+    let selected = null;       // {r, c}
+    let pencilMode = false;
+    let mistakes = 0;
+    let hintsUsed = 0;
+    let startTime = 0;
+    let timerHandle = null;
+    let undoStack = [];
+
+    function emptyPencils() { return Array.from({length:N},()=>Array.from({length:N},()=>new Set())); }
+    function bestKey() { return 'sloppy.sudoku.best.' + diff; }
+
+    function buildDom() {
+      boardEl.innerHTML = '';
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.r = r; cell.dataset.c = c;
+          cell.addEventListener('click', () => select(r, c));
+          const pen = document.createElement('div');
+          pen.className = 'pencil';
+          for (let i = 1; i <= 9; i++) {
+            const s = document.createElement('span');
+            s.dataset.n = i;
+            pen.appendChild(s);
+          }
+          cell.appendChild(pen);
+          const v = document.createElement('span');
+          v.className = 'val';
+          cell.appendChild(v);
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+    function cellEl(r, c) { return boardEl.children[r * N + c]; }
+
+    function newPuzzle() {
+      solved = makeSolved();
+      puzzle = makePuzzle(solved, DIFFS[diff]);
+      given = puzzle.map(r => r.map(v => v !== 0));
+      pencils = emptyPencils();
+      selected = null;
+      mistakes = 0; hintsUsed = 0;
+      $('mistakes').textContent = 0;
+      $('hints').textContent = 0;
+      undoStack = [];
+      startTime = performance.now();
+      if (timerHandle) clearInterval(timerHandle);
+      timerHandle = setInterval(updateTimer, 500);
+      const bestRaw = localStorage.getItem(bestKey());
+      $('best').textContent = bestRaw ? fmtTime(Number(bestRaw)) : '—';
+      $('status').textContent = `New ${diff} puzzle. Good luck!`;
+      $('status').className = 'status';
+      repaint();
+    }
+    function fmtTime(s) { const m = Math.floor(s/60), ss = s%60; return m + ':' + String(ss).padStart(2,'0'); }
+    function updateTimer() { $('time').textContent = fmtTime(Math.floor((performance.now() - startTime) / 1000)); }
+
+    function select(r, c) {
+      selected = { r, c };
+      ensureAudio();
+      playTap();
+      repaint();
+    }
+
+    function setValue(n) {
+      if (!selected) return;
+      const { r, c } = selected;
+      if (given[r][c]) return;
+      if (pencilMode && n !== 0) {
+        // toggle pencil mark
+        const set = pencils[r][c];
+        if (set.has(n)) set.delete(n); else set.add(n);
+        repaint();
+        return;
+      }
+      const before = puzzle[r][c];
+      const beforePencils = new Set(pencils[r][c]);
+      undoStack.push({ r, c, before, beforePencils });
+      puzzle[r][c] = n;
+      pencils[r][c].clear();
+      // count as mistake if wrong (and non-zero)
+      if (n !== 0 && n !== solved[r][c]) {
+        mistakes += 1; $('mistakes').textContent = mistakes;
+        playBad();
+      } else {
+        if (n !== 0) playTap();
+        // auto-clear pencils for that digit in same row/col/box
+        if (n !== 0) clearRelatedPencils(r, c, n);
+      }
+      repaint();
+      checkWin();
+    }
+    function clearRelatedPencils(r, c, n) {
+      for (let i = 0; i < N; i++) {
+        pencils[r][i].delete(n);
+        pencils[i][c].delete(n);
+      }
+      const br = Math.floor(r/3) * 3, bc = Math.floor(c/3) * 3;
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) pencils[br+i][bc+j].delete(n);
+    }
+
+    function undo() {
+      const last = undoStack.pop();
+      if (!last) return;
+      puzzle[last.r][last.c] = last.before;
+      pencils[last.r][last.c] = last.beforePencils;
+      ensureAudio(); playTap();
+      repaint();
+    }
+
+    function useHint() {
+      if (!selected) return;
+      const { r, c } = selected;
+      if (given[r][c] || puzzle[r][c] === solved[r][c]) return;
+      undoStack.push({ r, c, before: puzzle[r][c], beforePencils: new Set(pencils[r][c]) });
+      puzzle[r][c] = solved[r][c];
+      pencils[r][c].clear();
+      hintsUsed += 1;
+      $('hints').textContent = hintsUsed;
+      ensureAudio(); playTap();
+      repaint();
+      checkWin();
+    }
+
+    function isConflict(r, c) {
+      const v = puzzle[r][c];
+      if (v === 0) return false;
+      for (let i = 0; i < N; i++) {
+        if (i !== c && puzzle[r][i] === v) return true;
+        if (i !== r && puzzle[i][c] === v) return true;
+      }
+      const br = Math.floor(r/3) * 3, bc = Math.floor(c/3) * 3;
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+        const rr = br + i, cc = bc + j;
+        if ((rr !== r || cc !== c) && puzzle[rr][cc] === v) return true;
+      }
+      return false;
+    }
+
+    function repaint() {
+      const sel = selected;
+      const selVal = sel ? puzzle[sel.r][sel.c] : 0;
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          const el = cellEl(r, c);
+          el.classList.toggle('given', given[r][c]);
+          el.classList.toggle('selected', sel && sel.r === r && sel.c === c);
+          el.classList.toggle('same-row', !!sel && sel.r === r);
+          el.classList.toggle('same-col', !!sel && sel.c === c);
+          el.classList.toggle('same-box', !!sel && Math.floor(sel.r/3) === Math.floor(r/3) && Math.floor(sel.c/3) === Math.floor(c/3));
+          el.classList.toggle('same-num', !!sel && selVal !== 0 && puzzle[r][c] === selVal);
+          el.classList.toggle('conflict', isConflict(r, c));
+          const val = el.querySelector('.val');
+          val.textContent = puzzle[r][c] !== 0 ? puzzle[r][c] : '';
+          // pencils
+          const pen = el.querySelector('.pencil');
+          const showPencils = puzzle[r][c] === 0;
+          pen.style.display = showPencils ? 'grid' : 'none';
+          if (showPencils) {
+            for (let n = 1; n <= 9; n++) {
+              const span = pen.children[n - 1];
+              span.textContent = pencils[r][c].has(n) ? n : '';
+            }
+          }
+        }
+      }
+      $('pencilBtn').classList.toggle('active', pencilMode);
+    }
+
+    function checkWin() {
+      // Win if all cells filled and match solved
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+        if (puzzle[r][c] !== solved[r][c]) return;
+      }
+      // win!
+      clearInterval(timerHandle);
+      const elapsed = Math.floor((performance.now() - startTime) / 1000);
+      const prev = Number(localStorage.getItem(bestKey()) || 0);
+      let newBest = false;
+      if (!prev || elapsed < prev) {
+        localStorage.setItem(bestKey(), String(elapsed));
+        newBest = true;
+        $('best').textContent = fmtTime(elapsed);
+      }
+      $('status').textContent = `🏆 Solved in ${fmtTime(elapsed)}${mistakes ? ` with ${mistakes} mistake${mistakes > 1 ? 's' : ''}` : ''}${newBest ? ' — new best!' : ''}`;
+      $('status').className = 'status win';
+      // mark all cells complete
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) cellEl(r, c).classList.add('complete');
+      playWin();
+    }
+
+    // ---------- Numpad ----------
+    document.querySelectorAll('.numpad button').forEach(b => {
+      b.addEventListener('click', () => setValue(Number(b.dataset.n)));
+    });
+    // ---------- Toolbar ----------
+    document.querySelectorAll('#diffRow button').forEach(b => {
+      b.addEventListener('click', () => {
+        diff = b.dataset.diff;
+        document.querySelectorAll('#diffRow button').forEach(x => x.classList.toggle('active', x.dataset.diff === diff));
+        if (confirm('Start a new ' + diff + ' puzzle?')) newPuzzle();
+      });
+    });
+    $('newBtn').addEventListener('click', () => newPuzzle());
+    $('pencilBtn').addEventListener('click', () => { pencilMode = !pencilMode; repaint(); });
+    $('hintBtn').addEventListener('click', useHint);
+    $('undoBtn').addEventListener('click', undo);
+
+    // ---------- Keyboard ----------
+    window.addEventListener('keydown', (e) => {
+      if (e.key >= '1' && e.key <= '9') { e.preventDefault(); setValue(Number(e.key)); }
+      else if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); setValue(0); }
+      else if (e.key === 'p' || e.key === 'P') { pencilMode = !pencilMode; repaint(); }
+      else if (e.key === 'h' || e.key === 'H') { useHint(); }
+      else if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undo(); }
+      else if (e.key === 'ArrowUp' && selected) { selected = { r: Math.max(0, selected.r - 1), c: selected.c }; repaint(); }
+      else if (e.key === 'ArrowDown' && selected) { selected = { r: Math.min(8, selected.r + 1), c: selected.c }; repaint(); }
+      else if (e.key === 'ArrowLeft' && selected) { selected = { r: selected.r, c: Math.max(0, selected.c - 1) }; repaint(); }
+      else if (e.key === 'ArrowRight' && selected) { selected = { r: selected.r, c: Math.min(8, selected.c + 1) }; repaint(); }
+    });
+
+    // ---------- Boot ----------
+    buildDom();
+    newPuzzle();
+  </script>
+</body>
+</html>

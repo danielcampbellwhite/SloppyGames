@@ -148,6 +148,22 @@ const GAMES = [
     category: 'puzzles',
     thumb: 'worddefender',
   },
+  {
+    slug: 'sudoku',
+    title: 'Sloppy Sudoku',
+    description: 'Classic 9×9 Sudoku. Four difficulties, pencil marks, hints — the deepest, calmest game in the collection.',
+    href: '/games/sudoku/',
+    category: 'puzzles',
+    thumb: 'sudoku',
+  },
+  {
+    slug: 'wizard',
+    title: 'Splat Wizard',
+    description: 'A tiny RPG: cast spells by solving maths, spelling and pattern puzzles. Defeat monsters, level up, keep going.',
+    href: '/games/wizard/',
+    category: 'puzzles',
+    thumb: 'wizard',
+  },
 ];
 
 // ---------- Render helpers ----------
@@ -239,6 +255,23 @@ function thumbHTML(slug) {
       <span class="wd-word wd-word--3">JUMP</span>
       <span class="wd-laser"></span>
       <span class="wd-ship"></span>
+    </span>`;
+    case 'sudoku': return `<span class="thumb-sudoku">
+      <span class="su-cell">5</span><span class="su-cell"></span><span class="su-cell">2</span><span class="su-cell sep">7</span><span class="su-cell"></span>
+      <span class="su-cell"></span><span class="su-cell">9</span><span class="su-cell"></span><span class="su-cell sep">3</span><span class="su-cell"></span>
+      <span class="su-cell">8</span><span class="su-cell"></span><span class="su-cell">6</span><span class="su-cell sep">1</span><span class="su-cell">4</span>
+      <span class="su-cell sep-row"></span><span class="su-cell sep-row">3</span><span class="su-cell sep-row"></span><span class="su-cell sep-row sep">5</span><span class="su-cell sep-row"></span>
+      <span class="su-cell">7</span><span class="su-cell"></span><span class="su-cell">1</span><span class="su-cell sep"></span><span class="su-cell">8</span>
+    </span>`;
+    case 'wizard': return `<span class="thumb-wiz">
+      <span class="wiz-stars"></span>
+      <span class="wiz-player" aria-hidden="true">
+        <svg viewBox="0 0 100 100"><path d="M 36 50 L 60 6 L 84 50 Z" fill="#4338ca" stroke="#1a1a1a" stroke-width="3"/><rect x="32" y="48" width="56" height="8" fill="#312e81" stroke="#1a1a1a" stroke-width="3"/><path d="M 50 40 C 70 40, 78 52, 80 64 C 92 66, 96 80, 90 92 C 84 102, 60 100, 50 96 C 40 100, 16 102, 10 92 C 4 80, 8 66, 20 64 C 22 52, 30 40, 50 40 Z" fill="#9333ea" stroke="#1a1a1a" stroke-width="3"/><circle cx="42" cy="72" r="6" fill="#fff" stroke="#1a1a1a" stroke-width="2"/><circle cx="58" cy="72" r="6" fill="#fff" stroke="#1a1a1a" stroke-width="2"/><circle cx="43" cy="74" r="2.5" fill="#1a1a1a"/><circle cx="59" cy="74" r="2.5" fill="#1a1a1a"/></svg>
+      </span>
+      <span class="wiz-bolt"></span>
+      <span class="wiz-monster" aria-hidden="true">
+        <svg viewBox="0 0 100 100"><path d="M 50 28 C 78 28, 86 50, 86 70 C 86 90, 70 96, 50 96 C 30 96, 14 90, 14 70 C 14 50, 22 28, 50 28 Z" fill="#22c55e" stroke="#1a1a1a" stroke-width="3"/><circle cx="38" cy="56" r="6" fill="#fff" stroke="#1a1a1a" stroke-width="2"/><circle cx="62" cy="56" r="6" fill="#fff" stroke="#1a1a1a" stroke-width="2"/><circle cx="39" cy="58" r="2.5" fill="#1a1a1a"/><circle cx="63" cy="58" r="2.5" fill="#1a1a1a"/><path d="M 32 48 L 44 53 M 68 48 L 56 53" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/><path d="M 40 78 L 60 78 L 56 86 L 52 80 L 50 86 L 48 80 L 44 86 Z" fill="#fff" stroke="#1a1a1a" stroke-width="2"/></svg>
+      </span>
     </span>`;
     default: return '';
   }
