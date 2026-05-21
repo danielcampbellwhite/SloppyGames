@@ -338,6 +338,16 @@
       .topbar { padding: 0.75rem 1rem; }
       .topbar img { height: 38px; }
       .qcard { padding: 0.85rem 1rem 1rem; }
+      .stage {
+        /* Taller-relative-to-width on phones so the runners aren't squashed */
+        aspect-ratio: 1.7;
+      }
+      .subtitle { font-size: 0.95rem; margin-bottom: 0.25rem; }
+      main { gap: 0.5rem; padding: 0.5rem 0.75rem 1.25rem; }
+      .progress-bar .label { width: 36px; font-size: 0.7rem; }
+    }
+    @media (max-width: 380px) {
+      .stage { aspect-ratio: 1.5; }
     }
   </style>
 </head>
