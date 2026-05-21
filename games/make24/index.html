@@ -153,25 +153,37 @@
     }
 
     function findSolution(ns) {
-      // try all permutations and operator triples; return one that yields an integer target between 5 and 60
+      // Enumerate every reachable target (and remember whether at least one
+      // solution for it uses × or ÷). Prefer non-trivial targets so the
+      // answer isn't just "add all four numbers".
       const ops = ['+','−','×','÷'];
       const perms = permutations(ns);
-      const tried = new Set();
+      const reachable = new Map(); // target -> { hasMult }
       for (const p of perms) {
         for (const o1 of ops) for (const o2 of ops) for (const o3 of ops) {
           const seq = [p[0], o1, p[1], o2, p[2], o3, p[3]];
           const v = evaluate(seq);
-          if (v === null) continue;
-          if (!Number.isFinite(v)) continue;
+          if (v === null || !Number.isFinite(v)) continue;
           if (Math.abs(v - Math.round(v)) > 1e-9) continue;
           const t = Math.round(v);
-          if (t >= 5 && t <= 60 && !tried.has(t)) {
-            tried.add(t);
-            return { target: t };
-          }
+          if (t < 5 || t > 60) continue;
+          const hasMult = (o1 === '×' || o1 === '÷' || o2 === '×' || o2 === '÷' || o3 === '×' || o3 === '÷');
+          const existing = reachable.get(t);
+          if (!existing) reachable.set(t, { hasMult });
+          else if (hasMult && !existing.hasMult) existing.hasMult = true;
         }
       }
-      return null;
+      const sum = ns.reduce((a, b) => a + b, 0);
+      // Exclude the trivial "just add them all" target so the player can't
+      // win by ignoring all operators.
+      let candidates = Array.from(reachable.entries()).filter(([t]) => t !== sum);
+      if (!candidates.length) return null;
+      // Prefer targets that have a × / ÷ solution available — feels more
+      // interesting and forces the player to consider multiple operators.
+      const withMult = candidates.filter(([, info]) => info.hasMult);
+      const pool = withMult.length ? withMult : candidates;
+      const [target] = pool[Math.floor(Math.random() * pool.length)];
+      return { target };
     }
 
     function permutations(arr) {

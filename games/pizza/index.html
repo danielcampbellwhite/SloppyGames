@@ -210,13 +210,6 @@
         drawSliceTopping(cx, cy, sauceR, i);
       }
 
-      // small label of current count under fraction
-      ctx.font = 'bold 18px "Baloo 2", sans-serif';
-      ctx.fillStyle = '#1a1a1a';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const current = slices.filter(Boolean).length;
-      ctx.fillText(`${current}/${denom}`, cx, cy + R + 30 > h ? cy : cy);
     }
 
     function drawSliceTopping(cx, cy, R, i) {
