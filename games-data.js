@@ -218,19 +218,49 @@ function gameCardHTML(game) {
 function navHTML(activeCat) {
   const links = CATEGORIES.map(cat => {
     const cls = (activeCat === cat.slug) ? 'site-nav__link active' : 'site-nav__link';
-    return `<a class="${cls}" href="${rel(cat.path)}">${cat.label}</a>`;
+    return `<a class="${cls}" href="${rel(cat.path)}" role="menuitem">${cat.label}</a>`;
   }).join('');
   return `
     <a href="${rel('/')}" class="site-nav__home" aria-label="Sloppy Games home">
       <img src="${rel('/assets/logo.png')}" alt="Sloppy Games" class="site-nav__logo" />
     </a>
-    <nav class="site-nav__cats" aria-label="Game categories">${links}</nav>`;
+    <div class="site-menu" id="site-menu">
+      <button class="site-menu__btn" type="button" id="site-menu-btn"
+              aria-haspopup="true" aria-expanded="false" aria-controls="site-menu-list">
+        <span class="site-menu__bars" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="site-menu__text">Menu</span>
+      </button>
+      <nav class="site-menu__list" id="site-menu-list" role="menu" aria-label="Game categories">${links}</nav>
+    </div>`;
 }
 
 function renderHeader(activeCat) {
   const el = document.getElementById('site-header');
   if (!el) return;
   el.innerHTML = navHTML(activeCat);
+  // wire up the menu toggle
+  const wrap = document.getElementById('site-menu');
+  const btn = document.getElementById('site-menu-btn');
+  const list = document.getElementById('site-menu-list');
+  if (!wrap || !btn || !list) return;
+  function close() {
+    wrap.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+  function open() {
+    wrap.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (wrap.classList.contains('open')) close(); else open();
+  });
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+  });
 }
 
 function renderNewest(count = 6) {

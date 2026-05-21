@@ -77,7 +77,6 @@
     </div>
 
     <div class="panel">
-      <div class="ptype" id="ptype">— —</div>
       <div class="pattern" id="pattern"></div>
       <div class="choices" id="choices"></div>
       <div class="status" id="status">Tap your answer.</div>
@@ -237,7 +236,6 @@
         btn.addEventListener('click', () => guess(c, btn));
         choicesEl.appendChild(btn);
       });
-      $('ptype').textContent = current.label;
       $('round').textContent = round;
       $('streak').textContent = streak;
       $('score').textContent = score;
