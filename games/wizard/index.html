@@ -80,6 +80,98 @@
     .damage-pop.enemy { color: #f87171; }
     @keyframes popUp { 0%{transform:translate(-50%,0) scale(0.6);opacity:0;} 20%{transform:translate(-50%,-10px) scale(1.2);opacity:1;} 100%{transform:translate(-50%,-50px) scale(1);opacity:0;} }
 
+    /* Enemy weakness pill */
+    .weakness {
+      position: absolute;
+      top: 4px;
+      right: 0;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      border-radius: 999px;
+      box-shadow: 2px 2px 0 var(--ink);
+      padding: 2px 8px;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      color: var(--ink);
+      pointer-events: none;
+    }
+
+    /* Spell selection row */
+    .spell-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+      width: min(640px, 95vw);
+    }
+    .spell-btn {
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 0.6rem 0.3rem;
+      border-radius: 14px;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 4px 4px 0 var(--ink);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      line-height: 1.1;
+      transition: transform 0.08s, box-shadow 0.08s, background 0.08s;
+    }
+    .spell-btn:hover:not(:disabled) { background: #f3f3f3; }
+    .spell-btn:active:not(:disabled) { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .spell-btn.strong { background: linear-gradient(135deg, #fef3c7, #fde68a); animation: pulse 1.4s ease-in-out infinite; }
+    .spell-btn:disabled { opacity: 0.45; cursor: default; }
+    .spell-btn .ic { font-size: 1.4rem; line-height: 1; }
+    .spell-btn .sub { font-size: 0.65rem; font-weight: 700; color: #666; letter-spacing: 0.04em; }
+    @keyframes pulse { 0%, 100% { box-shadow: 4px 4px 0 var(--ink); } 50% { box-shadow: 4px 4px 0 var(--ink), 0 0 16px rgba(250, 204, 21, 0.7); } }
+
+    /* Streak banner */
+    .streak-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      background: var(--lime);
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+
+    /* Biome announce */
+    .biome-toast {
+      position: absolute;
+      inset: auto 0 50% 0;
+      pointer-events: none;
+      display: flex;
+      justify-content: center;
+      z-index: 9;
+    }
+    .biome-toast > div {
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      box-shadow: 6px 6px 0 var(--ink);
+      padding: 0.5rem 1rem;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      animation: biomePop 2.4s ease forwards;
+    }
+    @keyframes biomePop {
+      0% { transform: scale(0.5); opacity: 0; }
+      15% { transform: scale(1.15); opacity: 1; }
+      30% { transform: scale(1); opacity: 1; }
+      85% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0; }
+    }
+
     .spellbar {
       width: min(640px, 95vw);
       background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink);
@@ -128,7 +220,8 @@
     <div class="hud">
       <div class="hud-pill"><div class="label">Level</div><div class="value" id="level">1</div></div>
       <div class="hud-pill"><div class="label">XP</div><div class="value" id="xp">0 / 10</div></div>
-      <div class="hud-pill"><div class="label">Monsters slain</div><div class="value" id="kills">0</div></div>
+      <div class="hud-pill"><div class="label">Kills</div><div class="value" id="kills">0</div></div>
+      <div class="hud-pill"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
       <div class="hud-pill"><div class="label">Best level</div><div class="value" id="best">1</div></div>
     </div>
 
@@ -140,6 +233,7 @@
         <div class="fighter__hp"><div class="fill" id="playerHpFill" style="width:100%"></div></div>
       </div>
       <div class="fighter enemy" id="enemyEl">
+        <div class="weakness" id="weakness" style="display:none"></div>
         <div class="fighter__name" id="enemyName">—</div>
         <div class="fighter__sprite" id="enemySprite"></div>
         <div class="fighter__hp"><div class="fill" id="enemyHpFill" style="width:100%"></div></div>
@@ -153,7 +247,9 @@
       </div>
     </div>
 
-    <div class="spellbar" id="spellbar">
+    <div class="spell-row" id="spellRow"></div>
+
+    <div class="spellbar" id="spellbar" style="display:none">
       <div class="spell-school" id="school"><span class="icon">🔮</span>Spell</div>
       <div class="spell-prompt" id="prompt">Loading…</div>
       <div class="answers" id="answers"></div>
@@ -255,6 +351,24 @@
       { id: 'pattern', icon: '🔀', name: 'Pattern' },
     ];
 
+    // Spells the player can cast. Each spell uses a fixed school so picking
+    // the spell also picks the puzzle type. Effects vary so picking which
+    // spell to cast actually matters.
+    const SPELLS = [
+      { id: 'strike', name: 'Strike', icon: '⚡', school: 'math',    dmgMul: 1.0, blockNext: false, healMul: 0,   penalty: 1, desc: '×1 atk' },
+      { id: 'burst',  name: 'Burst',  icon: '🔥', school: 'pattern', dmgMul: 1.7, blockNext: false, healMul: 0,   penalty: 2, desc: '×1.7 atk' },
+      { id: 'curse',  name: 'Curse',  icon: '💀', school: 'spell',   dmgMul: 1.0, blockNext: true,  healMul: 0,   penalty: 1, desc: 'block next' },
+      { id: 'heal',   name: 'Heal',   icon: '💚', school: 'math',    dmgMul: 0,   blockNext: false, healMul: 2.0, penalty: 0, desc: 'restore HP' },
+    ];
+
+    // Biomes change every 5 kills — different look and stronger monster pool.
+    const BIOMES = [
+      { name: 'Twilight Cavern', top: '#4338ca', bot: '#1e1b4b', monsters: [0, 1, 2] },
+      { name: 'Lava Caves',      top: '#7c2d12', bot: '#1a1a1a', monsters: [2, 5, 3] },
+      { name: 'Frozen Tundra',   top: '#0e7490', bot: '#1e3a8a', monsters: [4, 7, 1] },
+      { name: 'Shadow Vault',    top: '#3b0764', bot: '#020617', monsters: [6, 9, 8] },
+    ];
+
     const SPELL_WORDS = [
       'CAT','DOG','OWL','BAT','SUN','MOON','STAR','SNOW','RAIN','TREE','LEAF','FROG',
       'WAND','POTION','DRAGON','WIZARD','CASTLE','SPELL','MAGIC','GHOST','SLIME','GIANT',
@@ -309,11 +423,10 @@
       const prompt = seq.join(', ') + ', ?';
       return { school: 'pattern', prompt, answer, choices };
     }
-    function makePuzzleFor(level) {
-      const r = Math.random();
-      if (r < 0.5) return makeMathPuzzle(level);
-      if (r < 0.8) return makeSpellPuzzle(level);
-      return makePatternPuzzle(level);
+    function makePuzzleFor(level, schoolId) {
+      if (schoolId === 'spell') return makeSpellPuzzle(level);
+      if (schoolId === 'pattern') return makePatternPuzzle(level);
+      return makeMathPuzzle(level);
     }
 
     // ---------- State ----------
@@ -327,26 +440,48 @@
     let enemy = null;
     let currentPuzzle = null;
     let acceptingInput = false;
+    let acceptingTurn = true;
+    let streak = 0;
+    let healCooldown = 0;
+    let pendingSpell = null;   // SPELLS entry currently being cast
+    let blockNext = false;     // does Curse's protection apply on this turn
 
     function xpForLevel(lvl) { return 10 + (lvl - 1) * 6; }
+    function currentBiome() {
+      const idx = Math.min(BIOMES.length - 1, Math.floor(kills / 5));
+      return BIOMES[idx];
+    }
     function spawnEnemy() {
-      const idx = Math.min(MONSTERS.length - 1, Math.floor((level - 1) / 1.5));
-      const base = MONSTERS[idx];
+      const biome = currentBiome();
+      const baseIdx = biome.monsters[Math.floor(Math.random() * biome.monsters.length)];
+      const base = MONSTERS[baseIdx % MONSTERS.length];
       const hp = 6 + level * 4;
-      enemy = { kind: base.kind, color: base.color, name: base.name, hp, maxHp: hp, atk: 3 + Math.floor(level * 1.2) };
+      // Pick a random weakness from damaging spells
+      const damaging = SPELLS.filter(s => s.dmgMul > 0);
+      const weakSpell = damaging[Math.floor(Math.random() * damaging.length)];
+      enemy = { kind: base.kind, color: base.color, name: base.name, hp, maxHp: hp, atk: 3 + Math.floor(level * 1.2), weak: weakSpell.id };
     }
     function startRun() {
       level = 1; xp = 0; kills = 0;
+      streak = 0; healCooldown = 0; pendingSpell = null; blockNext = false;
       player.maxHp = 30; player.hp = 30; player.atk = 6;
       hideCurtain();
+      applyBiome();
       spawnEnemy();
-      newPuzzle();
       updateHud();
       renderSprites();
+      showSpellSelect();
     }
-    function newPuzzle() {
-      currentPuzzle = makePuzzleFor(level);
-      renderPuzzle();
+    function newTurn() {
+      // Show spell selection again
+      pendingSpell = null;
+      acceptingTurn = true;
+      showSpellSelect();
+    }
+    function applyBiome() {
+      const biome = currentBiome();
+      const arena = $('arena');
+      arena.style.background = `linear-gradient(180deg, ${biome.top} 0%, ${biome.bot} 100%)`;
     }
 
     // ---------- DOM ----------
@@ -355,20 +490,58 @@
     function renderSprites() {
       $('playerSprite').innerHTML = wizardSVG();
       $('playerName').textContent = `${player.name} (Lv ${level})`;
+      const wEl = $('weakness');
       if (enemy) {
         $('enemySprite').innerHTML = monsterSVG(enemy.kind, enemy.color);
         $('enemyName').textContent = enemy.name;
         $('enemyEl').style.display = '';
+        const weakSpell = SPELLS.find(s => s.id === enemy.weak);
+        if (weakSpell) { wEl.style.display = ''; wEl.innerHTML = `weak to ${weakSpell.icon}`; }
       } else {
         $('enemyEl').style.display = 'none';
+        wEl.style.display = 'none';
       }
       $('playerHpFill').style.width = (player.hp / player.maxHp * 100) + '%';
       if (enemy) $('enemyHpFill').style.width = (enemy.hp / enemy.maxHp * 100) + '%';
     }
+    function showSpellSelect() {
+      $('spellbar').style.display = 'none';
+      const row = $('spellRow');
+      row.innerHTML = '';
+      row.style.display = 'grid';
+      SPELLS.forEach(sp => {
+        const b = document.createElement('button');
+        b.className = 'spell-btn';
+        // Highlight if this spell targets the enemy's weakness (and is a damaging spell)
+        const isStrong = enemy && enemy.weak === sp.id && sp.dmgMul > 0;
+        if (isStrong) b.classList.add('strong');
+        const onCooldown = sp.id === 'heal' && healCooldown > 0;
+        const fullHp = sp.id === 'heal' && player.hp >= player.maxHp;
+        b.disabled = onCooldown || fullHp || !acceptingTurn;
+        let sub = sp.desc;
+        if (sp.id === 'heal' && healCooldown > 0) sub = `${healCooldown} turn${healCooldown===1?'':'s'}`;
+        b.innerHTML = `<span class="ic">${sp.icon}</span><span>${sp.name}</span><span class="sub">${sub}</span>`;
+        b.addEventListener('click', () => onSpellPick(sp));
+        row.appendChild(b);
+      });
+    }
+
+    function onSpellPick(sp) {
+      if (!acceptingTurn) return;
+      ensureAudio();
+      acceptingTurn = false;
+      pendingSpell = sp;
+      currentPuzzle = makePuzzleFor(level, sp.school);
+      $('spellRow').style.display = 'none';
+      $('spellbar').style.display = '';
+      renderPuzzle();
+    }
+
     function renderPuzzle() {
       if (!currentPuzzle) return;
       const school = SCHOOLS.find(s => s.id === currentPuzzle.school);
-      $('school').innerHTML = `<span class="icon">${school.icon}</span>${school.name} spell — pick the right one to cast`;
+      const sp = pendingSpell;
+      $('school').innerHTML = `<span class="icon">${sp.icon}</span>${sp.name} (${school.name}) — solve to cast`;
       if (currentPuzzle.school === 'spell') {
         $('prompt').textContent = 'Unscramble: ' + currentPuzzle.prompt;
       } else if (currentPuzzle.school === 'pattern') {
@@ -394,6 +567,7 @@
       $('level').textContent = level;
       $('xp').textContent = `${xp} / ${xpForLevel(level)}`;
       $('kills').textContent = kills;
+      $('streak').textContent = streak;
       $('best').textContent = best;
     }
     function showCurtain(title, sub, btn) {
@@ -425,24 +599,78 @@
       setTimeout(() => el.classList.remove('attack'), 300);
     }
 
+    function applyDamageSpell(sp) {
+      let dmg = Math.round(player.atk * sp.dmgMul) + Math.floor(Math.random() * 3) - 1;
+      // Weakness bonus
+      if (enemy.weak === sp.id) dmg = Math.round(dmg * 1.5);
+      // Streak bonus: every 3 in a row, +50% to the next damage spell
+      if (streak >= 3 && streak % 3 === 0) dmg = Math.round(dmg * 1.5);
+      dmg = Math.max(1, dmg);
+      enemy.hp = Math.max(0, enemy.hp - dmg);
+      popDamage($('enemyEl'), dmg, 'player');
+      $('enemyEl').classList.add('hurt'); setTimeout(() => $('enemyEl').classList.remove('hurt'), 300);
+      $('enemyHpFill').style.width = (enemy.hp / enemy.maxHp * 100) + '%';
+    }
+    function enemyAttacks(times = 1) {
+      let i = 0;
+      const tick = () => {
+        if (i >= times) return;
+        if (blockNext) { blockNext = false; popBlock(); i = times; return; }
+        attackAnim($('enemyEl'));
+        playHurt();
+        const dmg = Math.max(1, enemy.atk + Math.floor(Math.random() * 3) - 1);
+        player.hp = Math.max(0, player.hp - dmg);
+        popDamage($('playerEl'), dmg, 'enemy');
+        $('playerEl').classList.add('hurt'); setTimeout(() => $('playerEl').classList.remove('hurt'), 300);
+        $('playerHpFill').style.width = (player.hp / player.maxHp * 100) + '%';
+        if (player.hp <= 0) return gameOver();
+        i += 1;
+        if (i < times) setTimeout(tick, 350);
+      };
+      tick();
+    }
+    function popBlock() {
+      const p = document.createElement('div');
+      p.className = 'damage-pop';
+      p.textContent = 'Blocked!';
+      p.style.color = '#a3e635';
+      $('playerEl').appendChild(p);
+      setTimeout(() => p.remove(), 900);
+    }
+
     function onAnswer(choice, btn) {
-      if (!acceptingInput) return;
+      if (!acceptingInput || !pendingSpell) return;
       ensureAudio();
       acceptingInput = false;
+      const sp = pendingSpell;
       const correct = choice === currentPuzzle.answer;
       if (correct) {
         btn.classList.add('good');
         playSpell();
-        attackAnim($('playerEl'));
-        const dmg = attack(player, enemy, $('enemyEl'));
-        $('enemyHpFill').style.width = (enemy.hp / enemy.maxHp * 100) + '%';
+        streak += 1;
+        if (sp.dmgMul > 0) {
+          attackAnim($('playerEl'));
+          applyDamageSpell(sp);
+        } else if (sp.healMul > 0) {
+          const heal = Math.round(player.atk * sp.healMul);
+          player.hp = Math.min(player.maxHp, player.hp + heal);
+          const p = document.createElement('div');
+          p.className = 'damage-pop';
+          p.textContent = '+' + heal;
+          p.style.color = '#a3e635';
+          $('playerEl').appendChild(p);
+          setTimeout(() => p.remove(), 900);
+          $('playerHpFill').style.width = (player.hp / player.maxHp * 100) + '%';
+          healCooldown = 3;
+        }
+        if (sp.blockNext) blockNext = true;
+
         if (enemy.hp <= 0) {
           // Kill
           playKill();
           kills += 1;
           xp += level + 2;
           $('enemyEl').style.opacity = '0.3';
-          updateHud();
           // Level up
           while (xp >= xpForLevel(level)) {
             xp -= xpForLevel(level);
@@ -453,36 +681,58 @@
             playLevelUp();
             if (level > best) { best = level; localStorage.setItem(BEST_KEY, String(best)); }
           }
-          if (player.hp < player.maxHp) player.hp = Math.min(player.maxHp, player.hp + 5); // small heal between fights
+          if (player.hp < player.maxHp) player.hp = Math.min(player.maxHp, player.hp + 5);
+          // Decrement cooldowns
+          if (healCooldown > 0) healCooldown -= 1;
+          updateHud();
+          // Biome transition every 5 kills
+          const wasBiomeIdx = Math.min(BIOMES.length - 1, Math.floor((kills - 1) / 5));
+          const newBiomeIdx = Math.min(BIOMES.length - 1, Math.floor(kills / 5));
+          if (newBiomeIdx !== wasBiomeIdx) {
+            announceBiome();
+          }
           setTimeout(() => {
             $('enemyEl').style.opacity = '';
+            applyBiome();
             spawnEnemy();
             renderSprites();
             updateHud();
-            newPuzzle();
+            newTurn();
           }, 900);
         } else {
-          setTimeout(() => { newPuzzle(); renderSprites(); updateHud(); }, 700);
+          if (healCooldown > 0) healCooldown -= 1;
+          updateHud();
+          renderSprites();
+          setTimeout(newTurn, 700);
         }
       } else {
         btn.classList.add('bad');
         playMiss();
+        streak = 0;
         // also flash the correct answer
         const ansEl = $('answers');
         ansEl.querySelectorAll('.answer').forEach(b => {
           if (b.textContent == currentPuzzle.answer) b.classList.add('good');
           b.disabled = true;
         });
-        // monster attacks
-        attackAnim($('enemyEl'));
-        playHurt();
+        // monster attacks (twice if you fizzled a Burst)
+        const times = sp.penalty;
         setTimeout(() => {
-          const dmg = attack(enemy, player, $('playerEl'));
-          $('playerHpFill').style.width = (player.hp / player.maxHp * 100) + '%';
-          if (player.hp <= 0) return gameOver();
-          setTimeout(() => { newPuzzle(); }, 800);
+          enemyAttacks(times);
+          if (healCooldown > 0) healCooldown -= 1;
+          updateHud();
+          if (player.hp > 0) setTimeout(newTurn, 700 + (times - 1) * 350);
         }, 300);
       }
+    }
+
+    function announceBiome() {
+      const biome = currentBiome();
+      const t = document.createElement('div');
+      t.className = 'biome-toast';
+      t.innerHTML = `<div>Entering ${biome.name}</div>`;
+      $('arena').appendChild(t);
+      setTimeout(() => t.remove(), 2400);
     }
 
     function gameOver() {
