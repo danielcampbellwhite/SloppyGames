@@ -137,8 +137,8 @@
     let score = 0, distance = 0, lives = 3;
     let best = Number(localStorage.getItem(BEST_KEY) || 0);
     let player = { lane: 1, x: LANE_X[1], targetX: LANE_X[1] };
-    let speed = 240;        // px / sec (world scrolls down at this speed)
-    let speedMin = 240, speedMax = 720;
+    let speed = 130;        // px / sec (world scrolls down at this speed)
+    let speedMin = 130, speedMax = 320;
     let gates = [];         // [{ y, question, answer, choices, passed }]
     let nextGateAt = 0;
     let lastFrame = 0;
@@ -247,7 +247,7 @@
 
       // distance and speed up
       distance += speed * dt / 30; // scale so units feel like meters
-      speed = Math.min(speedMax, speed + 12 * dt); // gentle ramp
+      speed = Math.min(speedMax, speed + 3 * dt); // gentle ramp
       bgOff = (bgOff + speed * dt) % 40;
 
       // spawn gates at intervals based on speed (closer when fast for challenge)
@@ -255,7 +255,7 @@
       if (nextGateAt <= 0) {
         gates.push(makeGate());
         // gap shrinks with speed
-        const gap = Math.max(0.8, 2.4 - (speed - speedMin) / 200);
+        const gap = Math.max(2.0, 4.0 - (speed - speedMin) / 90);
         nextGateAt = gap;
       }
 
