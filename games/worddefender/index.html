@@ -44,23 +44,40 @@
     .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; padding: 0.6rem 1.2rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
     .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
 
-    /* Mobile virtual keyboard helper */
-    .mobile-input {
-      width: min(560px, 95vw);
+    /* On-screen QWERTY for touch devices */
+    .vkb {
+      width: min(620px, 100vw);
       display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 4px;
     }
-    .mobile-input input {
-      width: 100%;
+    .vkb-row { display: flex; gap: 5px; }
+    .vkb-key {
       font-family: 'Baloo 2', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 0.7rem 1rem;
-      border-radius: 14px;
-      border: 3px solid var(--ink);
+      font-weight: 800;
+      font-size: 1.05rem;
+      min-width: 30px;
+      flex: 1;
+      max-width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      border: 2.5px solid var(--ink);
       background: var(--paper);
-      box-shadow: 4px 4px 0 var(--ink);
+      color: var(--ink);
+      box-shadow: 2px 3px 0 var(--ink);
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.05s ease, box-shadow 0.05s ease, background 0.05s ease;
+      touch-action: manipulation;
     }
-    @media (hover: none) and (pointer: coarse) { .mobile-input { display: block; } }
+    .vkb-key:active { transform: translate(2px,3px); box-shadow: 0 0 0 var(--ink); background: var(--lime); }
+    .vkb-key.flash { background: var(--lime); }
+    .vkb-row.r2 { padding: 0 18px; }
+    .vkb-row.r3 { padding: 0 36px; }
+    .vkb-key.esc { background: var(--paper); min-width: 60px; max-width: 80px; font-size: 0.8rem; }
+    @media (hover: none) and (pointer: coarse) { .vkb { display: flex; } }
 
     .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 600px; }
     kbd { font-family: 'Baloo 2', sans-serif; font-weight: 700; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; padding: 0 0.4rem; box-shadow: 2px 2px 0 var(--ink); }
@@ -100,11 +117,9 @@
       </div>
     </div>
 
-    <div class="mobile-input">
-      <input id="mobileInput" type="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Tap here and type the falling words…" />
-    </div>
+    <div class="vkb" id="vkb" aria-label="On-screen keyboard"></div>
 
-    <p class="hint">Just start typing! Use a real keyboard — or tap the input box on a phone. <kbd>Esc</kbd> to release the locked word.</p>
+    <p class="hint">Use a real keyboard, or tap the on-screen keys on a phone. <kbd>Esc</kbd> to release the locked word.</p>
   </main>
 
   <script>
@@ -215,11 +230,6 @@
       spawnTimer = 0;
       lastFrame = performance.now();
       updateHud();
-      // Focus mobile input if present so phone keyboards appear
-      const mi = $('mobileInput');
-      if (mi && getComputedStyle(mi.parentElement).display !== 'none') {
-        mi.value = ''; mi.focus();
-      }
     }
     function endGame() {
       state = 'gameover';
@@ -514,24 +524,38 @@
       }
     });
 
-    // Mobile input fallback: track each new character typed
-    const mi = $('mobileInput');
-    let lastMobileLen = 0;
-    mi.addEventListener('input', (e) => {
-      ensureAudio();
-      const v = e.target.value.toUpperCase();
-      // process every new character one by one
-      for (let i = lastMobileLen; i < v.length; i++) {
-        const ch = v[i];
-        if (ch >= 'A' && ch <= 'Z') handleTypedLetter(ch);
-      }
-      lastMobileLen = v.length;
-      // keep the buffer small so it doesn't grow forever
-      if (v.length > 80) { e.target.value = v.slice(-20); lastMobileLen = e.target.value.length; }
-    });
-    mi.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace') { lastMobileLen = Math.max(0, lastMobileLen - 1); }
-    });
+    // On-screen QWERTY keyboard for touch devices
+    (function buildVKB() {
+      const rows = [
+        ['Q','W','E','R','T','Y','U','I','O','P'],
+        ['A','S','D','F','G','H','J','K','L'],
+        ['Z','X','C','V','B','N','M','ESC'],
+      ];
+      const vkb = $('vkb');
+      rows.forEach((row, i) => {
+        const rEl = document.createElement('div');
+        rEl.className = 'vkb-row' + (i === 1 ? ' r2' : i === 2 ? ' r3' : '');
+        row.forEach(k => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'vkb-key' + (k === 'ESC' ? ' esc' : '');
+          b.dataset.k = k;
+          b.textContent = k;
+          // touch-friendly: respond on pointerdown for snappy feel
+          const press = (e) => {
+            e.preventDefault();
+            ensureAudio();
+            if (k === 'ESC') { lockedTarget = null; }
+            else { handleTypedLetter(k); }
+            b.classList.add('flash');
+            setTimeout(() => b.classList.remove('flash'), 90);
+          };
+          b.addEventListener('pointerdown', press);
+          rEl.appendChild(b);
+        });
+        vkb.appendChild(rEl);
+      });
+    })();
 
     // ---------- Boot ----------
     resize();
