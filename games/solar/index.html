@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Solar Splats — Sloppy Games</title>
+  <meta name="description" content="Drag the planets into the correct order from the sun. Tap any planet for a fun fact." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --purple: #9333ea; --lime: #84cc16; --lime-dark: #65a30d; --pink: #ec4899; --cyan: #06b6d4; --yellow: #facc15; --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6; --space-top: #1e1b4b; --space-bot: #4c1d95; --shadow: rgba(26, 26, 26, 0.2); }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 540px; color: #444; margin: -0.25rem 0 0.5rem; }
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(700px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 110px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); line-height: 1; color: var(--ink); }
+
+    .scene {
+      position: relative;
+      width: min(900px, 100%);
+      background: linear-gradient(180deg, var(--space-top) 0%, var(--space-bot) 100%);
+      border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink);
+      padding: 1rem; overflow: hidden;
+    }
+    .stars { position: absolute; inset: 0; background-image:
+        radial-gradient(1.5px 1.5px at 10% 10%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 30% 40%, #fff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 55% 20%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 78% 60%, #fff 50%, transparent 51%),
+        radial-gradient(2px 2px at 88% 18%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 22% 82%, #fff 50%, transparent 51%),
+        radial-gradient(1.5px 1.5px at 66% 86%, #fff 50%, transparent 51%),
+        radial-gradient(1px 1px at 42% 64%, #fff 50%, transparent 51%);
+      opacity: 0.7; pointer-events: none;
+    }
+    .slots-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.4rem; padding: 1.5rem 0.5rem; position: relative; }
+    .sun { width: 64px; height: 64px; flex: 0 0 64px; align-self: center; }
+    .slot {
+      flex: 1; min-width: 50px; aspect-ratio: 1;
+      background: rgba(255,255,255,0.08);
+      border: 3px dashed rgba(255,255,255,0.4);
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .slot.over { background: rgba(132, 204, 22, 0.25); border-color: var(--lime); }
+    .slot.correct { border-color: var(--lime); background: rgba(132, 204, 22, 0.18); }
+    .slot.wrong { border-color: var(--pink); background: rgba(236, 72, 153, 0.18); }
+    .slot-label { position: absolute; bottom: 0; color: rgba(255,255,255,0.7); font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.75rem; text-align: center; transform: translateY(100%); }
+
+    .tray { background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 6px 0 var(--ink); padding: 0.85rem; display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
+    .planet { width: 64px; height: 64px; cursor: grab; user-select: none; touch-action: none; position: relative; }
+    .planet.placed { opacity: 0.35; cursor: default; }
+    .planet.dragging { z-index: 10; opacity: 0.85; }
+    .planet svg { width: 100%; height: 100%; display: block; pointer-events: none; }
+    .planet-name { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.7rem; white-space: nowrap; pointer-events: none; }
+    .tray .planet-name { color: var(--ink); }
+    .slot .planet { width: 90%; height: 90%; }
+    .slot .planet-name { color: rgba(255,255,255,0.85); }
+
+    .factbox { position: absolute; top: 8px; left: 8px; right: 8px; background: rgba(255,255,255,0.95); border: 2px solid var(--ink); border-radius: 12px; padding: 0.5rem 0.75rem; font-family: 'Baloo 2', sans-serif; font-weight: 600; font-size: 0.9rem; box-shadow: 3px 3px 0 var(--ink); pointer-events: none; display: none; max-width: calc(100% - 16px); }
+    .factbox.show { display: block; }
+
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; padding: 0.6rem 1.2rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .btn:hover { background: #a3e635; }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .btn.ghost { background: var(--paper); }
+    .status { font-family: 'Baloo 2', sans-serif; font-weight: 700; min-height: 1.4em; text-align: center; }
+    .status.win { color: var(--lime-dark); }
+    .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 540px; }
+    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } .planet { width: 50px; height: 50px; } .sun { width: 48px; height: 48px; flex: 0 0 48px; } .slot { min-width: 38px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">← Back</a>
+    <a href="../../index.html"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Solar Splats <span class="accent">Order the planets</span></h1>
+    <p class="subtitle">Drag each planet into the correct slot from the sun. Tap a planet for a fun fact!</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+      <div class="hud-pill"><div class="label">Solved</div><div class="value" id="solved">0</div></div>
+      <div class="hud-pill"><div class="label">Best time</div><div class="value" id="best">—</div></div>
+    </div>
+
+    <div class="scene">
+      <div class="stars"></div>
+      <div id="factbox" class="factbox"></div>
+      <div class="slots-row" id="slotsRow">
+        <div class="sun" id="sun"></div>
+        <!-- 8 slots inserted by JS -->
+      </div>
+    </div>
+
+    <div id="status" class="status">Drag the planets into order.</div>
+
+    <div class="tray" id="tray"></div>
+
+    <div class="actions">
+      <button class="btn ghost" id="resetBtn">Shuffle again</button>
+    </div>
+
+    <p class="hint">Tip: <em>My Very Energetic Mother Just Served Us Noodles</em> — Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune.</p>
+  </main>
+
+  <script>
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function env(g, t, a, h, r, peak = 0.22) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.setValueAtTime(peak, t + a + h); g.gain.linearRampToValueAtTime(0, t + a + h + r); }
+    function playGood() { const c = ensureAudio(), t = c.currentTime; [659.25, 880].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.05, 0.005, 0.04, 0.12, 0.22); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.05); o.stop(t+i*0.05+0.18); }); }
+    function playWin() { const c = ensureAudio(), t = c.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.1, 0.005, 0.05, 0.2, 0.28); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.1); o.stop(t+i*0.1+0.26); }); }
+    function playBad() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.18, 0.28); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(240, t); o.frequency.exponentialRampToValueAtTime(110, t+0.22); o.connect(g); o.start(t); o.stop(t+0.24); }
+
+    const PLANETS = [
+      { id: 'mercury', name: 'Mercury', fact: 'Smallest planet. A year is just 88 Earth days!', svg: planetSVG('#9ca3af', '#4b5563') },
+      { id: 'venus',   name: 'Venus',   fact: 'Hottest planet. Surface temperatures over 450°C.', svg: planetSVG('#fbbf24', '#b45309', true) },
+      { id: 'earth',   name: 'Earth',   fact: 'The only known planet with life. Hi!', svg: planetSVG('#22c55e', '#1d4ed8', false, true) },
+      { id: 'mars',    name: 'Mars',    fact: 'The Red Planet. Has the tallest volcano in the solar system.', svg: planetSVG('#dc2626', '#7f1d1d') },
+      { id: 'jupiter', name: 'Jupiter', fact: 'Biggest planet — over 1,300 Earths would fit inside!', svg: planetSVG('#f97316', '#9a3412', false, false, true) },
+      { id: 'saturn',  name: 'Saturn',  fact: 'Famous for its giant icy rings.', svg: planetSVG('#fcd34d', '#92400e', false, false, false, true) },
+      { id: 'uranus',  name: 'Uranus',  fact: 'Spins on its side — really!', svg: planetSVG('#67e8f9', '#0e7490') },
+      { id: 'neptune', name: 'Neptune', fact: 'Windiest planet — winds over 2,000 km/h.', svg: planetSVG('#3b82f6', '#1e3a8a') },
+    ];
+
+    function planetSVG(c1, c2, atmosphere, earthy, banded, ringed) {
+      const ring = ringed ? `
+        <ellipse cx="50" cy="50" rx="46" ry="10" fill="none" stroke="#fde68a" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
+        <ellipse cx="50" cy="50" rx="46" ry="10" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+      ` : '';
+      const surface = banded ? `
+        <ellipse cx="50" cy="42" rx="32" ry="4" fill="${c2}" opacity="0.6"/>
+        <ellipse cx="50" cy="52" rx="34" ry="4" fill="${c2}" opacity="0.5"/>
+        <ellipse cx="50" cy="62" rx="30" ry="3" fill="${c2}" opacity="0.7"/>
+      ` : '';
+      const continents = earthy ? `
+        <path d="M 32 38 Q 38 32 46 38 L 50 46 Q 44 52 36 50 Z" fill="${c1}" stroke="${c2}" stroke-width="1"/>
+        <path d="M 56 46 Q 64 44 68 52 L 64 62 Q 56 60 54 54 Z" fill="${c1}" stroke="${c2}" stroke-width="1"/>
+      ` : '';
+      const atmosphereLayer = atmosphere ? `<circle cx="50" cy="50" r="40" fill="none" stroke="#fef3c7" stroke-width="2" opacity="0.5"/>` : '';
+      const baseColor = earthy ? c2 : c1;
+      return `<svg viewBox="0 0 100 100">
+        <defs><filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="1" flood-opacity="0.3"/></filter></defs>
+        ${ring}
+        <circle cx="50" cy="50" r="38" fill="${baseColor}" stroke="#1a1a1a" stroke-width="3"/>
+        ${continents}
+        ${surface}
+        ${atmosphereLayer}
+        <ellipse cx="40" cy="38" rx="10" ry="6" fill="#fff" opacity="0.25"/>
+      </svg>`;
+    }
+
+    const BEST_KEY = 'sloppy.solar.best';
+    const SOLVED_KEY = 'sloppy.solar.solved';
+    const $ = id => document.getElementById(id);
+    const slotsRow = $('slotsRow'), tray = $('tray'), factbox = $('factbox');
+    let placed = {}; // slotIdx -> planet id
+    let startTime = 0;
+    let solvedCount = Number(localStorage.getItem(SOLVED_KEY) || 0);
+    let best = localStorage.getItem(BEST_KEY);
+    $('solved').textContent = solvedCount;
+    $('best').textContent = best ? best + 's' : '—';
+
+    function buildSun() {
+      $('sun').innerHTML = `<svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="35" fill="#facc15" stroke="#1a1a1a" stroke-width="3"/>
+        <g stroke="#facc15" stroke-width="5" stroke-linecap="round">
+          <line x1="50" y1="6" x2="50" y2="16"/>
+          <line x1="50" y1="84" x2="50" y2="94"/>
+          <line x1="6" y1="50" x2="16" y2="50"/>
+          <line x1="84" y1="50" x2="94" y2="50"/>
+          <line x1="18" y1="18" x2="25" y2="25"/>
+          <line x1="75" y1="75" x2="82" y2="82"/>
+          <line x1="18" y1="82" x2="25" y2="75"/>
+          <line x1="75" y1="25" x2="82" y2="18"/>
+        </g>
+      </svg>`;
+    }
+
+    function buildSlots() {
+      // Clear existing slots after sun
+      [...slotsRow.querySelectorAll('.slot')].forEach(s => s.remove());
+      for (let i = 0; i < 8; i++) {
+        const s = document.createElement('div');
+        s.className = 'slot';
+        s.dataset.idx = i;
+        slotsRow.appendChild(s);
+      }
+    }
+
+    function buildTray() {
+      tray.innerHTML = '';
+      const shuffled = PLANETS.slice().sort(() => Math.random() - 0.5);
+      for (const p of shuffled) {
+        const el = document.createElement('div');
+        el.className = 'planet';
+        el.dataset.id = p.id;
+        el.innerHTML = p.svg + `<span class="planet-name">${p.name}</span>`;
+        tray.appendChild(el);
+      }
+      placed = {};
+      $('correct').textContent = 0;
+      startTime = performance.now();
+      $('status').textContent = 'Drag the planets into order.';
+      $('status').className = 'status';
+    }
+
+    // ---------- Drag and drop (pointer-based) ----------
+    let dragging = null;
+    let dragOffset = {x:0, y:0};
+    let placeholder = null;
+    let lastTapStart = 0;
+    let tapTarget = null;
+
+    function onDown(e) {
+      const planet = e.target.closest('.planet');
+      if (!planet) return;
+      if (planet.classList.contains('placed')) return;
+      e.preventDefault();
+      ensureAudio();
+      const rect = planet.getBoundingClientRect();
+      const pt = e.touches ? e.touches[0] : e;
+      dragOffset.x = pt.clientX - rect.left;
+      dragOffset.y = pt.clientY - rect.top;
+      dragging = planet;
+      tapTarget = planet;
+      lastTapStart = performance.now();
+      // create placeholder so layout doesn't jump
+      placeholder = planet.cloneNode(true);
+      placeholder.style.visibility = 'hidden';
+      planet.parentNode.insertBefore(placeholder, planet);
+      // lift planet
+      const origRect = rect;
+      planet.classList.add('dragging');
+      planet.style.position = 'fixed';
+      planet.style.left = origRect.left + 'px';
+      planet.style.top = origRect.top + 'px';
+      planet.style.width = origRect.width + 'px';
+      planet.style.height = origRect.height + 'px';
+      planet.style.pointerEvents = 'none';
+      document.body.appendChild(planet);
+    }
+    function onMove(e) {
+      if (!dragging) return;
+      e.preventDefault();
+      const pt = e.touches ? e.touches[0] : e;
+      dragging.style.left = (pt.clientX - dragOffset.x) + 'px';
+      dragging.style.top = (pt.clientY - dragOffset.y) + 'px';
+      // highlight slot under pointer
+      const slot = elementAtSlot(pt.clientX, pt.clientY);
+      document.querySelectorAll('.slot.over').forEach(s => s.classList.remove('over'));
+      if (slot) slot.classList.add('over');
+      if (performance.now() - lastTapStart > 200) tapTarget = null; // moved -> not a tap
+    }
+    function onUp(e) {
+      if (!dragging) return;
+      const pt = e.changedTouches ? e.changedTouches[0] : e;
+      const slot = elementAtSlot(pt.clientX, pt.clientY);
+      document.querySelectorAll('.slot.over').forEach(s => s.classList.remove('over'));
+      const planet = dragging;
+      // restore styles
+      planet.style.position = '';
+      planet.style.left = '';
+      planet.style.top = '';
+      planet.style.width = '';
+      planet.style.height = '';
+      planet.style.pointerEvents = '';
+      planet.classList.remove('dragging');
+      if (placeholder) { placeholder.parentNode.replaceChild(planet, placeholder); placeholder = null; }
+      dragging = null;
+
+      if (slot && !slot.querySelector('.planet')) {
+        // place
+        const slotIdx = Number(slot.dataset.idx);
+        slot.appendChild(planet);
+        placed[slotIdx] = planet.dataset.id;
+        planet.classList.add('placed');
+        // check correctness for this planet
+        const correct = PLANETS[slotIdx].id === planet.dataset.id;
+        slot.classList.toggle('correct', correct);
+        slot.classList.toggle('wrong', !correct);
+        if (correct) playGood(); else playBad();
+        // update HUD
+        const correctCount = Object.entries(placed).filter(([i, id]) => PLANETS[Number(i)].id === id).length;
+        $('correct').textContent = correctCount;
+        if (correctCount === 8) onWin();
+      } else if (tapTarget === planet && performance.now() - lastTapStart < 250) {
+        // treat as tap → show fact
+        showFact(planet.dataset.id);
+      }
+    }
+    function elementAtSlot(x, y) {
+      const el = document.elementFromPoint(x, y);
+      return el ? el.closest('.slot') : null;
+    }
+    function showFact(id) {
+      const p = PLANETS.find(p => p.id === id);
+      if (!p) return;
+      factbox.innerHTML = `<strong>${p.name}:</strong> ${p.fact}`;
+      factbox.classList.add('show');
+      clearTimeout(showFact._h);
+      showFact._h = setTimeout(() => factbox.classList.remove('show'), 3000);
+    }
+
+    function onWin() {
+      const elapsed = Math.floor((performance.now() - startTime) / 1000);
+      playWin();
+      $('status').textContent = `Solar system sorted in ${elapsed}s!`;
+      $('status').className = 'status win';
+      solvedCount += 1;
+      localStorage.setItem(SOLVED_KEY, String(solvedCount));
+      $('solved').textContent = solvedCount;
+      if (!best || elapsed < Number(best)) {
+        best = elapsed;
+        localStorage.setItem(BEST_KEY, String(best));
+        $('best').textContent = best + 's';
+      }
+    }
+
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+    document.addEventListener('touchstart', onDown, { passive: false });
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+
+    $('resetBtn').addEventListener('click', () => {
+      buildTray();
+      buildSlots();
+      buildSun();
+    });
+
+    buildSun();
+    buildSlots();
+    buildTray();
+  </script>
+</body>
+</html>

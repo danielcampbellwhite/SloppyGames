@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Fraction Pizza — Sloppy Games</title>
+  <meta name="description" content="Drop toppings onto pizza slices to match the target fraction." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --purple: #9333ea; --lime: #84cc16; --lime-dark: #65a30d; --pink: #ec4899; --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6; --shadow: rgba(26, 26, 26, 0.2); --crust: #d97706; --sauce: #ef4444; --cheese: #fcd34d; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 540px; color: #444; margin: -0.25rem 0 0.5rem; }
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(560px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 110px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); line-height: 1; color: var(--ink); }
+
+    .target-card { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink); padding: 0.75rem 1.25rem; text-align: center; font-family: 'Baloo 2', sans-serif; }
+    .target-card .label { font-weight: 700; font-size: 0.85rem; color: #666; letter-spacing: 0.08em; text-transform: uppercase; }
+    .target-card .frac { display: inline-flex; flex-direction: column; align-items: center; font-size: 1.4rem; line-height: 1.1; margin-top: 0.2rem; }
+    .target-card .frac .top { font-weight: 800; }
+    .target-card .frac .bar { width: 30px; border-bottom: 3px solid var(--ink); margin: 2px 0; }
+    .target-card .frac .bot { font-weight: 800; }
+    .target-card .topping { display: inline-block; margin-left: 0.4rem; }
+
+    .stage { background: var(--paper); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); padding: 1rem; }
+    canvas#pizza { display: block; touch-action: manipulation; cursor: pointer; }
+    .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.05rem; padding: 0.65rem 1.3rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .btn:hover { background: #a3e635; }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .btn.ghost { background: var(--paper); }
+    .status { font-family: 'Baloo 2', sans-serif; font-weight: 700; min-height: 1.4em; text-align: center; }
+    .status.win { color: var(--lime-dark); }
+    .status.bad { color: var(--pink); }
+    .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 540px; }
+    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">← Back</a>
+    <a href="../../index.html"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Fraction Pizza <span class="accent">Tap to top</span></h1>
+    <p class="subtitle">Tap pizza slices to add toppings until the topped fraction matches the target.</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Score</div><div class="value" id="score">0</div></div>
+      <div class="hud-pill"><div class="label">Level</div><div class="value" id="level">1</div></div>
+      <div class="hud-pill"><div class="label">Best</div><div class="value" id="best">0</div></div>
+    </div>
+
+    <div class="target-card">
+      <div class="label">Make this many topped slices</div>
+      <div>
+        <span class="frac"><span class="top" id="tNum">3</span><span class="bar"></span><span class="bot" id="tDen">4</span></span>
+        <span class="topping" id="topName">🍅</span>
+      </div>
+    </div>
+
+    <div class="stage"><canvas id="pizza" width="420" height="420"></canvas></div>
+
+    <div id="status" class="status">Tap a slice to add a topping.</div>
+
+    <div class="controls">
+      <button class="btn ghost" id="clearBtn">Clear toppings</button>
+      <button class="btn" id="checkBtn">Check answer</button>
+    </div>
+
+    <p class="hint">A new level appears when you get it right. Score goes up each level, with a bonus for getting it on the first check.</p>
+  </main>
+
+  <script>
+    // ---------- Audio ----------
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function env(g, t, a, h, r, peak = 0.22) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.setValueAtTime(peak, t + a + h); g.gain.linearRampToValueAtTime(0, t + a + h + r); }
+    function playTap() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.002, 0.01, 0.05, 0.16); const o = c.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(600, t); o.frequency.exponentialRampToValueAtTime(800, t+0.06); o.connect(g); o.start(t); o.stop(t+0.08); }
+    function playWin() { const c = ensureAudio(), t = c.currentTime; [523.25, 659.25, 783.99, 1046.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.08, 0.005, 0.05, 0.16, 0.22); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.08); o.stop(t+i*0.08+0.22); }); }
+    function playBad() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.18, 0.28); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(240, t); o.frequency.exponentialRampToValueAtTime(110, t+0.22); o.connect(g); o.start(t); o.stop(t+0.24); }
+
+    // ---------- DOM ----------
+    const $ = id => document.getElementById(id);
+    const canvas = $('pizza'), ctx = canvas.getContext('2d');
+
+    // ---------- State ----------
+    const BEST_KEY = 'sloppy.pizza.best';
+    let denom = 4, num = 3, slices = [], level = 1, score = 0, attempts = 0, toppingKind = 'tomato';
+    let best = Number(localStorage.getItem(BEST_KEY) || 0);
+    $('best').textContent = best;
+
+    const TOPPINGS = [
+      { id: 'tomato',  emoji: '🍅' },
+      { id: 'olive',   emoji: '🫒' },
+      { id: 'cheese',  emoji: '🧀' },
+      { id: 'mushroom', emoji: '🍄' },
+      { id: 'pepperoni', emoji: '🥩' },
+    ];
+
+    // ---------- Sizing ----------
+    function sizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const size = Math.min(420, window.innerWidth - 80);
+      canvas.width = size * dpr;
+      canvas.height = size * dpr;
+      canvas.style.width = size + 'px';
+      canvas.style.height = size + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', () => { sizeCanvas(); draw(); });
+
+    // ---------- Level ----------
+    function newLevel() {
+      // Vary denom and choose num so fraction isn't 0/n or n/n
+      const denomChoices = level < 3 ? [2,3,4] : level < 6 ? [3,4,5,6] : [4,5,6,8];
+      denom = denomChoices[Math.floor(Math.random() * denomChoices.length)];
+      num = 1 + Math.floor(Math.random() * (denom - 1));
+      slices = new Array(denom).fill(false);
+      toppingKind = TOPPINGS[Math.floor(Math.random() * TOPPINGS.length)].id;
+      attempts = 0;
+      $('tNum').textContent = num;
+      $('tDen').textContent = denom;
+      const t = TOPPINGS.find(x => x.id === toppingKind);
+      $('topName').textContent = t.emoji;
+      $('level').textContent = level;
+      $('status').textContent = 'Tap slices to add toppings, then tap Check.';
+      $('status').className = 'status';
+      sizeCanvas();
+      draw();
+    }
+
+    // ---------- Drawing ----------
+    function draw() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.width / dpr, h = canvas.height / dpr;
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 10;
+
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 12, R * 0.95, R * 0.22, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // crust ring
+      ctx.fillStyle = '#d97706';
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      // crust inner highlight
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath(); ctx.arc(cx, cy, R - 12, 0, Math.PI*2); ctx.fill();
+
+      // sauce
+      const sauceR = R - 22;
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath(); ctx.arc(cx, cy, sauceR, 0, Math.PI*2); ctx.fill();
+
+      // cheese flecks
+      ctx.fillStyle = '#fcd34d';
+      for (let i = 0; i < 90; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const rr = Math.random() * sauceR * 0.95;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 1.5 + Math.random() * 2.5, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // slice dividers
+      ctx.strokeStyle = 'rgba(26,26,26,0.55)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < denom; i++) {
+        const a = (i / denom) * Math.PI * 2 - Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+        ctx.stroke();
+      }
+
+      // toppings on selected slices
+      for (let i = 0; i < denom; i++) {
+        if (!slices[i]) continue;
+        drawSliceTopping(cx, cy, sauceR, i);
+      }
+
+      // small label of current count under fraction
+      ctx.font = 'bold 18px "Baloo 2", sans-serif';
+      ctx.fillStyle = '#1a1a1a';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const current = slices.filter(Boolean).length;
+      ctx.fillText(`${current}/${denom}`, cx, cy + R + 30 > h ? cy : cy);
+    }
+
+    function drawSliceTopping(cx, cy, R, i) {
+      // distribute several topping marks within the slice wedge
+      const a0 = (i / denom) * Math.PI * 2 - Math.PI / 2;
+      const a1 = ((i + 1) / denom) * Math.PI * 2 - Math.PI / 2;
+      const count = denom <= 4 ? 5 : denom <= 6 ? 4 : 3;
+      const t = TOPPINGS.find(x => x.id === toppingKind);
+      for (let k = 0; k < count; k++) {
+        const a = a0 + (a1 - a0) * (0.25 + 0.5 * Math.random());
+        const r = R * (0.25 + 0.6 * Math.random());
+        const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+        const px = 16 + Math.random() * 8;
+        drawTopping(x, y, px, t.id);
+      }
+    }
+    function drawTopping(x, y, size, kind) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 2;
+      if (kind === 'tomato') {
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath(); ctx.arc(0, 0, size / 2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath(); ctx.ellipse(-size*0.15, -size*0.15, size*0.18, size*0.1, 0, 0, Math.PI*2); ctx.fill();
+      } else if (kind === 'olive') {
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath(); ctx.ellipse(0, 0, size/2, size/2.7, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#374151';
+        ctx.beginPath(); ctx.arc(0, 0, size*0.16, 0, Math.PI*2); ctx.fill();
+      } else if (kind === 'cheese') {
+        ctx.fillStyle = '#fcd34d';
+        ctx.beginPath(); ctx.moveTo(-size/2, size/3); ctx.lineTo(0, -size/2); ctx.lineTo(size/2, size/3); ctx.closePath(); ctx.fill(); ctx.stroke();
+      } else if (kind === 'mushroom') {
+        ctx.fillStyle = '#e7c9a3';
+        ctx.beginPath(); ctx.arc(0, -size*0.1, size*0.45, Math.PI, 2*Math.PI); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fafaf9';
+        ctx.beginPath(); ctx.rect(-size*0.12, -size*0.1, size*0.24, size*0.3); ctx.fill(); ctx.stroke();
+      } else if (kind === 'pepperoni') {
+        ctx.fillStyle = '#b91c1c';
+        ctx.beginPath(); ctx.arc(0, 0, size/2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#7f1d1d';
+        for (let j = 0; j < 3; j++) {
+          const ang = Math.random() * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(Math.cos(ang) * size*0.18, Math.sin(ang) * size*0.18, size*0.08, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    // ---------- Input ----------
+    canvas.addEventListener('click', (e) => {
+      ensureAudio();
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      const cx = rect.width / 2, cy = rect.height / 2;
+      const dx = x - cx, dy = y - cy;
+      const r = Math.hypot(dx, dy);
+      const R = Math.min(rect.width, rect.height) / 2 - 10;
+      if (r > R) return;
+      let a = Math.atan2(dy, dx) + Math.PI / 2; // 0 at top
+      if (a < 0) a += Math.PI * 2;
+      const idx = Math.floor((a / (Math.PI * 2)) * denom);
+      slices[idx] = !slices[idx];
+      playTap();
+      draw();
+    });
+
+    $('clearBtn').addEventListener('click', () => { ensureAudio(); slices = new Array(denom).fill(false); draw(); });
+    $('checkBtn').addEventListener('click', () => {
+      ensureAudio();
+      attempts += 1;
+      const current = slices.filter(Boolean).length;
+      if (current === num) {
+        const earned = 10 + Math.max(0, 5 - (attempts - 1) * 2);
+        score += earned;
+        if (score > best) { best = score; localStorage.setItem(BEST_KEY, String(best)); }
+        $('score').textContent = score;
+        $('best').textContent = best;
+        $('status').textContent = `Yes! ${num}/${denom} — +${earned} points.`;
+        $('status').className = 'status win';
+        playWin();
+        level += 1;
+        setTimeout(newLevel, 1300);
+      } else if (current < num) {
+        $('status').textContent = `Not quite — needs more toppings. ${current}/${denom}.`;
+        $('status').className = 'status bad';
+        playBad();
+      } else {
+        $('status').textContent = `Too many — remove some. ${current}/${denom}.`;
+        $('status').className = 'status bad';
+        playBad();
+      }
+    });
+
+    newLevel();
+  </script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Splat Speller — Sloppy Games</title>
+  <meta name="description" content="Guess the hidden word one letter at a time. Six wrong letters and the splat shows up!" />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple: #9333ea; --purple-dark: #6b21a8;
+      --lime: #84cc16; --lime-dark: #65a30d;
+      --pink: #ec4899; --cyan: #06b6d4; --yellow: #facc15;
+      --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6;
+      --shadow: rgba(26, 26, 26, 0.2);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); transition: transform 0.1s ease, box-shadow 0.1s ease; }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .back:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 540px; color: #444; margin: -0.25rem 0 0.5rem; }
+
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(560px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 110px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); line-height: 1; color: var(--ink); }
+
+    .panel { width: min(560px, 95vw); background: var(--paper); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); padding: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+    .splat-mood { width: 130px; height: 130px; }
+    .splat-mood svg { width: 100%; height: 100%; }
+    .category { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.85rem; color: #666; text-transform: uppercase; letter-spacing: 0.08em; }
+    .blanks { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: center; font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.5rem, 4vw, 2.2rem); }
+    .blank { min-width: 24px; padding: 0 6px; border-bottom: 4px solid var(--ink); text-align: center; }
+    .blank.reveal { color: var(--purple-dark); animation: pop 0.4s ease; }
+    @keyframes pop { 0% { transform: scale(0.7); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+    .keyboard { width: min(560px, 95vw); display: grid; grid-template-columns: repeat(9, 1fr); gap: 0.3rem; }
+    @media (max-width: 540px) { .keyboard { grid-template-columns: repeat(7, 1fr); gap: 0.25rem; } }
+    .key {
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(0.95rem, 3vw, 1.2rem);
+      padding: 0.55rem 0; border-radius: 10px; border: 3px solid var(--ink); background: var(--paper);
+      box-shadow: 3px 3px 0 var(--ink); cursor: pointer; color: var(--ink);
+      transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.06s ease;
+    }
+    .key:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); }
+    .key:disabled { cursor: default; opacity: 0.5; box-shadow: 1px 1px 0 var(--ink); }
+    .key.good { background: var(--lime); }
+    .key.bad { background: var(--pink); color: var(--paper); }
+
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.05rem; padding: 0.65rem 1.3rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease; }
+    .btn:hover { background: #a3e635; }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .btn.ghost { background: var(--paper); }
+    .status { font-family: 'Baloo 2', sans-serif; font-weight: 700; min-height: 1.4em; }
+    .status.win { color: var(--lime-dark); }
+    .status.lose { color: var(--pink); }
+    .hint { font-size: 0.9rem; color: #666; text-align: center; }
+    kbd { font-family: 'Baloo 2', sans-serif; font-weight: 700; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; padding: 0 0.4rem; box-shadow: 2px 2px 0 var(--ink); }
+    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } .splat-mood { width: 100px; height: 100px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html" aria-label="Back to Sloppy Games">← Back</a>
+    <a href="../../index.html" aria-label="Sloppy Games home"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Splat Speller <span class="accent">Guess the word</span></h1>
+    <p class="subtitle">Tap letters to guess. Six wrong letters and the splat appears!</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Score</div><div class="value" id="score">0</div></div>
+      <div class="hud-pill"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+      <div class="hud-pill"><div class="label">Wrong left</div><div class="value" id="lives">6</div></div>
+      <div class="hud-pill"><div class="label">Best</div><div class="value" id="best">0</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="splat-mood" id="mood"></div>
+      <div class="category" id="cat">— —</div>
+      <div class="blanks" id="blanks"></div>
+      <div class="status" id="status" aria-live="polite">Tap a letter to start guessing.</div>
+    </div>
+
+    <div class="keyboard" id="keyboard"></div>
+
+    <div class="actions">
+      <button class="btn ghost" id="hintBtn">Reveal a letter (−5 pts)</button>
+      <button class="btn" id="newBtn">New word</button>
+    </div>
+
+    <p class="hint">Use your real keyboard or tap the on-screen keys.</p>
+  </main>
+
+  <script>
+    // ---------- Audio ----------
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function env(g, t, a, h, r, peak = 0.22) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.setValueAtTime(peak, t + a + h); g.gain.linearRampToValueAtTime(0, t + a + h + r); }
+    function playGood() { const c = ensureAudio(), t = c.currentTime; [659.25, 880].forEach((f, i) => { const g = c.createGain(); g.connect(c.destination); env(g, t + i*0.06, 0.005, 0.03, 0.12, 0.22); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.06); o.stop(t+i*0.06+0.18); }); }
+    function playBad() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.2, 0.3); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(240, t); o.frequency.exponentialRampToValueAtTime(110, t+0.22); o.connect(g); o.start(t); o.stop(t+0.24); }
+    function playWin() { const c = ensureAudio(), t = c.currentTime; [523.25, 659.25, 783.99, 1046.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.1, 0.005, 0.05, 0.2, 0.28); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.1); o.stop(t+i*0.1+0.26); }); }
+    function playLose() { const c = ensureAudio(), t = c.currentTime; [600, 480, 380, 260].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.12, 0.01, 0.05, 0.15, 0.24); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.12); o.stop(t+i*0.12+0.22); }); }
+
+    // ---------- Word list ----------
+    const WORDS = [
+      // animals
+      { word: 'OCTOPUS', cat: 'Animal' },{ word: 'KANGAROO', cat: 'Animal' },{ word: 'PENGUIN', cat: 'Animal' },{ word: 'GIRAFFE', cat: 'Animal' },{ word: 'DOLPHIN', cat: 'Animal' },{ word: 'CHEETAH', cat: 'Animal' },{ word: 'BUTTERFLY', cat: 'Animal' },{ word: 'HEDGEHOG', cat: 'Animal' },{ word: 'TIGER', cat: 'Animal' },{ word: 'PANDA', cat: 'Animal' },{ word: 'RABBIT', cat: 'Animal' },{ word: 'SQUIRREL', cat: 'Animal' },
+      // food
+      { word: 'PIZZA', cat: 'Food' },{ word: 'BANANA', cat: 'Food' },{ word: 'BURGER', cat: 'Food' },{ word: 'PANCAKE', cat: 'Food' },{ word: 'SPAGHETTI', cat: 'Food' },{ word: 'CHOCOLATE', cat: 'Food' },{ word: 'STRAWBERRY', cat: 'Food' },{ word: 'WATERMELON', cat: 'Food' },{ word: 'CHEESE', cat: 'Food' },{ word: 'SANDWICH', cat: 'Food' },{ word: 'COOKIE', cat: 'Food' },
+      // space
+      { word: 'PLANET', cat: 'Space' },{ word: 'ROCKET', cat: 'Space' },{ word: 'GALAXY', cat: 'Space' },{ word: 'ASTRONAUT', cat: 'Space' },{ word: 'SATURN', cat: 'Space' },{ word: 'JUPITER', cat: 'Space' },{ word: 'ORBIT', cat: 'Space' },{ word: 'COMET', cat: 'Space' },{ word: 'METEOR', cat: 'Space' },{ word: 'NEBULA', cat: 'Space' },
+      // sports
+      { word: 'FOOTBALL', cat: 'Sport' },{ word: 'CRICKET', cat: 'Sport' },{ word: 'TENNIS', cat: 'Sport' },{ word: 'SWIMMING', cat: 'Sport' },{ word: 'CYCLING', cat: 'Sport' },{ word: 'GYMNASTICS', cat: 'Sport' },{ word: 'BASKETBALL', cat: 'Sport' },
+      // colours
+      { word: 'PURPLE', cat: 'Colour' },{ word: 'ORANGE', cat: 'Colour' },{ word: 'YELLOW', cat: 'Colour' },{ word: 'TURQUOISE', cat: 'Colour' },{ word: 'MAGENTA', cat: 'Colour' },{ word: 'SCARLET', cat: 'Colour' },
+      // weather
+      { word: 'THUNDER', cat: 'Weather' },{ word: 'RAINBOW', cat: 'Weather' },{ word: 'BLIZZARD', cat: 'Weather' },{ word: 'TORNADO', cat: 'Weather' },{ word: 'HURRICANE', cat: 'Weather' },{ word: 'SUNSHINE', cat: 'Weather' },
+      // school
+      { word: 'PENCIL', cat: 'School' },{ word: 'TEACHER', cat: 'School' },{ word: 'HOMEWORK', cat: 'School' },{ word: 'SCIENCE', cat: 'School' },{ word: 'HISTORY', cat: 'School' },{ word: 'PLAYGROUND', cat: 'School' },
+      // body
+      { word: 'ELBOW', cat: 'Body' },{ word: 'SHOULDER', cat: 'Body' },{ word: 'KNUCKLE', cat: 'Body' },{ word: 'EYEBROW', cat: 'Body' },{ word: 'FRECKLE', cat: 'Body' },
+      // things
+      { word: 'TREASURE', cat: 'Adventure' },{ word: 'DRAGON', cat: 'Adventure' },{ word: 'CASTLE', cat: 'Adventure' },{ word: 'PIRATE', cat: 'Adventure' },{ word: 'WIZARD', cat: 'Adventure' },{ word: 'VOLCANO', cat: 'Adventure' },{ word: 'JUNGLE', cat: 'Adventure' },{ word: 'SUBMARINE', cat: 'Adventure' },
+    ];
+
+    // ---------- State ----------
+    const MAX_WRONG = 6;
+    const BEST_KEY = 'sloppy.speller.best';
+    let best = Number(localStorage.getItem(BEST_KEY) || 0);
+    let current = null;          // { word, cat }
+    let revealed = new Set();    // letters guessed correctly
+    let wrong = new Set();
+    let score = 0;
+    let streak = 0;
+    let state = 'idle';          // 'idle' | 'play' | 'won' | 'lost'
+    let hintUsed = false;
+
+    // ---------- DOM ----------
+    const $ = id => document.getElementById(id);
+    const blanksEl = $('blanks'), keyboardEl = $('keyboard'), moodEl = $('mood'), catEl = $('cat'), statusEl = $('status');
+
+    function newWord() {
+      current = WORDS[Math.floor(Math.random() * WORDS.length)];
+      revealed = new Set();
+      wrong = new Set();
+      hintUsed = false;
+      state = 'play';
+      catEl.textContent = current.cat;
+      render();
+      statusEl.textContent = 'Tap a letter to guess!';
+      statusEl.className = 'status';
+    }
+
+    function render() {
+      // blanks
+      blanksEl.innerHTML = '';
+      [...current.word].forEach((ch) => {
+        const b = document.createElement('span');
+        b.className = 'blank' + (revealed.has(ch) ? ' reveal' : '');
+        b.textContent = revealed.has(ch) ? ch : ' ';
+        blanksEl.appendChild(b);
+      });
+      // mood splat
+      moodEl.innerHTML = moodSVG(wrong.size);
+      // lives
+      $('lives').textContent = MAX_WRONG - wrong.size;
+      $('streak').textContent = streak;
+      $('score').textContent = score;
+      $('best').textContent = best;
+      // keyboard active states
+      keyboardEl.querySelectorAll('.key').forEach(b => {
+        const letter = b.dataset.letter;
+        b.disabled = revealed.has(letter) || wrong.has(letter) || state !== 'play';
+        b.classList.toggle('good', revealed.has(letter));
+        b.classList.toggle('bad', wrong.has(letter));
+      });
+    }
+
+    function buildKeyboard() {
+      keyboardEl.innerHTML = '';
+      for (let i = 0; i < 26; i++) {
+        const letter = String.fromCharCode(65 + i);
+        const b = document.createElement('button');
+        b.className = 'key';
+        b.dataset.letter = letter;
+        b.textContent = letter;
+        b.addEventListener('click', () => guess(letter));
+        keyboardEl.appendChild(b);
+      }
+    }
+
+    function guess(letter) {
+      if (state !== 'play') return;
+      if (revealed.has(letter) || wrong.has(letter)) return;
+      if ([...current.word].includes(letter)) {
+        revealed.add(letter);
+        playGood();
+        // win?
+        if ([...current.word].every(ch => revealed.has(ch))) {
+          state = 'won';
+          const remaining = MAX_WRONG - wrong.size;
+          const wordScore = current.word.length * 2 + remaining * 5 - (hintUsed ? 5 : 0);
+          score += Math.max(0, wordScore);
+          streak += 1;
+          if (score > best) { best = score; localStorage.setItem(BEST_KEY, String(best)); }
+          statusEl.textContent = `You got it: ${current.word}! +${wordScore} points.`;
+          statusEl.className = 'status win';
+          playWin();
+        }
+      } else {
+        wrong.add(letter);
+        playBad();
+        if (wrong.size >= MAX_WRONG) {
+          state = 'lost';
+          streak = 0;
+          statusEl.textContent = `Splat! The word was: ${current.word}.`;
+          statusEl.className = 'status lose';
+          playLose();
+        }
+      }
+      render();
+    }
+
+    function useHint() {
+      if (state !== 'play') return;
+      if (hintUsed) return;
+      const unrevealed = [...current.word].filter(ch => !revealed.has(ch));
+      if (!unrevealed.length) return;
+      const pick = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+      hintUsed = true;
+      revealed.add(pick);
+      score = Math.max(0, score - 5);
+      playGood();
+      if ([...current.word].every(ch => revealed.has(ch))) {
+        state = 'won';
+        statusEl.textContent = `Solved! +bonus`;
+        statusEl.className = 'status win';
+      }
+      render();
+    }
+
+    // Mood splat — gets sadder as wrong guesses pile up
+    function moodSVG(w) {
+      // mouth + eye expression varies with w (0..MAX_WRONG)
+      const tilt = Math.min(1, w / MAX_WRONG);
+      const mouthY = 62 + tilt * 8;
+      const mouthCurve = (1 - tilt * 2) * 18; // happy → sad
+      const mouthPath = `M 30 ${mouthY} Q 50 ${mouthY + mouthCurve} 70 ${mouthY}`;
+      const tearOpacity = tilt > 0.6 ? 1 : 0;
+      const eyeShape = tilt > 0.8 ? 'X' : 'o';
+      let eyes;
+      if (eyeShape === 'X') {
+        eyes = `
+          <path d="M 34 38 L 42 46 M 42 38 L 34 46" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+          <path d="M 58 38 L 66 46 M 66 38 L 58 46" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+        `;
+      } else {
+        eyes = `
+          <circle cx="38" cy="44" r="7" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+          <circle cx="62" cy="44" r="7" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+          <circle cx="39" cy="45" r="3" fill="#1a1a1a"/>
+          <circle cx="63" cy="45" r="3" fill="#1a1a1a"/>
+        `;
+      }
+      const tears = `
+        <ellipse cx="32" cy="56" rx="3" ry="5" fill="#06b6d4" stroke="#1a1a1a" stroke-width="1.5" opacity="${tearOpacity}"/>
+        <ellipse cx="68" cy="56" rx="3" ry="5" fill="#06b6d4" stroke="#1a1a1a" stroke-width="1.5" opacity="${tearOpacity}"/>
+      `;
+      return `<svg viewBox="0 0 100 100">
+        <path d="M 50 6 C 70 6, 78 18, 80 30 C 92 32, 96 46, 90 56 C 96 66, 90 80, 78 80 C 74 92, 56 96, 50 88 C 42 96, 26 90, 22 80 C 10 80, 4 66, 10 56 C 4 46, 8 32, 20 30 C 22 18, 30 6, 50 6 Z" fill="#9333ea" stroke="#1a1a1a" stroke-width="4" stroke-linejoin="round"/>
+        ${eyes}
+        ${tears}
+        <path d="${mouthPath}" stroke="#1a1a1a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      </svg>`;
+    }
+
+    // ---------- Wire-up ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      buildKeyboard();
+      newWord();
+      $('newBtn').addEventListener('click', () => { ensureAudio(); newWord(); });
+      $('hintBtn').addEventListener('click', () => { ensureAudio(); useHint(); });
+      window.addEventListener('keydown', (e) => {
+        if (e.key.length === 1) {
+          const k = e.key.toUpperCase();
+          if (k >= 'A' && k <= 'Z') { ensureAudio(); guess(k); }
+        }
+        if ((e.key === 'Enter' || e.key === ' ') && state !== 'play') { e.preventDefault(); ensureAudio(); newWord(); }
+      });
+    });
+  </script>
+</body>
+</html>

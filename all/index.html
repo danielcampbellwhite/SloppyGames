@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>All Games — Sloppy Games</title>
+  <meta name="description" content="Every Sloppy Games title, grouped by category. Arcade, puzzles, maths, learn and creative — all free to play in your browser." />
+  <link rel="canonical" href="https://sloppygames.co.uk/all/" />
+  <meta name="theme-color" content="#9333ea" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Sloppy Games" />
+  <meta property="og:title" content="All Games — Sloppy Games" />
+  <meta property="og:description" content="Every Sloppy Games title, grouped by category. Arcade, puzzles, maths, learn and creative — all free to play in your browser." />
+  <meta property="og:url" content="https://sloppygames.co.uk/all/" />
+  <meta property="og:image" content="https://sloppygames.co.uk/assets/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="All Games — Sloppy Games" />
+  <meta name="twitter:description" content="Every Sloppy Games title, grouped by category. Arcade, puzzles, maths, learn and creative — all free to play in your browser." />
+  <meta name="twitter:image" content="https://sloppygames.co.uk/assets/logo.png" />
+  <link rel="icon" type="image/png" href="../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-depth="1">
+  <div class="bg-blobs" aria-hidden="true">
+    <span class="blob blob--purple"></span>
+    <span class="blob blob--lime"></span>
+  </div>
+
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <section style="text-align:center; padding: 1.5rem 1rem 0.5rem; position:relative;">
+      <h1 class="section-title" style="margin-bottom:0.3rem;">All the Games</h1>
+      <p class="section-sub">Pick a category, or scroll the whole lot.</p>
+    </section>
+
+    <div id="all-grouped" style="position:relative;"></div>
+  </main>
+
+  <footer class="site-footer">
+    <img src="../assets/logo.png" alt="" class="footer-logo" />
+    <p>&copy; <span id="year"></span> Sloppy Games. Free to play, made with love.</p>
+  </footer>
+
+  <script src="../games-data.js"></script>
+  <script>
+    renderHeader('all');
+    renderAllGrouped();
+  </script>
+</body>
+</html>

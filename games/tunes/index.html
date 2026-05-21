@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Splat Tunes — Sloppy Games</title>
+  <meta name="description" content="A musical memory game. Watch the notes, then play the melody back." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --purple: #9333ea; --lime: #84cc16; --lime-dark: #65a30d; --pink: #ec4899; --cyan: #06b6d4; --yellow: #facc15; --orange: #f97316; --red: #ef4444; --blue: #3b82f6; --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6; --shadow: rgba(26, 26, 26, 0.2); }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 540px; color: #444; margin: -0.25rem 0 0.5rem; }
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(560px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 110px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); line-height: 1; color: var(--ink); }
+
+    .keys { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; width: min(700px, 95vw); margin-top: 0.5rem; }
+    .key {
+      aspect-ratio: 0.5; border: 4px solid var(--ink); border-radius: 18px 18px 22px 22px;
+      box-shadow: 0 6px 0 var(--ink), inset 0 -10px 0 rgba(0,0,0,0.18);
+      background: var(--dim); cursor: pointer;
+      display: flex; align-items: flex-end; justify-content: center;
+      font-family: 'Baloo 2', sans-serif; font-weight: 800;
+      font-size: 1.2rem; color: var(--ink); padding: 0 0 12px;
+      transition: background 0.06s ease, transform 0.06s ease, box-shadow 0.06s ease, filter 0.06s ease;
+    }
+    .key[data-note="C"] { --dim: #c084fc; --lit: #f3e8ff; }
+    .key[data-note="D"] { --dim: #f0abfc; --lit: #fdf2f8; }
+    .key[data-note="E"] { --dim: #ec4899; --lit: #fce7f3; }
+    .key[data-note="F"] { --dim: #ef4444; --lit: #fee2e2; }
+    .key[data-note="G"] { --dim: #f97316; --lit: #ffedd5; }
+    .key[data-note="A"] { --dim: #facc15; --lit: #fef9c3; }
+    .key[data-note="B"] { --dim: #84cc16; --lit: #ecfccb; }
+    .key.lit { background: var(--lit); box-shadow: 0 6px 0 var(--ink), 0 0 30px var(--dim); filter: brightness(1.15); }
+    .key:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 3px 0 var(--ink), inset 0 -6px 0 rgba(0,0,0,0.12); }
+    .key:disabled { cursor: default; opacity: 0.6; }
+
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.05rem; padding: 0.65rem 1.3rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .btn.ghost { background: var(--paper); }
+    .speed { display: inline-flex; align-items: center; gap: 0.4rem; font-family: 'Baloo 2', sans-serif; font-weight: 700; }
+    .speed select { font-family: inherit; font-weight: 700; padding: 0.4rem 0.6rem; border-radius: 12px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
+
+    .status { font-family: 'Baloo 2', sans-serif; font-weight: 700; min-height: 1.4em; text-align: center; }
+    .status.win { color: var(--lime-dark); }
+    .status.bad { color: var(--pink); }
+    .hint { font-size: 0.9rem; color: #666; text-align: center; max-width: 600px; }
+    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } .keys { gap: 0.3rem; } .key { font-size: 0.95rem; padding-bottom: 8px; border-radius: 14px 14px 16px 16px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">← Back</a>
+    <a href="../../index.html"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Splat Tunes <span class="accent">Hear and play</span></h1>
+    <p class="subtitle">Watch and listen to the melody, then play it back. Each round adds one more note.</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Round</div><div class="value" id="round">0</div></div>
+      <div class="hud-pill"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+      <div class="hud-pill"><div class="label">Best round</div><div class="value" id="best">0</div></div>
+    </div>
+
+    <div class="keys" id="keys">
+      <button class="key" data-note="C" data-freq="261.63" aria-label="C"><span>C</span></button>
+      <button class="key" data-note="D" data-freq="293.66" aria-label="D"><span>D</span></button>
+      <button class="key" data-note="E" data-freq="329.63" aria-label="E"><span>E</span></button>
+      <button class="key" data-note="F" data-freq="349.23" aria-label="F"><span>F</span></button>
+      <button class="key" data-note="G" data-freq="392.00" aria-label="G"><span>G</span></button>
+      <button class="key" data-note="A" data-freq="440.00" aria-label="A"><span>A</span></button>
+      <button class="key" data-note="B" data-freq="493.88" aria-label="B"><span>B</span></button>
+    </div>
+
+    <div id="status" class="status">Press Start to hear the first note.</div>
+
+    <div class="actions">
+      <button class="btn" id="startBtn">Start</button>
+      <label class="speed">Speed
+        <select id="speed">
+          <option value="700">Easy</option>
+          <option value="500" selected>Normal</option>
+          <option value="320">Fast</option>
+        </select>
+      </label>
+    </div>
+
+    <p class="hint">Tip: you can also use keys <kbd>1</kbd>–<kbd>7</kbd> for the notes.</p>
+  </main>
+
+  <script>
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function playNote(freq, dur) {
+      const c = ensureAudio(), t = c.currentTime;
+      const g = c.createGain(); g.connect(c.destination);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.22, t + 0.012);
+      g.gain.setValueAtTime(0.22, t + dur - 0.04);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      const o1 = c.createOscillator(); o1.type = 'triangle'; o1.frequency.value = freq;
+      const o2 = c.createOscillator(); o2.type = 'sine'; o2.frequency.value = freq * 2;
+      const g2 = c.createGain(); g2.gain.value = 0.35;
+      o1.connect(g); o2.connect(g2); g2.connect(g);
+      o1.start(t); o2.start(t); o1.stop(t + dur + 0.02); o2.stop(t + dur + 0.02);
+    }
+    function playWrong() {
+      const c = ensureAudio(), t = c.currentTime;
+      const g = c.createGain(); g.connect(c.destination);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.22, t + 0.01);
+      g.gain.linearRampToValueAtTime(0, t + 0.45);
+      const o = c.createOscillator(); o.type = 'sawtooth';
+      o.frequency.setValueAtTime(220, t);
+      o.frequency.exponentialRampToValueAtTime(80, t + 0.45);
+      o.connect(g); o.start(t); o.stop(t + 0.45);
+    }
+    function playFlourish() {
+      const c = ensureAudio(), t = c.currentTime;
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        const g = c.createGain(); g.connect(c.destination);
+        g.gain.setValueAtTime(0, t + i * 0.1);
+        g.gain.linearRampToValueAtTime(0.2, t + i * 0.1 + 0.01);
+        g.gain.linearRampToValueAtTime(0, t + i * 0.1 + 0.22);
+        const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
+        o.connect(g); o.start(t + i * 0.1); o.stop(t + i * 0.1 + 0.24);
+      });
+    }
+
+    const NOTES = ['C','D','E','F','G','A','B'];
+    const FREQ = { C: 261.63, D: 293.66, E: 329.63, F: 349.23, G: 392.00, A: 440.00, B: 493.88 };
+    const $ = id => document.getElementById(id);
+    const BEST_KEY = 'sloppy.tunes.best';
+    let best = Number(localStorage.getItem(BEST_KEY) || 0);
+    $('best').textContent = best;
+
+    let melody = [];
+    let playerStep = 0;
+    let inputOn = false;
+    let state = 'idle';
+    let streak = 0;
+
+    function setStatus(msg, cls = '') { $('status').textContent = msg; $('status').className = 'status ' + cls; }
+    function lightKey(note, dur) {
+      const k = document.querySelector(`.key[data-note="${note}"]`);
+      k.classList.add('lit');
+      playNote(FREQ[note], dur / 1000 * 0.9);
+      setTimeout(() => k.classList.remove('lit'), dur);
+    }
+    function setKeysEnabled(on) {
+      document.querySelectorAll('.key').forEach(k => k.disabled = !on);
+      inputOn = on;
+    }
+    async function playMelody() {
+      setKeysEnabled(false);
+      setStatus('Listen…');
+      const stepMs = Number($('speed').value);
+      await new Promise(r => setTimeout(r, 500));
+      for (const n of melody) {
+        lightKey(n, Math.max(160, stepMs - 80));
+        await new Promise(r => setTimeout(r, stepMs));
+      }
+      setStatus('Your turn!');
+      setKeysEnabled(true);
+      playerStep = 0;
+    }
+    function nextRound() {
+      melody.push(NOTES[Math.floor(Math.random() * NOTES.length)]);
+      $('round').textContent = melody.length;
+      playMelody();
+    }
+    function onKey(note) {
+      if (!inputOn) return;
+      lightKey(note, 260);
+      const expected = melody[playerStep];
+      if (note !== expected) { gameOver(); return; }
+      playerStep += 1;
+      if (playerStep === melody.length) {
+        setKeysEnabled(false);
+        streak += 1;
+        if (melody.length > best) { best = melody.length; localStorage.setItem(BEST_KEY, String(best)); $('best').textContent = best; }
+        $('streak').textContent = streak;
+        setStatus('Nice! Next note…', 'win');
+        setTimeout(nextRound, 800);
+      }
+    }
+    function gameOver() {
+      state = 'gameover';
+      setKeysEnabled(false);
+      playWrong();
+      streak = 0;
+      $('streak').textContent = 0;
+      setStatus(`Oops! You reached round ${melody.length}. Press Start to try again.`, 'bad');
+      $('startBtn').textContent = 'Try again';
+    }
+    function startGame() {
+      ensureAudio();
+      melody = [];
+      $('round').textContent = 0;
+      $('startBtn').textContent = 'Restart';
+      setStatus('Get ready…');
+      setTimeout(nextRound, 400);
+    }
+
+    document.querySelectorAll('.key').forEach(k => {
+      k.addEventListener('click', () => { ensureAudio(); onKey(k.dataset.note); });
+    });
+    $('startBtn').addEventListener('click', startGame);
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (e.key >= '1' && e.key <= '7') {
+        const note = NOTES[Number(e.key) - 1];
+        ensureAudio();
+        if (inputOn) onKey(note);
+        else { lightKey(note, 260); }
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        if (!inputOn) { e.preventDefault(); startGame(); }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Word Hunt — Sloppy Games</title>
+  <meta name="description" content="A word search puzzle. Drag across letters to find each hidden word." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --purple: #9333ea; --lime: #84cc16; --lime-dark: #65a30d; --pink: #ec4899; --cyan: #06b6d4; --yellow: #facc15; --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6; --shadow: rgba(26, 26, 26, 0.2); }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 540px; color: #444; margin: -0.25rem 0 0.5rem; }
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(560px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 110px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); line-height: 1; color: var(--ink); }
+
+    .layout { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; width: min(900px, 100%); }
+    .stage {
+      position: relative; user-select: none; touch-action: none;
+      background: var(--paper); border: 3px solid var(--ink); border-radius: 16px;
+      box-shadow: 0 6px 0 var(--ink); padding: 8px;
+    }
+    canvas#grid { display: block; touch-action: none; }
+    .sidebar { background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 6px 0 var(--ink); padding: 0.85rem 1rem; min-width: 200px; display: flex; flex-direction: column; gap: 0.6rem; }
+    .sidebar h3 { font-family: 'Baloo 2', sans-serif; font-size: 1rem; margin: 0; color: #666; letter-spacing: 0.08em; text-transform: uppercase; }
+    .wordlist { display: flex; flex-direction: column; gap: 0.3rem; }
+    .wordlist .w { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 1.1rem; padding: 0.25rem 0.5rem; border-radius: 8px; transition: background 0.2s ease; }
+    .wordlist .w.found { color: #888; text-decoration: line-through; background: rgba(132, 204, 22, 0.18); }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.05rem; padding: 0.65rem 1.3rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .btn:hover { background: #a3e635; }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .btn.ghost { background: var(--paper); }
+    select.diff { font-family: inherit; font-weight: 700; padding: 0.35rem 0.6rem; border-radius: 10px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
+    .hint { font-size: 0.9rem; color: #666; text-align: center; }
+    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } .sidebar { min-width: 0; width: 100%; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">← Back</a>
+    <a href="../../index.html"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Word Hunt <span class="accent">Drag to find</span></h1>
+    <p class="subtitle">Find all the hidden words. Drag your finger or mouse from the first letter to the last.</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Found</div><div class="value" id="found">0</div></div>
+      <div class="hud-pill"><div class="label">Total</div><div class="value" id="total">0</div></div>
+      <div class="hud-pill"><div class="label">Time</div><div class="value" id="time">0s</div></div>
+      <div class="hud-pill"><div class="label">Best</div><div class="value" id="best">—</div></div>
+    </div>
+
+    <div class="layout">
+      <div class="stage"><canvas id="grid"></canvas></div>
+      <div class="sidebar">
+        <h3>Words</h3>
+        <div class="wordlist" id="wordlist"></div>
+        <select class="diff" id="diff">
+          <option value="easy">Easy (8 grid · 5 words)</option>
+          <option value="normal" selected>Normal (10 grid · 7 words)</option>
+          <option value="hard">Hard (12 grid · 9 words · diagonals)</option>
+        </select>
+        <div class="actions">
+          <button class="btn" id="newBtn">New puzzle</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="hint">Drag in any straight line (horizontal, vertical, or diagonal on Hard) over the letters of a word.</p>
+  </main>
+
+  <script>
+    // ---------- Audio ----------
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function env(g, t, a, h, r, peak = 0.22) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.setValueAtTime(peak, t + a + h); g.gain.linearRampToValueAtTime(0, t + a + h + r); }
+    function playFound() { const c = ensureAudio(), t = c.currentTime; [659.25, 880, 1175].forEach((f, i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.05, 0.005, 0.04, 0.12, 0.22); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.05); o.stop(t+i*0.05+0.16); }); }
+    function playMiss() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.03, 0.1, 0.18); const o = c.createOscillator(); o.type='sine'; o.frequency.value=220; o.connect(g); o.start(t); o.stop(t+0.12); }
+    function playWin() { const c = ensureAudio(), t = c.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.1, 0.005, 0.05, 0.2, 0.28); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.1); o.stop(t+i*0.1+0.26); }); }
+
+    // ---------- Word pool ----------
+    const POOLS = {
+      animals: ['CAT','DOG','TIGER','PANDA','HORSE','RABBIT','EAGLE','SHARK','OTTER','BEAR','LION','MOUSE','FROG','OWL','WOLF','FOX'],
+      foods:   ['PIZZA','APPLE','BREAD','PASTA','CHEESE','GRAPE','MANGO','PEACH','TACO','CAKE','HONEY','CHIPS'],
+      space:   ['STAR','PLANET','MOON','SUN','COMET','NEBULA','ORBIT','MARS','VENUS','SATURN'],
+      colours: ['RED','BLUE','GREEN','PURPLE','PINK','LIME','CYAN','GOLD','SILVER','ORANGE'],
+      sports:  ['SOCCER','TENNIS','RUGBY','HOCKEY','GOLF','SWIM','SKATE','BOXING','JUDO'],
+    };
+    const THEMES = Object.keys(POOLS);
+
+    // ---------- DOM ----------
+    const $ = id => document.getElementById(id);
+    const canvas = $('grid'), ctx = canvas.getContext('2d');
+    const wlEl = $('wordlist'), diffEl = $('diff');
+
+    // ---------- Game state ----------
+    let SIZE = 10, WORD_COUNT = 7, ALLOW_DIAG = true;
+    let grid = [];           // 2D array of chars
+    let words = [];          // [{ word, found, line: [[r,c],...] }]
+    let cellPx = 36;
+    let dragStart = null;
+    let dragEnd = null;
+    let startTime = 0;
+    let timerHandle = null;
+    let foundCount = 0;
+    let bestKey = '';
+
+    function newPuzzle() {
+      const d = diffEl.value;
+      if (d === 'easy')   { SIZE = 8;  WORD_COUNT = 5; ALLOW_DIAG = false; }
+      if (d === 'normal') { SIZE = 10; WORD_COUNT = 7; ALLOW_DIAG = false; }
+      if (d === 'hard')   { SIZE = 12; WORD_COUNT = 9; ALLOW_DIAG = true; }
+      bestKey = 'sloppy.wordhunt.best.' + d;
+      const bestRaw = localStorage.getItem(bestKey);
+      $('best').textContent = bestRaw ? bestRaw + 's' : '—';
+      generate();
+      sizeCanvas();
+      draw();
+      renderWordList();
+      foundCount = 0;
+      $('found').textContent = 0;
+      $('total').textContent = words.length;
+      startTime = performance.now();
+      if (timerHandle) clearInterval(timerHandle);
+      timerHandle = setInterval(updateTime, 250);
+    }
+
+    function updateTime() {
+      const s = Math.floor((performance.now() - startTime) / 1000);
+      $('time').textContent = s + 's';
+    }
+
+    function generate() {
+      const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
+      const pool = POOLS[theme].filter(w => w.length <= SIZE).slice();
+      // shuffle
+      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+
+      grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(''));
+      words = [];
+
+      const dirs = ALLOW_DIAG
+        ? [[0,1],[1,0],[1,1],[1,-1],[0,-1],[-1,0],[-1,-1],[-1,1]]
+        : [[0,1],[1,0]];
+
+      for (const word of pool) {
+        if (words.length >= WORD_COUNT) break;
+        let placed = false;
+        for (let tries = 0; tries < 60 && !placed; tries++) {
+          const dir = dirs[Math.floor(Math.random() * dirs.length)];
+          const dr = dir[0], dc = dir[1];
+          const len = word.length;
+          // pick a starting cell that fits
+          const startR = Math.floor(Math.random() * SIZE);
+          const startC = Math.floor(Math.random() * SIZE);
+          const endR = startR + dr * (len - 1);
+          const endC = startC + dc * (len - 1);
+          if (endR < 0 || endR >= SIZE || endC < 0 || endC >= SIZE) continue;
+          // check fits
+          let ok = true;
+          for (let i = 0; i < len; i++) {
+            const r = startR + dr * i, c = startC + dc * i;
+            if (grid[r][c] && grid[r][c] !== word[i]) { ok = false; break; }
+          }
+          if (!ok) continue;
+          // place
+          const line = [];
+          for (let i = 0; i < len; i++) {
+            const r = startR + dr * i, c = startC + dc * i;
+            grid[r][c] = word[i];
+            line.push([r, c]);
+          }
+          words.push({ word, found: false, line });
+          placed = true;
+        }
+      }
+      // fill blanks
+      for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+        if (!grid[r][c]) grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      }
+    }
+
+    function renderWordList() {
+      wlEl.innerHTML = '';
+      for (const w of words) {
+        const div = document.createElement('div');
+        div.className = 'w' + (w.found ? ' found' : '');
+        div.textContent = w.word;
+        div.dataset.word = w.word;
+        wlEl.appendChild(div);
+      }
+    }
+
+    // ---------- Sizing ----------
+    function sizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const stageW = Math.min(560, window.innerWidth - 80);
+      cellPx = Math.floor((stageW - 16) / SIZE);
+      const size = cellPx * SIZE;
+      canvas.width = size * dpr;
+      canvas.height = size * dpr;
+      canvas.style.width = size + 'px';
+      canvas.style.height = size + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', () => { sizeCanvas(); draw(); });
+
+    function draw() {
+      const px = cellPx, S = SIZE;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // grid background
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, px * S, px * S);
+
+      // found-word highlights
+      ctx.lineWidth = px * 0.7;
+      ctx.lineCap = 'round';
+      for (const w of words) {
+        if (!w.found) continue;
+        const [r1, c1] = w.line[0], [r2, c2] = w.line[w.line.length - 1];
+        ctx.strokeStyle = 'rgba(132, 204, 22, 0.5)';
+        ctx.beginPath();
+        ctx.moveTo(c1 * px + px / 2, r1 * px + px / 2);
+        ctx.lineTo(c2 * px + px / 2, r2 * px + px / 2);
+        ctx.stroke();
+      }
+
+      // active drag preview
+      if (dragStart && dragEnd) {
+        const start = snapToCell(dragStart);
+        const end = clampLine(start, snapToCell(dragEnd));
+        if (end) {
+          ctx.strokeStyle = 'rgba(147, 51, 234, 0.45)';
+          ctx.lineWidth = px * 0.7;
+          ctx.beginPath();
+          ctx.moveTo(start.c * px + px / 2, start.r * px + px / 2);
+          ctx.lineTo(end.c * px + px / 2, end.r * px + px / 2);
+          ctx.stroke();
+        }
+      }
+
+      // letters
+      ctx.fillStyle = '#1a1a1a';
+      ctx.font = `bold ${Math.floor(px * 0.55)}px "Baloo 2", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let r = 0; r < S; r++) {
+        for (let c = 0; c < S; c++) {
+          ctx.fillText(grid[r][c], c * px + px / 2, r * px + px / 2);
+        }
+      }
+
+      // grid lines (subtle)
+      ctx.strokeStyle = 'rgba(26, 26, 26, 0.12)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= S; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * px + 0.5); ctx.lineTo(S * px, i * px + 0.5); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(i * px + 0.5, 0); ctx.lineTo(i * px + 0.5, S * px); ctx.stroke();
+      }
+    }
+
+    // ---------- Input ----------
+    function snapToCell(pt) {
+      const r = Math.max(0, Math.min(SIZE - 1, Math.floor(pt.y / cellPx)));
+      const c = Math.max(0, Math.min(SIZE - 1, Math.floor(pt.x / cellPx)));
+      return { r, c };
+    }
+    function eventPt(e) {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+    }
+    // Make sure dragEnd snaps to a valid straight line from start
+    function clampLine(start, end) {
+      const dr = end.r - start.r, dc = end.c - start.c;
+      if (dr === 0 && dc === 0) return start;
+      // 4-dir base, 8-dir on hard
+      let candidates = [[0,1],[1,0],[0,-1],[-1,0]];
+      if (ALLOW_DIAG) candidates = candidates.concat([[1,1],[1,-1],[-1,1],[-1,-1]]);
+      // pick direction with smallest angle
+      let best = null, bestScore = -2;
+      const mag = Math.hypot(dr, dc);
+      for (const [d1, d2] of candidates) {
+        const score = (dr * d1 + dc * d2) / mag;
+        if (score > bestScore) { bestScore = score; best = [d1, d2]; }
+      }
+      if (!best || bestScore < 0.5) return null;
+      // step count = projection on chosen dir
+      const steps = Math.round((dr * best[0] + dc * best[1]) / (best[0]*best[0] + best[1]*best[1]));
+      const stepsClamped = Math.max(0, Math.min(SIZE - 1, steps));
+      // ensure end is within bounds; clip if necessary
+      let r = start.r + best[0] * stepsClamped;
+      let c = start.c + best[1] * stepsClamped;
+      // clamp
+      while (r < 0 || r >= SIZE || c < 0 || c >= SIZE) {
+        r -= best[0]; c -= best[1];
+      }
+      return { r, c };
+    }
+
+    function startDrag(e) { e.preventDefault(); dragStart = eventPt(e); dragEnd = dragStart; draw(); }
+    function moveDrag(e) { if (!dragStart) return; e.preventDefault(); dragEnd = eventPt(e); draw(); }
+    function endDrag(e) {
+      if (!dragStart) return;
+      const start = snapToCell(dragStart);
+      const end = dragEnd ? clampLine(start, snapToCell(dragEnd)) : null;
+      dragStart = null; dragEnd = null;
+      if (end) tryMatch(start, end);
+      draw();
+    }
+    canvas.addEventListener('mousedown', startDrag);
+    canvas.addEventListener('mousemove', moveDrag);
+    window.addEventListener('mouseup', endDrag);
+    canvas.addEventListener('touchstart', startDrag, { passive: false });
+    canvas.addEventListener('touchmove', moveDrag, { passive: false });
+    canvas.addEventListener('touchend', endDrag);
+
+    function tryMatch(start, end) {
+      ensureAudio();
+      // walk start → end collecting letters
+      const dr = Math.sign(end.r - start.r), dc = Math.sign(end.c - start.c);
+      const steps = Math.max(Math.abs(end.r - start.r), Math.abs(end.c - start.c)) + 1;
+      let s = '', cells = [];
+      for (let i = 0; i < steps; i++) {
+        const r = start.r + dr * i, c = start.c + dc * i;
+        s += grid[r][c];
+        cells.push([r, c]);
+      }
+      const reverse = [...s].reverse().join('');
+      const found = words.find(w => !w.found && (w.word === s || w.word === reverse));
+      if (found) {
+        found.found = true;
+        // Use the actual selection direction
+        found.line = (found.word === s) ? cells : cells.slice().reverse();
+        foundCount += 1;
+        $('found').textContent = foundCount;
+        wlEl.querySelector(`[data-word="${found.word}"]`).classList.add('found');
+        playFound();
+        if (words.every(w => w.found)) {
+          clearInterval(timerHandle);
+          playWin();
+          const elapsed = Math.floor((performance.now() - startTime) / 1000);
+          const prev = Number(localStorage.getItem(bestKey) || 0);
+          if (!prev || elapsed < prev) {
+            localStorage.setItem(bestKey, String(elapsed));
+            $('best').textContent = elapsed + 's';
+          }
+        }
+      } else {
+        playMiss();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      diffEl.addEventListener('change', newPuzzle);
+      $('newBtn').addEventListener('click', () => { ensureAudio(); newPuzzle(); });
+      newPuzzle();
+    });
+  </script>
+</body>
+</html>
