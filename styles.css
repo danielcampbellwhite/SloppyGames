@@ -1190,3 +1190,34 @@ a.game-card:hover h3 { text-decoration: underline; text-decoration-thickness: 3p
   0%, 100% { opacity: 0; transform: scaleX(0.6); }
   40%, 60% { opacity: 1; transform: scaleX(1); }
 }
+
+/* Splat Words thumbnail — two rows of Wordle-style tiles */
+.game-thumb--splatwords {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+}
+.thumb-sw { display: contents; }
+.sw-row { display: flex; gap: 4px; }
+.sw-tile {
+  width: 28px; height: 28px;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 1px 2px 0 var(--ink);
+}
+.sw-tile--correct { background: #84cc16; border-color: #65a30d; }
+.sw-tile--present { background: #facc15; border-color: #ca8a04; }
+.sw-tile--absent  { background: #a8a29e; color: #fff; border-color: #57534e; }
+@media (max-width: 380px) { .sw-tile { width: 22px; height: 22px; font-size: 0.7rem; } }

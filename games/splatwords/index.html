@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Splat Words — Sloppy Games</title>
+  <meta name="description" content="A Wordle-style 5-letter word puzzle. Six guesses, colour clues for each letter — green if right and in the right spot, yellow if it's somewhere else." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --purple: #9333ea; --purple-dark: #6b21a8; --lime: #84cc16; --lime-dark: #65a30d; --pink: #ec4899; --cyan: #06b6d4; --yellow: #facc15; --ink: #1a1a1a; --paper: #ffffff; --bg: #fffdf6; --shadow: rgba(26, 26, 26, 0.2); --green: #65a30d; --absent: #a8a29e; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: 'Fredoka', system-ui, sans-serif; color: var(--ink); background: var(--bg); min-height: 100dvh; display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent; }
+    h1, h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1100px; width: 100%; margin: 0 auto; }
+    .back { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--ink); font-family: 'Baloo 2', sans-serif; font-weight: 700; padding: 0.5rem 0.9rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--ink); }
+    .back:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .topbar img { height: 48px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0.5rem 1rem 2rem; gap: 0.75rem; }
+    .title { text-align: center; font-size: clamp(1.75rem, 4.5vw, 2.5rem); line-height: 1.1; }
+    .title .accent { background: var(--lime); padding: 0 0.4rem; border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); display: inline-block; transform: rotate(-1deg); }
+    .subtitle { text-align: center; max-width: 560px; color: #444; margin: -0.25rem 0 0.5rem; }
+    .hud { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; width: min(440px, 95vw); }
+    .hud-pill { flex: 1 1 0; min-width: 100px; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 4px 4px 0 var(--ink); padding: 0.4rem 0.7rem; text-align: center; }
+    .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); line-height: 1; color: var(--ink); }
+
+    .board {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      gap: 6px;
+      padding: 6px;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      box-shadow: 0 6px 0 var(--ink);
+    }
+    .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .tile {
+      width: 52px;
+      height: 52px;
+      border: 3px solid var(--ink);
+      border-radius: 10px;
+      background: var(--paper);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      color: var(--ink);
+      transition: transform 0.2s ease;
+    }
+    .tile.filled { background: #f3f4f6; animation: pop 0.12s ease; }
+    .tile.correct { background: var(--lime); border-color: var(--lime-dark); color: var(--ink); }
+    .tile.present { background: var(--yellow); border-color: #ca8a04; color: var(--ink); }
+    .tile.absent  { background: var(--absent); border-color: #57534e; color: #fff; }
+    .tile.flip { animation: flipReveal 0.5s ease both; }
+    @keyframes pop { 0% { transform: scale(0.96); } 100% { transform: scale(1); } }
+    @keyframes flipReveal { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+    .row.shake { animation: shake 0.35s ease; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+    @media (max-width: 540px) {
+      .tile { width: 48px; height: 48px; font-size: 1.3rem; }
+    }
+    @media (max-width: 400px) {
+      .tile { width: 44px; height: 44px; font-size: 1.2rem; }
+    }
+
+    .status { font-family: 'Baloo 2', sans-serif; font-weight: 700; min-height: 1.4em; text-align: center; max-width: 540px; }
+    .status.win { color: var(--lime-dark); }
+    .status.bad { color: var(--pink); }
+    .status code { background: var(--paper); border: 2px solid var(--ink); border-radius: 8px; padding: 0 0.4rem; font-family: 'Baloo 2', sans-serif; font-weight: 800; letter-spacing: 0.1em; }
+
+    /* On-screen QWERTY (always visible — it's the primary input) */
+    .vkb {
+      width: min(640px, 100vw);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 4px;
+    }
+    .vkb-row { display: flex; gap: 5px; justify-content: center; }
+    .vkb-key {
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem;
+      min-width: 28px; height: 44px;
+      flex: 1; max-width: 40px;
+      border-radius: 8px;
+      border: 2.5px solid var(--ink); background: var(--paper); color: var(--ink);
+      box-shadow: 2px 3px 0 var(--ink); cursor: pointer; padding: 0;
+      transition: transform 0.05s, box-shadow 0.05s, background 0.05s;
+      touch-action: manipulation;
+    }
+    .vkb-key:active { transform: translate(2px,3px); box-shadow: 0 0 0 var(--ink); }
+    .vkb-key.wide { max-width: 60px; min-width: 50px; font-size: 0.78rem; }
+    .vkb-key.correct { background: var(--lime); border-color: var(--lime-dark); }
+    .vkb-key.present { background: var(--yellow); border-color: #ca8a04; }
+    .vkb-key.absent  { background: var(--absent); color: #fff; border-color: #57534e; }
+    .vkb-row.r2 { padding: 0 14px; }
+
+    .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; padding: 0.55rem 1.2rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+    .btn.primary { background: var(--lime); }
+    .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .hint { font-size: 0.85rem; color: #666; text-align: center; max-width: 540px; }
+    kbd { font-family: 'Baloo 2', sans-serif; font-weight: 700; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; padding: 0 0.4rem; box-shadow: 2px 2px 0 var(--ink); }
+
+    @media (max-width: 540px) { .topbar { padding: 0.75rem 1rem; } .topbar img { height: 38px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back" href="../../index.html">← Back</a>
+    <a href="../../index.html"><img src="../../assets/logo.png" alt="Sloppy Games" /></a>
+  </header>
+
+  <main>
+    <h1 class="title">Splat Words <span class="accent">Six guesses</span></h1>
+    <p class="subtitle">Guess the 5-letter word. After each guess, tiles colour up: <strong style="color:var(--lime-dark)">green</strong> = right letter, right place. <strong style="color:#ca8a04">yellow</strong> = right letter, wrong place. <strong style="color:#57534e">grey</strong> = not in the word.</p>
+
+    <div class="hud">
+      <div class="hud-pill"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+      <div class="hud-pill"><div class="label">Best</div><div class="value" id="best">0</div></div>
+      <div class="hud-pill"><div class="label">Wins</div><div class="value" id="wins">0</div></div>
+      <div class="hud-pill"><div class="label">Plays</div><div class="value" id="plays">0</div></div>
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="status" id="status">Type a 5-letter guess, then press Enter.</div>
+
+    <div class="vkb" id="vkb"></div>
+
+    <div class="controls">
+      <button class="btn" id="newBtn">New word</button>
+    </div>
+
+    <p class="hint">Type with your keyboard or the on-screen keys. <kbd>Enter</kbd> to submit, <kbd>Backspace</kbd> to delete.</p>
+  </main>
+
+  <script>
+    // ---------- Audio ----------
+    let audio = null;
+    function ensureAudio() { if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+    function env(g, t, a, h, r, peak = 0.22) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.setValueAtTime(peak, t + a + h); g.gain.linearRampToValueAtTime(0, t + a + h + r); }
+    function playTap() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.002, 0.005, 0.04, 0.14); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=800; o.connect(g); o.start(t); o.stop(t+0.05); }
+    function playGood() { const c = ensureAudio(), t = c.currentTime; [659.25, 880].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.05, 0.005, 0.04, 0.12, 0.22); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.05); o.stop(t+i*0.05+0.18); }); }
+    function playBad() { const c = ensureAudio(), t = c.currentTime; const g = c.createGain(); g.connect(c.destination); env(g, t, 0.005, 0.04, 0.18, 0.28); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(110, t+0.22); o.connect(g); o.start(t); o.stop(t+0.24); }
+    function playWin() { const c = ensureAudio(), t = c.currentTime; [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.09, 0.005, 0.05, 0.18, 0.26); const o = c.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(g); o.start(t+i*0.09); o.stop(t+i*0.09+0.24); }); }
+    function playLose() { const c = ensureAudio(), t = c.currentTime; [600, 480, 380, 260].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.12, 0.01, 0.05, 0.15, 0.22); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.12); o.stop(t+i*0.12+0.22); }); }
+
+    // ---------- Word list ----------
+    // Curated, kid-friendly 5-letter words used as both target pool and accepted guesses.
+    const WORDS = [
+      'APPLE','BREAD','GRAPE','PIZZA','CAKES','HONEY','LEMON','MANGO','PEACH','SUGAR','SWEET','SCONE','PASTA','PRAWN','LUNCH','DRINK','MELON','CHIPS','SNACK','BERRY',
+      'TIGER','PANDA','HORSE','SHEEP','MOUSE','EAGLE','SHARK','OTTER','SNAKE','RHINO','GOOSE','SHEEP','ZEBRA','CAMEL','HIPPO','LLAMA','HYENA','MOOSE','LEMUR','PUPPY',
+      'PLANT','GRASS','LEAFY','PETAL','TWIGS','BLOOM','SHRUB','FRUIT','OLIVE','MAPLE',
+      'PURPLE','GREEN','LIME','PINK','CYAN','BROWN','BLACK','WHITE','OLIVE','TEAL','CORAL','AZURE','IVORY','MOSSY','BLUSH','PASTY','PEACH','LEMON',
+      'CLOUD','STORM','SUNNY','SNOWY','RAINY','MISTY','FROST','SLEET','SHADE','LIGHT','GLOOM','BREEZ',
+      'JUMPY','HAPPY','GRUMP','SILLY','CRAZY','PROUD','BRAVE','SMART','QUICK','LOUDY','MERRY','SCARY','SPOOK',
+      'HOUSE','TENTS','CABIN','TOWER','CASTLE','HOTEL','SHOP','PARK','POND','RIVER','BEACH','OCEAN','MOUNT','ISLAND',
+      'BIKE','TRAIN','BOATS','PLANE','TRUCK','WAGON','SHIPS','LORRY','VAN','TRIKE',
+      'SHEET','PAPER','BOOKS','PENCIL','BRUSH','BOARD','CRAFT','MAGIC','GAMES','TOYBOX',
+      'EARTH','WATER','SPACE','STARS','MOONS','SUNLIT','METEOR','GALAXY','PLANET','ROCKET','COMET','VENUS','MARSY','PLUTO',
+      'JELLY','TASTY','MUNCH','SLOPPY','SPLAT','SPRAY','PAINT','CRAFT','BUILD','TIDYY',
+      'SLIME','BLOBS','DROPS','SPOTS','GUNGE','GUNKS','SLUSH','BOGEY','MUSHY','OOZES','SMUSH','SQUISH','SPLOT','SPLOOT',
+      'WIZARD','SPELL','POTION','BREW','SCROLL','ENCHANT','MAGICK','CURSE','BLESS','RUNES','TRAIL',
+    ];
+    // Keep only valid 5-letter entries (the list above is curated but might have a few off-counts)
+    const VALID_FIVE = WORDS.filter(w => w.length === 5);
+    function pickAnswer() {
+      // A subset that's most common and recognisable for the target answer
+      const targetPool = [
+        'APPLE','BREAD','GRAPE','PIZZA','HONEY','LEMON','MANGO','PEACH','SUGAR','SWEET','PASTA','LUNCH','DRINK','MELON','CHIPS','SNACK','BERRY',
+        'TIGER','PANDA','HORSE','SHEEP','MOUSE','EAGLE','SHARK','OTTER','SNAKE','RHINO','GOOSE','ZEBRA','CAMEL','HIPPO','LLAMA','HYENA','MOOSE','PUPPY',
+        'PLANT','GRASS','PETAL','BLOOM','SHRUB','FRUIT','OLIVE','MAPLE',
+        'GREEN','BROWN','BLACK','WHITE','TEAL','CORAL','AZURE','IVORY',
+        'CLOUD','STORM','SUNNY','SNOWY','RAINY','MISTY','FROST','SLEET','SHADE','LIGHT',
+        'HAPPY','SILLY','CRAZY','PROUD','BRAVE','SMART','QUICK','MERRY','SCARY','JUMPY',
+        'HOUSE','CABIN','TOWER','HOTEL','RIVER','BEACH','OCEAN','MOUNT',
+        'TRAIN','PLANE','TRUCK','WAGON',
+        'PAPER','BRUSH','BOARD','CRAFT','MAGIC','GAMES',
+        'EARTH','WATER','SPACE','STARS','MOONS','VENUS','PLUTO',
+        'JELLY','TASTY','MUNCH','SPLAT','PAINT','SCROLL','SPELL','SLIME','SQUISH'
+      ].filter(w => w.length === 5);
+      return targetPool[Math.floor(Math.random() * targetPool.length)];
+    }
+    function isValidGuess(w) {
+      // Be permissive — accept any 5-letter A-Z string. Avoids "not a word" frustrations.
+      return /^[A-Z]{5}$/.test(w);
+    }
+
+    // ---------- State ----------
+    const STATS_KEY = 'sloppy.splatwords.stats';
+    const MAX = 6;
+    let target = '';
+    let row = 0, col = 0;
+    let board = Array.from({length: MAX}, () => Array(5).fill(''));
+    let states = Array.from({length: MAX}, () => Array(5).fill(null));
+    let keyState = {}; // letter → 'absent' | 'present' | 'correct'
+    let state = 'play'; // 'play' | 'won' | 'lost'
+    let stats = (() => { try { return JSON.parse(localStorage.getItem(STATS_KEY)||'{"streak":0,"best":0,"wins":0,"plays":0}'); } catch { return {streak:0,best:0,wins:0,plays:0}; } })();
+
+    // ---------- DOM ----------
+    const $ = id => document.getElementById(id);
+    const boardEl = $('board');
+
+    function buildBoard() {
+      boardEl.innerHTML = '';
+      for (let r = 0; r < MAX; r++) {
+        const rEl = document.createElement('div');
+        rEl.className = 'row';
+        rEl.dataset.r = r;
+        for (let c = 0; c < 5; c++) {
+          const t = document.createElement('div');
+          t.className = 'tile';
+          t.dataset.r = r; t.dataset.c = c;
+          rEl.appendChild(t);
+        }
+        boardEl.appendChild(rEl);
+      }
+    }
+
+    function buildKeyboard() {
+      const rows = [
+        ['Q','W','E','R','T','Y','U','I','O','P'],
+        ['A','S','D','F','G','H','J','K','L'],
+        ['ENTER','Z','X','C','V','B','N','M','BKSP'],
+      ];
+      const vkb = $('vkb');
+      vkb.innerHTML = '';
+      rows.forEach((row, i) => {
+        const rEl = document.createElement('div');
+        rEl.className = 'vkb-row' + (i === 1 ? ' r2' : '');
+        row.forEach(k => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'vkb-key';
+          if (k === 'ENTER' || k === 'BKSP') b.classList.add('wide');
+          b.dataset.k = k;
+          b.textContent = k === 'BKSP' ? '⌫' : k === 'ENTER' ? '↵' : k;
+          const press = (e) => {
+            e.preventDefault();
+            ensureAudio();
+            handleKey(k);
+          };
+          b.addEventListener('pointerdown', press);
+          rEl.appendChild(b);
+        });
+        vkb.appendChild(rEl);
+      });
+    }
+
+    function handleKey(k) {
+      if (state !== 'play') return;
+      if (k === 'ENTER') return submit();
+      if (k === 'BKSP') return back();
+      if (/^[A-Z]$/.test(k)) return type(k);
+    }
+
+    function type(letter) {
+      if (col >= 5) return;
+      board[row][col] = letter;
+      const t = boardEl.children[row].children[col];
+      t.textContent = letter;
+      t.classList.add('filled');
+      col += 1;
+      playTap();
+    }
+    function back() {
+      if (col === 0) return;
+      col -= 1;
+      board[row][col] = '';
+      const t = boardEl.children[row].children[col];
+      t.textContent = '';
+      t.classList.remove('filled');
+    }
+
+    function submit() {
+      if (col < 5) {
+        shake(); setStatus('Need 5 letters first.', 'bad');
+        return;
+      }
+      const guess = board[row].join('');
+      if (!isValidGuess(guess)) { shake(); setStatus('Letters only, please.', 'bad'); return; }
+      // Score the guess
+      const result = scoreGuess(guess, target);
+      states[row] = result;
+      // Animate tile reveals
+      for (let c = 0; c < 5; c++) {
+        const tile = boardEl.children[row].children[c];
+        setTimeout(() => {
+          tile.classList.add('flip');
+          setTimeout(() => {
+            tile.classList.remove('flip');
+            tile.classList.add(result[c]);
+            tile.classList.remove('filled');
+            updateKeyState(guess[c], result[c]);
+            paintKeyboard();
+          }, 250);
+        }, c * 200);
+      }
+      const totalAnimMs = 5 * 200 + 250;
+      setTimeout(() => {
+        if (guess === target) return win();
+        row += 1; col = 0;
+        if (row >= MAX) return lose();
+        setStatus('');
+        playTap();
+      }, totalAnimMs);
+    }
+
+    function scoreGuess(guess, target) {
+      // Standard Wordle algorithm with duplicate handling.
+      const out = Array(5).fill('absent');
+      const tArr = target.split('');
+      // First pass: correct
+      for (let i = 0; i < 5; i++) {
+        if (guess[i] === tArr[i]) {
+          out[i] = 'correct';
+          tArr[i] = null; // consumed
+        }
+      }
+      // Second pass: present (in word but elsewhere)
+      for (let i = 0; i < 5; i++) {
+        if (out[i] === 'correct') continue;
+        const idx = tArr.indexOf(guess[i]);
+        if (idx >= 0) {
+          out[i] = 'present';
+          tArr[idx] = null;
+        }
+      }
+      return out;
+    }
+
+    function updateKeyState(letter, st) {
+      const cur = keyState[letter];
+      // Upgrade priority: correct > present > absent
+      const rank = { absent: 1, present: 2, correct: 3 };
+      if (!cur || rank[st] > rank[cur]) keyState[letter] = st;
+    }
+    function paintKeyboard() {
+      document.querySelectorAll('.vkb-key').forEach(b => {
+        const k = b.dataset.k;
+        if (k && k.length === 1) {
+          b.classList.remove('correct','present','absent');
+          if (keyState[k]) b.classList.add(keyState[k]);
+        }
+      });
+    }
+
+    function shake() {
+      const rEl = boardEl.children[row];
+      rEl.classList.remove('shake');
+      void rEl.offsetWidth;
+      rEl.classList.add('shake');
+      playBad();
+    }
+    function setStatus(msg, cls = '') {
+      $('status').innerHTML = msg;
+      $('status').className = 'status' + (cls ? ' ' + cls : '');
+    }
+
+    function win() {
+      state = 'won';
+      stats.wins += 1; stats.plays += 1; stats.streak += 1;
+      if (stats.streak > stats.best) stats.best = stats.streak;
+      saveStats();
+      playWin();
+      setStatus(`🎉 Got it in ${row + 1}! The word was <code>${target}</code>.`, 'win');
+    }
+    function lose() {
+      state = 'lost';
+      stats.plays += 1; stats.streak = 0;
+      saveStats();
+      playLose();
+      setStatus(`💀 Out of guesses. The word was <code>${target}</code>.`, 'bad');
+    }
+    function saveStats() {
+      localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+      updateHud();
+    }
+    function updateHud() {
+      $('streak').textContent = stats.streak;
+      $('best').textContent = stats.best;
+      $('wins').textContent = stats.wins;
+      $('plays').textContent = stats.plays;
+    }
+
+    function newGame() {
+      target = pickAnswer();
+      row = 0; col = 0;
+      board = Array.from({length: MAX}, () => Array(5).fill(''));
+      states = Array.from({length: MAX}, () => Array(5).fill(null));
+      keyState = {};
+      state = 'play';
+      buildBoard();
+      paintKeyboard();
+      setStatus('Type a 5-letter guess, then press Enter.');
+    }
+
+    // ---------- Input ----------
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); ensureAudio(); handleKey('ENTER'); }
+      else if (e.key === 'Backspace') { e.preventDefault(); ensureAudio(); handleKey('BKSP'); }
+      else if (e.key.length === 1) {
+        const ch = e.key.toUpperCase();
+        if (/^[A-Z]$/.test(ch)) { ensureAudio(); handleKey(ch); }
+      }
+    });
+    $('newBtn').addEventListener('click', () => { ensureAudio(); newGame(); });
+
+    // ---------- Boot ----------
+    buildBoard();
+    buildKeyboard();
+    updateHud();
+    newGame();
+  </script>
+</body>
+</html>

@@ -164,6 +164,14 @@ const GAMES = [
     category: 'puzzles',
     thumb: 'wizard',
   },
+  {
+    slug: 'splatwords',
+    title: 'Splat Words',
+    description: 'Wordle-style word puzzle. Six guesses, colour clues for each letter — green right place, yellow wrong place, grey not in word.',
+    href: '/games/splatwords/',
+    category: 'puzzles',
+    thumb: 'splatwords',
+  },
 ];
 
 // ---------- Render helpers ----------
@@ -262,6 +270,14 @@ function thumbHTML(slug) {
       <span class="su-cell">8</span><span class="su-cell"></span><span class="su-cell">6</span><span class="su-cell sep">1</span><span class="su-cell">4</span>
       <span class="su-cell sep-row"></span><span class="su-cell sep-row">3</span><span class="su-cell sep-row"></span><span class="su-cell sep-row sep">5</span><span class="su-cell sep-row"></span>
       <span class="su-cell">7</span><span class="su-cell"></span><span class="su-cell">1</span><span class="su-cell sep"></span><span class="su-cell">8</span>
+    </span>`;
+    case 'splatwords': return `<span class="thumb-sw">
+      <span class="sw-row">
+        <span class="sw-tile sw-tile--absent">S</span><span class="sw-tile sw-tile--present">P</span><span class="sw-tile sw-tile--absent">L</span><span class="sw-tile sw-tile--correct">A</span><span class="sw-tile sw-tile--absent">T</span>
+      </span>
+      <span class="sw-row">
+        <span class="sw-tile sw-tile--correct">P</span><span class="sw-tile sw-tile--correct">L</span><span class="sw-tile sw-tile--correct">A</span><span class="sw-tile sw-tile--correct">N</span><span class="sw-tile sw-tile--correct">T</span>
+      </span>
     </span>`;
     case 'wizard': return `<span class="thumb-wiz">
       <span class="wiz-stars"></span>
