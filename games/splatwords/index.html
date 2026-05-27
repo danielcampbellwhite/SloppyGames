@@ -6,7 +6,7 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
   <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
   <title>Splat Words — Sloppy Games</title>
-  <meta name="description" content="A Wordle-style 5-letter word puzzle. Six guesses, colour clues for each letter — green if right and in the right spot, yellow if it's somewhere else." />
+  <meta name="description" content="A Wordle-style 4-letter word puzzle. Six guesses, colour clues for each letter — green if right and in the right spot, yellow if it's somewhere else." />
   <link rel="icon" type="image/png" href="../../assets/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -40,7 +40,7 @@
       border-radius: 16px;
       box-shadow: 0 6px 0 var(--ink);
     }
-    .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .tile {
       width: 52px;
       height: 52px;
@@ -122,7 +122,7 @@
 
   <main>
     <h1 class="title">Splat Words <span class="accent">Six guesses</span></h1>
-    <p class="subtitle">Guess the 5-letter word. After each guess, tiles colour up: <strong style="color:var(--lime-dark)">green</strong> = right letter, right place. <strong style="color:#ca8a04">yellow</strong> = right letter, wrong place. <strong style="color:#57534e">grey</strong> = not in the word.</p>
+    <p class="subtitle">Guess the 4-letter word. After each guess, tiles colour up: <strong style="color:var(--lime-dark)">green</strong> = right letter, right place. <strong style="color:#ca8a04">yellow</strong> = right letter, wrong place. <strong style="color:#57534e">grey</strong> = not in the word.</p>
 
     <div class="hud">
       <div class="hud-pill"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
@@ -133,7 +133,7 @@
 
     <div class="board" id="board"></div>
 
-    <div class="status" id="status">Type a 5-letter guess, then press Enter.</div>
+    <div class="status" id="status">Type a 4-letter guess, then press Enter.</div>
 
     <div class="vkb" id="vkb"></div>
 
@@ -156,53 +156,45 @@
     function playLose() { const c = ensureAudio(), t = c.currentTime; [600, 480, 380, 260].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.12, 0.01, 0.05, 0.15, 0.22); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.12); o.stop(t+i*0.12+0.22); }); }
 
     // ---------- Word list ----------
-    // Curated, kid-friendly 5-letter words used as both target pool and accepted guesses.
-    const WORDS = [
-      'APPLE','BREAD','GRAPE','PIZZA','CAKES','HONEY','LEMON','MANGO','PEACH','SUGAR','SWEET','SCONE','PASTA','PRAWN','LUNCH','DRINK','MELON','CHIPS','SNACK','BERRY',
-      'TIGER','PANDA','HORSE','SHEEP','MOUSE','EAGLE','SHARK','OTTER','SNAKE','RHINO','GOOSE','SHEEP','ZEBRA','CAMEL','HIPPO','LLAMA','HYENA','MOOSE','LEMUR','PUPPY',
-      'PLANT','GRASS','LEAFY','PETAL','TWIGS','BLOOM','SHRUB','FRUIT','OLIVE','MAPLE',
-      'PURPLE','GREEN','LIME','PINK','CYAN','BROWN','BLACK','WHITE','OLIVE','TEAL','CORAL','AZURE','IVORY','MOSSY','BLUSH','PASTY','PEACH','LEMON',
-      'CLOUD','STORM','SUNNY','SNOWY','RAINY','MISTY','FROST','SLEET','SHADE','LIGHT','GLOOM','BREEZ',
-      'JUMPY','HAPPY','GRUMP','SILLY','CRAZY','PROUD','BRAVE','SMART','QUICK','LOUDY','MERRY','SCARY','SPOOK',
-      'HOUSE','TENTS','CABIN','TOWER','CASTLE','HOTEL','SHOP','PARK','POND','RIVER','BEACH','OCEAN','MOUNT','ISLAND',
-      'BIKE','TRAIN','BOATS','PLANE','TRUCK','WAGON','SHIPS','LORRY','VAN','TRIKE',
-      'SHEET','PAPER','BOOKS','PENCIL','BRUSH','BOARD','CRAFT','MAGIC','GAMES','TOYBOX',
-      'EARTH','WATER','SPACE','STARS','MOONS','SUNLIT','METEOR','GALAXY','PLANET','ROCKET','COMET','VENUS','MARSY','PLUTO',
-      'JELLY','TASTY','MUNCH','SLOPPY','SPLAT','SPRAY','PAINT','CRAFT','BUILD','TIDYY',
-      'SLIME','BLOBS','DROPS','SPOTS','GUNGE','GUNKS','SLUSH','BOGEY','MUSHY','OOZES','SMUSH','SQUISH','SPLOT','SPLOOT',
-      'WIZARD','SPELL','POTION','BREW','SCROLL','ENCHANT','MAGICK','CURSE','BLESS','RUNES','TRAIL',
-    ];
-    // Keep only valid 5-letter entries (the list above is curated but might have a few off-counts)
-    const VALID_FIVE = WORDS.filter(w => w.length === 5);
+    // Curated, kid-friendly 4-letter words used as the answer pool.
     function pickAnswer() {
-      // A subset that's most common and recognisable for the target answer
       const targetPool = [
-        'APPLE','BREAD','GRAPE','PIZZA','HONEY','LEMON','MANGO','PEACH','SUGAR','SWEET','PASTA','LUNCH','DRINK','MELON','CHIPS','SNACK','BERRY',
-        'TIGER','PANDA','HORSE','SHEEP','MOUSE','EAGLE','SHARK','OTTER','SNAKE','RHINO','GOOSE','ZEBRA','CAMEL','HIPPO','LLAMA','HYENA','MOOSE','PUPPY',
-        'PLANT','GRASS','PETAL','BLOOM','SHRUB','FRUIT','OLIVE','MAPLE',
-        'GREEN','BROWN','BLACK','WHITE','TEAL','CORAL','AZURE','IVORY',
-        'CLOUD','STORM','SUNNY','SNOWY','RAINY','MISTY','FROST','SLEET','SHADE','LIGHT',
-        'HAPPY','SILLY','CRAZY','PROUD','BRAVE','SMART','QUICK','MERRY','SCARY','JUMPY',
-        'HOUSE','CABIN','TOWER','HOTEL','RIVER','BEACH','OCEAN','MOUNT',
-        'TRAIN','PLANE','TRUCK','WAGON',
-        'PAPER','BRUSH','BOARD','CRAFT','MAGIC','GAMES',
-        'EARTH','WATER','SPACE','STARS','MOONS','VENUS','PLUTO',
-        'JELLY','TASTY','MUNCH','SPLAT','PAINT','SCROLL','SPELL','SLIME','SQUISH'
-      ].filter(w => w.length === 5);
-      return targetPool[Math.floor(Math.random() * targetPool.length)];
+        // animals
+        'BEAR','WOLF','LION','GOAT','CROW','DUCK','FROG','MOLE','SEAL','TUNA','PUMA','LAMB','HARE','TOAD','OWLS','SWAN','MULE','DEER','BIRD','FISH','CRAB','WORM',
+        // food
+        'CAKE','MILK','RICE','BUNS','BEAN','SOUP','PORK','HAMS','EGGS','PEAR','PLUM','LIME','CORN','TACO','OATS','JAMS','TART','MEAT','HERB','BERRY'.slice(0,4),
+        // colours
+        'BLUE','PINK','GOLD','GREY','TEAL','ROSE','MINT',
+        // weather / nature
+        'RAIN','SNOW','HAIL','MIST','WIND','HAZE','FIRE','LEAF','TREE','ROCK','SAND','LAKE','POND','HILL','MOON','STAR',
+        // moods / size
+        'NICE','KIND','COOL','WILD','LOUD','SOFT','TINY','HUGE','FAST','SLOW','LONG','TALL','BUSY','LAZY','BOLD',
+        // home / things
+        'DOOR','ROOF','BELL','LAMP','BOOK','GAME','TOYS','MAPS','PILE','CUPS','BOWL','SOAP','MOPS','RUGS','BAGS','SHOE',
+        // adventure / fantasy
+        'WAND','KING','HERO','BANE','GOLD','GEMS','RUBY','RUNE','MAZE','TROL'.replace('TROL','TROL'),'TOMB','RING',
+        // verbs
+        'JUMP','SWIM','RUNS','HIKE','SING','READ','BAKE','HUGS','PLAY','MAKE','BUILD'.slice(0,4),
+        // sloppy-themed
+        'SLOP','SPAT','SPIT','GLOP','BLOB','GOOP','PLOP','OOZE','GUNK','GLUE','SLIM','MUSH','PLAY'
+      ].filter(w => w && w.length === 4).map(w => w.toUpperCase());
+      // Deduplicate
+      const uniq = Array.from(new Set(targetPool));
+      return uniq[Math.floor(Math.random() * uniq.length)];
     }
     function isValidGuess(w) {
-      // Be permissive — accept any 5-letter A-Z string. Avoids "not a word" frustrations.
-      return /^[A-Z]{5}$/.test(w);
+      // Be permissive — accept any 4-letter A-Z string. Avoids "not a word" frustrations.
+      return /^[A-Z]{4}$/.test(w);
     }
 
     // ---------- State ----------
     const STATS_KEY = 'sloppy.splatwords.stats';
     const MAX = 6;
+    const LEN = 4;
     let target = '';
     let row = 0, col = 0;
-    let board = Array.from({length: MAX}, () => Array(5).fill(''));
-    let states = Array.from({length: MAX}, () => Array(5).fill(null));
+    let board = Array.from({length: MAX}, () => Array(LEN).fill(''));
+    let states = Array.from({length: MAX}, () => Array(LEN).fill(null));
     let keyState = {}; // letter → 'absent' | 'present' | 'correct'
     let state = 'play'; // 'play' | 'won' | 'lost'
     let stats = (() => { try { return JSON.parse(localStorage.getItem(STATS_KEY)||'{"streak":0,"best":0,"wins":0,"plays":0}'); } catch { return {streak:0,best:0,wins:0,plays:0}; } })();
@@ -217,7 +209,7 @@
         const rEl = document.createElement('div');
         rEl.className = 'row';
         rEl.dataset.r = r;
-        for (let c = 0; c < 5; c++) {
+        for (let c = 0; c < LEN; c++) {
           const t = document.createElement('div');
           t.className = 'tile';
           t.dataset.r = r; t.dataset.c = c;
@@ -265,7 +257,7 @@
     }
 
     function type(letter) {
-      if (col >= 5) return;
+      if (col >= LEN) return;
       board[row][col] = letter;
       const t = boardEl.children[row].children[col];
       t.textContent = letter;
@@ -283,8 +275,8 @@
     }
 
     function submit() {
-      if (col < 5) {
-        shake(); setStatus('Need 5 letters first.', 'bad');
+      if (col < LEN) {
+        shake(); setStatus('Need 4 letters first.', 'bad');
         return;
       }
       const guess = board[row].join('');
@@ -293,7 +285,7 @@
       const result = scoreGuess(guess, target);
       states[row] = result;
       // Animate tile reveals
-      for (let c = 0; c < 5; c++) {
+      for (let c = 0; c < LEN; c++) {
         const tile = boardEl.children[row].children[c];
         setTimeout(() => {
           tile.classList.add('flip');
@@ -318,17 +310,17 @@
 
     function scoreGuess(guess, target) {
       // Standard Wordle algorithm with duplicate handling.
-      const out = Array(5).fill('absent');
+      const out = Array(LEN).fill('absent');
       const tArr = target.split('');
       // First pass: correct
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < LEN; i++) {
         if (guess[i] === tArr[i]) {
           out[i] = 'correct';
           tArr[i] = null; // consumed
         }
       }
       // Second pass: present (in word but elsewhere)
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < LEN; i++) {
         if (out[i] === 'correct') continue;
         const idx = tArr.indexOf(guess[i]);
         if (idx >= 0) {
@@ -396,13 +388,13 @@
     function newGame() {
       target = pickAnswer();
       row = 0; col = 0;
-      board = Array.from({length: MAX}, () => Array(5).fill(''));
-      states = Array.from({length: MAX}, () => Array(5).fill(null));
+      board = Array.from({length: MAX}, () => Array(LEN).fill(''));
+      states = Array.from({length: MAX}, () => Array(LEN).fill(null));
       keyState = {};
       state = 'play';
       buildBoard();
       paintKeyboard();
-      setStatus('Type a 5-letter guess, then press Enter.');
+      setStatus('Type a 4-letter guess, then press Enter.');
     }
 
     // ---------- Input ----------
