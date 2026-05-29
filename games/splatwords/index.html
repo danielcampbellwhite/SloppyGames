@@ -104,7 +104,11 @@
     .vkb-key.absent  { background: var(--absent); color: #fff; border-color: #57534e; }
     .vkb-row.r2 { padding: 0 14px; }
 
-    .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .diff-row { display: inline-flex; gap: 0.3rem; }
+    .diff-row button { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.85rem; padding: 0.45rem 0.8rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
+    .diff-row button.active { background: var(--lime); }
+    .diff-row button:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); }
     .btn { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; padding: 0.55rem 1.2rem; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
     .btn.primary { background: var(--lime); }
     .btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
@@ -122,7 +126,7 @@
 
   <main>
     <h1 class="title">Splat Words <span class="accent">Six guesses</span></h1>
-    <p class="subtitle">Guess the 4-letter word. After each guess, tiles colour up: <strong style="color:var(--lime-dark)">green</strong> = right letter, right place. <strong style="color:#ca8a04">yellow</strong> = right letter, wrong place. <strong style="color:#57534e">grey</strong> = not in the word.</p>
+    <p class="subtitle" id="subtitle">Guess the 4-letter word. After each guess, tiles colour up: <strong style="color:var(--lime-dark)">green</strong> = right letter, right place. <strong style="color:#ca8a04">yellow</strong> = right letter, wrong place. <strong style="color:#57534e">grey</strong> = not in the word.</p>
 
     <div class="hud">
       <div class="hud-pill"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
@@ -138,7 +142,12 @@
     <div class="vkb" id="vkb"></div>
 
     <div class="controls">
-      <button class="btn" id="newBtn">New word</button>
+      <div class="diff-row" id="diffRow">
+        <button data-len="4" class="active">4 letters</button>
+        <button data-len="5">5 letters</button>
+        <button data-len="6">6 letters</button>
+      </div>
+      <button class="btn primary" id="newBtn">New word</button>
     </div>
 
     <p class="hint">Type with your keyboard or the on-screen keys. <kbd>Enter</kbd> to submit, <kbd>Backspace</kbd> to delete.</p>
@@ -156,48 +165,69 @@
     function playLose() { const c = ensureAudio(), t = c.currentTime; [600, 480, 380, 260].forEach((f,i) => { const g = c.createGain(); g.connect(c.destination); env(g, t+i*0.12, 0.01, 0.05, 0.15, 0.22); const o = c.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.connect(g); o.start(t+i*0.12); o.stop(t+i*0.12+0.22); }); }
 
     // ---------- Word list ----------
-    // Curated, kid-friendly 4-letter words used as the answer pool.
-    function pickAnswer() {
-      const targetPool = [
-        // animals
-        'BEAR','WOLF','LION','GOAT','CROW','DUCK','FROG','MOLE','SEAL','TUNA','PUMA','LAMB','HARE','TOAD','OWLS','SWAN','MULE','DEER','BIRD','FISH','CRAB','WORM',
-        // food
-        'CAKE','MILK','RICE','BUNS','BEAN','SOUP','PORK','HAMS','EGGS','PEAR','PLUM','LIME','CORN','TACO','OATS','JAMS','TART','MEAT','HERB','BERRY'.slice(0,4),
-        // colours
+    // Curated, kid-friendly answer pools keyed by word length.
+    const POOLS = {
+      4: [
+        'BEAR','WOLF','LION','GOAT','CROW','DUCK','FROG','MOLE','SEAL','TUNA','PUMA','LAMB','HARE','TOAD','SWAN','MULE','DEER','BIRD','FISH','CRAB','WORM',
+        'CAKE','MILK','RICE','BUNS','BEAN','SOUP','PORK','EGGS','PEAR','PLUM','LIME','CORN','TACO','OATS','TART','MEAT','HERB',
         'BLUE','PINK','GOLD','GREY','TEAL','ROSE','MINT',
-        // weather / nature
         'RAIN','SNOW','HAIL','MIST','WIND','HAZE','FIRE','LEAF','TREE','ROCK','SAND','LAKE','POND','HILL','MOON','STAR',
-        // moods / size
         'NICE','KIND','COOL','WILD','LOUD','SOFT','TINY','HUGE','FAST','SLOW','LONG','TALL','BUSY','LAZY','BOLD',
-        // home / things
-        'DOOR','ROOF','BELL','LAMP','BOOK','GAME','TOYS','MAPS','PILE','CUPS','BOWL','SOAP','MOPS','RUGS','BAGS','SHOE',
-        // adventure / fantasy
-        'WAND','KING','HERO','BANE','GOLD','GEMS','RUBY','RUNE','MAZE','TROL'.replace('TROL','TROL'),'TOMB','RING',
-        // verbs
-        'JUMP','SWIM','RUNS','HIKE','SING','READ','BAKE','HUGS','PLAY','MAKE','BUILD'.slice(0,4),
-        // sloppy-themed
-        'SLOP','SPAT','SPIT','GLOP','BLOB','GOOP','PLOP','OOZE','GUNK','GLUE','SLIM','MUSH','PLAY'
-      ].filter(w => w && w.length === 4).map(w => w.toUpperCase());
-      // Deduplicate
-      const uniq = Array.from(new Set(targetPool));
-      return uniq[Math.floor(Math.random() * uniq.length)];
+        'DOOR','ROOF','BELL','LAMP','BOOK','GAME','TOYS','MAPS','PILE','CUPS','BOWL','SOAP','RUGS','BAGS','SHOE',
+        'WAND','KING','HERO','GEMS','RUBY','RUNE','MAZE','TOMB','RING',
+        'JUMP','SWIM','RUNS','HIKE','SING','READ','BAKE','HUGS','PLAY','MAKE',
+        'SLOP','SPAT','SPIT','GLOP','BLOB','GOOP','PLOP','OOZE','GUNK','GLUE','MUSH',
+      ],
+      5: [
+        'APPLE','BREAD','GRAPE','PIZZA','HONEY','LEMON','MANGO','PEACH','SUGAR','SWEET','PASTA','LUNCH','DRINK','MELON','CHIPS','SNACK','BERRY','SCONE','PRAWN',
+        'TIGER','PANDA','HORSE','SHEEP','MOUSE','EAGLE','SHARK','OTTER','SNAKE','RHINO','GOOSE','ZEBRA','CAMEL','HIPPO','LLAMA','HYENA','MOOSE','PUPPY','LEMUR',
+        'PLANT','GRASS','PETAL','BLOOM','SHRUB','FRUIT','OLIVE','MAPLE',
+        'GREEN','BROWN','BLACK','WHITE','CORAL','AZURE','IVORY',
+        'CLOUD','STORM','SUNNY','SNOWY','RAINY','MISTY','FROST','SLEET','SHADE','LIGHT',
+        'HAPPY','SILLY','CRAZY','PROUD','BRAVE','SMART','QUICK','MERRY','SCARY','JUMPY',
+        'HOUSE','CABIN','TOWER','HOTEL','RIVER','BEACH','OCEAN','MOUNT','ISLE',
+        'TRAIN','PLANE','TRUCK','WAGON','BOATS',
+        'PAPER','BRUSH','BOARD','CRAFT','MAGIC','GAMES',
+        'EARTH','WATER','SPACE','STARS','MOONS','VENUS','PLUTO','COMET','ORBIT',
+        'JELLY','TASTY','MUNCH','SPLAT','PAINT','SPELL','SLIME','BLOBS','DROPS','GUNGE','SLUSH',
+      ],
+      6: [
+        'BANANA','ORANGE','CARROT','POTATO','TOMATO','CHEESE','COOKIE','MUFFIN','WAFFLE','PEPPER','BUTTER',
+        'RABBIT','MONKEY','TURTLE','DONKEY','WALRUS','FALCON','BEAVER','BADGER','PARROT','IGUANA',
+        'PURPLE','YELLOW','SILVER','INDIGO','BRONZE',
+        'PLANET','ROCKET','GALAXY','METEOR','SATURN','SHADOW','SUNSET',
+        'JUNGLE','FOREST','DESERT','ISLAND','MEADOW','CANYON','GARDEN','CASTLE',
+        'WIZARD','POTION','DRAGON','GOBLIN','KNIGHT','SHIELD','MARKET',
+        'SPLOSH','SQUISH','SLUDGE','SPLODGE','GLOOPY','SPLOTS','SQUELCH'.slice(0,6),
+      ],
+    };
+    // Normalise: uppercase, correct length, deduped
+    for (const k of Object.keys(POOLS)) {
+      const n = Number(k);
+      POOLS[k] = Array.from(new Set(POOLS[k].map(w => w.toUpperCase()).filter(w => w.length === n)));
+    }
+    function pickAnswer() {
+      const pool = POOLS[LEN] || POOLS[4];
+      return pool[Math.floor(Math.random() * pool.length)];
     }
     function isValidGuess(w) {
-      // Be permissive — accept any 4-letter A-Z string. Avoids "not a word" frustrations.
-      return /^[A-Z]{4}$/.test(w);
+      // Be permissive — accept any A-Z string of the right length. Avoids "not a word" frustrations.
+      return new RegExp('^[A-Z]{' + LEN + '}$').test(w);
     }
 
     // ---------- State ----------
-    const STATS_KEY = 'sloppy.splatwords.stats';
+    const STATS_KEY_BASE = 'sloppy.splatwords.stats';
     const MAX = 6;
-    const LEN = 4;
+    let LEN = 4;
     let target = '';
     let row = 0, col = 0;
     let board = Array.from({length: MAX}, () => Array(LEN).fill(''));
     let states = Array.from({length: MAX}, () => Array(LEN).fill(null));
     let keyState = {}; // letter → 'absent' | 'present' | 'correct'
     let state = 'play'; // 'play' | 'won' | 'lost'
-    let stats = (() => { try { return JSON.parse(localStorage.getItem(STATS_KEY)||'{"streak":0,"best":0,"wins":0,"plays":0}'); } catch { return {streak:0,best:0,wins:0,plays:0}; } })();
+    function statsKey() { return STATS_KEY_BASE + '.' + LEN; }
+    let stats = loadStats();
+    function loadStats() { try { return JSON.parse(localStorage.getItem(statsKey())||'{"streak":0,"best":0,"wins":0,"plays":0}'); } catch { return {streak:0,best:0,wins:0,plays:0}; } }
 
     // ---------- DOM ----------
     const $ = id => document.getElementById(id);
@@ -209,6 +239,7 @@
         const rEl = document.createElement('div');
         rEl.className = 'row';
         rEl.dataset.r = r;
+        rEl.style.gridTemplateColumns = `repeat(${LEN}, 1fr)`;
         for (let c = 0; c < LEN; c++) {
           const t = document.createElement('div');
           t.className = 'tile';
@@ -375,7 +406,7 @@
       setStatus(`💀 Out of guesses. The word was <code>${target}</code>.`, 'bad');
     }
     function saveStats() {
-      localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+      localStorage.setItem(statsKey(), JSON.stringify(stats));
       updateHud();
     }
     function updateHud() {
@@ -394,7 +425,16 @@
       state = 'play';
       buildBoard();
       paintKeyboard();
-      setStatus('Type a 4-letter guess, then press Enter.');
+      setStatus(`Type a ${LEN}-letter guess, then press Enter.`);
+    }
+
+    function setLength(len) {
+      LEN = len;
+      stats = loadStats();          // per-length stats
+      document.querySelectorAll('#diffRow button').forEach(b => b.classList.toggle('active', Number(b.dataset.len) === LEN));
+      $('subtitle').innerHTML = `Guess the ${LEN}-letter word. After each guess, tiles colour up: <strong style="color:var(--lime-dark)">green</strong> = right letter, right place. <strong style="color:#ca8a04">yellow</strong> = right letter, wrong place. <strong style="color:#57534e">grey</strong> = not in the word.`;
+      updateHud();
+      newGame();
     }
 
     // ---------- Input ----------
@@ -407,6 +447,9 @@
       }
     });
     $('newBtn').addEventListener('click', () => { ensureAudio(); newGame(); });
+    document.querySelectorAll('#diffRow button').forEach(b => {
+      b.addEventListener('click', () => { ensureAudio(); setLength(Number(b.dataset.len)); });
+    });
 
     // ---------- Boot ----------
     buildBoard();

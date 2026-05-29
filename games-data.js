@@ -167,7 +167,7 @@ const GAMES = [
   {
     slug: 'splatwords',
     title: 'Splat Words',
-    description: 'Wordle-style 4-letter word puzzle. Six guesses, colour clues for each letter — green right place, yellow wrong place, grey not in word.',
+    description: 'Wordle-style word puzzle. Six guesses, colour clues for each letter. Choose 4, 5 or 6-letter words.',
     href: '/games/splatwords/',
     category: 'puzzles',
     thumb: 'splatwords',
