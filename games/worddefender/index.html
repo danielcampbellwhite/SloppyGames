@@ -30,7 +30,7 @@
     .hud-pill .label { font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.65rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
     .hud-pill .value { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: clamp(1.2rem, 3.5vw, 1.6rem); line-height: 1; color: var(--ink); }
 
-    .stage { position: relative; width: min(560px, 95vw); aspect-ratio: 0.75; max-height: calc(100dvh - 280px); min-height: 360px; border: 4px solid var(--ink); border-radius: 24px; box-shadow: 0 8px 0 var(--ink); overflow: hidden; user-select: none; touch-action: manipulation; background: linear-gradient(180deg, var(--space-top) 0%, var(--space-bot) 100%); }
+    .stage { position: relative; width: min(560px, 95vw); aspect-ratio: 0.7; max-height: calc(100dvh - 460px); min-height: 420px; border: 4px solid var(--ink); border-radius: 24px; box-shadow: 0 8px 0 var(--ink); overflow: hidden; user-select: none; touch-action: manipulation; background: linear-gradient(180deg, var(--space-top) 0%, var(--space-bot) 100%); }
     canvas#sky { display: block; width: 100%; height: 100%; }
 
     .curtain { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); text-align: center; padding: 1rem; transition: opacity 0.2s ease; z-index: 10; }
@@ -166,8 +166,11 @@
     }
 
     // ---------- Config ----------
-    const VW = 480, VH = 720;
-    const FLOOR_Y = VH - 80;
+    const VW = 480;
+    // VH and FLOOR_Y adapt to the stage's actual height so the ship stays
+    // pinned to the visible bottom edge no matter how tall the stage ends up.
+    let VH = 720;
+    let FLOOR_Y = VH - 80;
     const BEST_KEY = 'sloppy.worddefender.best';
 
     // ---------- DOM ----------
@@ -183,6 +186,10 @@
       canvas.style.width = cssW + 'px';
       canvas.style.height = cssH + 'px';
       scale = canvas.width / VW;
+      // Match the virtual world height to the actual canvas height so the
+      // floor and ship sit at the visible bottom edge.
+      VH = canvas.height / scale;
+      FLOOR_Y = VH - 80;
     }
     window.addEventListener('resize', resize);
 
