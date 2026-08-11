@@ -647,6 +647,67 @@
       width: 100%;
     }
 
+    /* Visual scene */
+    .play-scene {
+      position: relative;
+      width: min(720px, 95vw);
+      aspect-ratio: 16 / 9;
+      max-height: calc(100dvh - 320px);
+      min-height: 240px;
+      border: 4px solid var(--ink);
+      border-radius: 22px;
+      box-shadow: 0 8px 0 var(--ink);
+      overflow: hidden;
+      background: linear-gradient(180deg, #bef264, #84cc16 55%, #65a30d);
+      touch-action: manipulation;
+    }
+    .play-scene canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .play-panel {
+      position: absolute;
+      max-width: 90%;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.55rem 0.7rem;
+      z-index: 3;
+      font-family: 'Baloo 2', sans-serif;
+    }
+    .play-panel__close {
+      position: absolute; top: -12px; right: -12px;
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      box-shadow: 2px 2px 0 var(--ink);
+      font-family: inherit; font-weight: 800; font-size: 0.85rem;
+      cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .play-panel__row { display: flex; gap: 0.4rem; align-items: center; }
+    .play-panel__name { font-weight: 800; font-size: 1rem; }
+    .play-panel__meta { font-size: 0.75rem; color: #666; margin-top: -2px; }
+    .play-panel__bar {
+      margin: 0.35rem 0;
+      height: 10px; background: rgba(0,0,0,0.15);
+      border: 2px solid var(--ink); border-radius: 999px; overflow: hidden;
+      min-width: 160px;
+    }
+    .play-panel__bar .fill { height: 100%; width: 0%; background: linear-gradient(90deg, #f472b6, #db2777); transition: width 0.3s ease; }
+    .play-panel__bar.full .fill { background: linear-gradient(90deg, #f472b6, #db2777, #9333ea); }
+    .play-panel__acts { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+    .play-panel__acts button {
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      border-radius: 10px;
+      box-shadow: 2px 2px 0 var(--ink);
+      padding: 0.25rem 0.5rem;
+      font-family: inherit; font-weight: 700; font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .play-panel__acts button:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); }
+    .play-panel__acts button:active { transform: translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
+    .play-panel__acts .mate-btn { background: linear-gradient(180deg,#fef3c7,#facc15); }
+
     /* Mate confetti / pair popup */
     .pair-cheer {
       position: absolute; inset: 0;
@@ -765,13 +826,19 @@
       <div class="actions" id="actions"></div>
     </section>
 
-    <!-- Play Centre -->
+    <!-- Play Centre (visual scene) -->
     <section id="screen-play" class="screen">
       <div class="play-header">
         <h2>🏛️ The Play Centre</h2>
-        <p id="play-blurb">Other pets of the same species come here to meet friends. Play together enough and one of them might become your pet's mate!</p>
+        <p id="play-blurb">Walk your pet over to another and try to make friends. Fill the heart to become mates!</p>
       </div>
-      <div class="play-list" id="play-list"></div>
+      <div class="play-scene" id="play-scene">
+        <canvas id="play-canvas"></canvas>
+        <div class="play-panel" id="play-panel" style="display:none;">
+          <button class="play-panel__close" id="play-panel-close" aria-label="Close">✕</button>
+          <div class="play-panel__body" id="play-panel-body"></div>
+        </div>
+      </div>
       <div class="play-back">
         <button class="ghost-btn" id="play-leave">← Back to habitat</button>
       </div>
@@ -3447,6 +3514,18 @@
   document.getElementById('btn-play-centre').addEventListener('click', openPlayCentre);
   document.getElementById('play-leave').addEventListener('click', leavePlayCentre);
   document.getElementById('mini-done').addEventListener('click', () => { if (G.miniGame) endMini(); });
+  document.getElementById('play-scene').addEventListener('pointerdown', (e) => {
+    if (!G.playScene) return;
+    // Ignore taps on the panel itself.
+    if (e.target.closest('.play-panel')) return;
+    const rect = document.getElementById('play-scene').getBoundingClientRect();
+    onPlaySceneTap(e.clientX - rect.left, e.clientY - rect.top);
+  });
+  document.getElementById('play-panel-close').addEventListener('click', () => {
+    if (!G.playScene) return;
+    G.playScene.focusedId = null;
+    G.playScene.panel.style.display = 'none';
+  });
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (confirm('Really reset? Your pet will be gone forever.')) {
       wipeSave();
@@ -3607,58 +3686,260 @@
     }
     saveNow();
     setScreen('play');
-    renderPlayCentre();
+    startPlayScene();
   }
 
-  function renderPlayCentre() {
-    const list = document.getElementById('play-list');
-    list.innerHTML = '';
+  // ---------- Play Centre canvas scene ----------
+  //
+  // Design space is 100x60 to fit the 16:9 scene canvas.  Your pet
+  // spawns on the left; CPU pets stand in a line on the right.  Tap
+  // a CPU to walk your pet over — while they're close enough, the
+  // interaction panel appears anchored to that CPU.
+
+  function startPlayScene() {
+    const canvas = document.getElementById('play-canvas');
+    if (!canvas) return;
+    G.playScene = {
+      canvas,
+      ctx: canvas.getContext('2d'),
+      pxW: 0, pxH: 0,
+      player: { x: 15, y: 52, tx: 15, ty: 52, facing: 1, walkT: 0 },
+      cpus: [],           // [{ id, x, y, tx, ty, facing, walkT, bob }]
+      focusedId: null,    // which CPU the player pet is next to
+      lastFrame: 0,
+      panel: document.getElementById('play-panel'),
+      panelBody: document.getElementById('play-panel-body'),
+    };
+    // Arrange CPUs across the right two-thirds of the scene.
     const roster = G.save.playCentre.roster;
-    for (const cpu of roster) {
-      const card = document.createElement('div');
-      card.className = 'play-card';
-      const speciesName = SPECIES[cpu.species].name;
-      const variantName = (SPECIES[cpu.species].variants[cpu.variant] || {}).name || '';
-      const variantSwatch = (SPECIES[cpu.species].variants[cpu.variant] || {}).swatch || '#9333ea';
-      const genderLabel = cpu.gender === 'f' ? '♀' : '♂';
-      const canMate = cpu.attraction >= 100;
-      card.innerHTML = `
-        <div class="play-card__top">
-          <div class="play-card__portrait">
-            <canvas width="80" height="80" data-portrait="${cpu.id}"></canvas>
-          </div>
-          <div>
-            <div class="play-card__name">${cpu.name} ${genderLabel}</div>
-            <div class="play-card__meta">${speciesName} · ${variantName}<span class="swatch" style="background:${variantSwatch};"></span></div>
-            <div class="play-card__personality">"${cpu.personality}"</div>
-          </div>
-        </div>
-        <div class="play-card__bar${canMate ? ' full' : ''}">
-          <div class="fill" style="width:${cpu.attraction}%;"></div>
-        </div>
-        <div class="play-card__row">
-          <button data-act="play"  data-id="${cpu.id}">🎾 Play together</button>
-          <button data-act="snack" data-id="${cpu.id}">🍔 Share a snack</button>
-          <button data-act="gift"  data-id="${cpu.id}">💐 Give a gift</button>
-        </div>
-        ${canMate ? `<div class="play-card__row"><button class="play-card__mate-btn" data-act="mate" data-id="${cpu.id}">❤️ Become mates with ${cpu.name}!</button></div>` : ''}`;
-      list.appendChild(card);
-      // paint portrait
-      const pc = card.querySelector('canvas');
-      const pctx = pc.getContext('2d');
-      pctx.setTransform(1,0,0,1,0,0);
-      pctx.clearRect(0,0,80,80);
-      pctx.save();
-      pctx.translate(40, 76);
-      pctx.scale(0.7, 0.7);
-      pctx.translate(-50, -100);
-      SPECIES[cpu.species].draw(pctx, 'happy', performance.now(), paletteBySV(cpu.species, cpu.variant || 0));
-      pctx.restore();
+    roster.forEach((cpu, i) => {
+      const cx = 50 + (i - (roster.length - 1) / 2) * 18;
+      const cy = 50 + (i % 2 === 0 ? 2 : -2);
+      G.playScene.cpus.push({
+        id: cpu.id,
+        x: cx, y: cy, tx: cx, ty: cy,
+        facing: -1, walkT: 0, wanderT: 2000 + Math.random() * 3000,
+      });
+    });
+    sizePlayCanvas();
+    G.playScene.lastFrame = performance.now();
+    requestAnimationFrame(playLoop);
+  }
+  function sizePlayCanvas() {
+    const ps = G.playScene;
+    if (!ps) return;
+    const dpr = window.devicePixelRatio || 1;
+    const el = document.getElementById('play-scene');
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    ps.canvas.width  = Math.floor(rect.width  * dpr);
+    ps.canvas.height = Math.floor(rect.height * dpr);
+    ps.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ps.ctx.scale(dpr, dpr);
+    ps.pxW = rect.width;
+    ps.pxH = rect.height;
+  }
+  function pdx(x) { return (x / 100) * G.playScene.pxW; }
+  function pdy(y) { return (y / 60)  * G.playScene.pxH; }
+  window.addEventListener('resize', () => { if (G.playScene) sizePlayCanvas(); });
+
+  function playLoop(nowMs) {
+    if (G.screen !== 'play' || !G.playScene) return;   // stop when we leave
+    const ps = G.playScene;
+    const dt = Math.min(nowMs - ps.lastFrame, 200);
+    ps.lastFrame = nowMs;
+    stepPlayScene(dt);
+    drawPlayScene(nowMs);
+    positionPlayPanel();
+    requestAnimationFrame(playLoop);
+  }
+
+  function stepPlayScene(dt) {
+    const ps = G.playScene;
+    // Player pet walks toward tx/ty.
+    const p = ps.player;
+    const dx1 = p.tx - p.x, dy1 = p.ty - p.y;
+    const dist = Math.hypot(dx1, dy1);
+    const speed = 0.025;
+    if (dist > 0.6) {
+      const step = Math.min(dist, speed * dt);
+      p.x += (dx1 / dist) * step;
+      p.y += (dy1 / dist) * step;
+      p.facing = dx1 > 0 ? 1 : -1;
+      p.walkT += dt;
     }
-    // Delegate button clicks.
-    list.querySelectorAll('button').forEach(b => {
+    // CPUs wander gently.
+    for (const c of ps.cpus) {
+      c.wanderT -= dt;
+      if (c.wanderT <= 0) {
+        c.tx = c.tx + (Math.random() * 8 - 4);
+        c.ty = 46 + Math.random() * 8;
+        c.wanderT = 3000 + Math.random() * 4000;
+      }
+      const cdx = c.tx - c.x, cdy = c.ty - c.y;
+      const cdist = Math.hypot(cdx, cdy);
+      if (cdist > 0.4) {
+        const step = Math.min(cdist, 0.008 * dt);
+        c.x += (cdx / cdist) * step;
+        c.y += (cdy / cdist) * step;
+        c.facing = cdx > 0 ? 1 : -1;
+        c.walkT += dt;
+      }
+    }
+    // Auto-focus the nearest CPU when the player pet arrives.
+    let nearest = null, best = Infinity;
+    for (const c of ps.cpus) {
+      const d = Math.hypot(c.x - p.x, c.y - p.y);
+      if (d < 14 && d < best) { nearest = c; best = d; }
+    }
+    if (nearest && ps.focusedId !== nearest.id) {
+      ps.focusedId = nearest.id;
+      renderPlayPanel();
+    } else if (!nearest && ps.focusedId) {
+      ps.focusedId = null;
+      ps.panel.style.display = 'none';
+    }
+  }
+
+  function drawPlayScene(t) {
+    const ps = G.playScene;
+    const ctx = ps.ctx;
+    // Background — bright meadow with pond.
+    const g = ctx.createLinearGradient(0, 0, 0, ps.pxH);
+    g.addColorStop(0, '#bef264'); g.addColorStop(0.7, '#84cc16'); g.addColorStop(1, '#65a30d');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, ps.pxW, ps.pxH);
+    // Pond
+    ctx.fillStyle = '#38bdf8';
+    ctx.strokeStyle = '#0284c7';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(pdx(20), pdy(56), 40, 10, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    // Ground line
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.fillRect(0, ps.pxH * 0.78, ps.pxW, ps.pxH * 0.22);
+    // Simple trees along the back
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+    for (let i = 0; i < 4; i++) {
+      const tx = pdx(15 + i * 25);
+      const ty = pdy(35);
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(tx - 3, ty, 6, 12);
+      ctx.fillStyle = '#166534';
+      ctx.beginPath(); ctx.arc(tx, ty - 8, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    // Bench / bench-ish rectangle mid-right
+    ctx.fillStyle = '#a16207';
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+    const bx = pdx(78), by = pdy(58), bw = 60;
+    ctx.fillRect(bx - bw / 2, by, bw, 6); ctx.strokeRect(bx - bw / 2, by, bw, 6);
+    ctx.fillRect(bx - bw / 2 + 3, by + 6, 6, 10);
+    ctx.fillRect(bx + bw / 2 - 9, by + 6, 6, 10);
+
+    // Draw all pets in age order (front-back doesn't matter here)
+    const all = [];
+    all.push({ kind: 'player', ...ps.player });
+    for (const c of ps.cpus) all.push({ kind: 'cpu', ...c });
+    all.sort((a, b) => a.y - b.y);
+    for (const item of all) drawScenePet(item, t);
+  }
+
+  function drawScenePet(item, t) {
+    const ps = G.playScene;
+    const ctx = ps.ctx;
+    let pet;
+    if (item.kind === 'player') pet = activePet();
+    else pet = playCpu(item.id);
+    if (!pet) return;
+    const species = SPECIES[pet.species];
+    const spriteSize = 70;
+    const px = pdx(item.x);
+    const py = pdy(item.y) + Math.sin(t / 220 + item.walkT / 200) * 2;
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath(); ctx.ellipse(px, pdy(item.y) + 4, spriteSize * 0.25, spriteSize * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+    // sprite
+    ctx.save();
+    ctx.translate(px, py);
+    const s = spriteSize / 100;
+    ctx.scale(item.facing * s, s);
+    ctx.translate(-50, -100);
+    const palette = item.kind === 'player' ? paletteFor(pet) : paletteBySV(pet.species, pet.variant || 0);
+    species.draw(ctx, 'happy', t, palette);
+    ctx.restore();
+    // name tag
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2;
+    ctx.font = 'bold 10px "Baloo 2", sans-serif';
+    const label = item.kind === 'player' ? pet.name + ' (you)' : pet.name;
+    const w = ctx.measureText(label).width;
+    const tagX = px - w / 2 - 4;
+    const tagY = pdy(item.y) - spriteSize - 4;
+    ctx.beginPath();
+    const r = 5, xR = tagX, yR = tagY - 10, wR = w + 8, hR = 12;
+    ctx.moveTo(xR + r, yR);
+    ctx.lineTo(xR + wR - r, yR);
+    ctx.quadraticCurveTo(xR + wR, yR, xR + wR, yR + r);
+    ctx.lineTo(xR + wR, yR + hR - r);
+    ctx.quadraticCurveTo(xR + wR, yR + hR, xR + wR - r, yR + hR);
+    ctx.lineTo(xR + r, yR + hR);
+    ctx.quadraticCurveTo(xR, yR + hR, xR, yR + hR - r);
+    ctx.lineTo(xR, yR + r);
+    ctx.quadraticCurveTo(xR, yR, xR + r, yR);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(label, tagX + 4, tagY);
+    // If focused CPU, glow behind
+    if (item.kind === 'cpu' && item.id === ps.focusedId) {
+      ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath(); ctx.ellipse(px, pdy(item.y) + 5, spriteSize * 0.32, spriteSize * 0.09, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function playCpu(id) {
+    // Look up a CPU-pet-like record from the roster.
+    if (!G.save.playCentre) return null;
+    const raw = G.save.playCentre.roster.find(c => c.id === id);
+    return raw || null;
+  }
+
+  function renderPlayPanel() {
+    const ps = G.playScene;
+    if (!ps || !ps.focusedId) return;
+    const cpu = playCpu(ps.focusedId);
+    if (!cpu) { ps.panel.style.display = 'none'; return; }
+    const canMate = cpu.attraction >= 100;
+    const speciesName = SPECIES[cpu.species].name;
+    const variantName = (SPECIES[cpu.species].variants[cpu.variant] || {}).name || '';
+    const genderLabel = cpu.gender === 'f' ? '♀' : '♂';
+    ps.panelBody.innerHTML = `
+      <div class="play-panel__name">${cpu.name} ${genderLabel}</div>
+      <div class="play-panel__meta">${speciesName} · ${variantName} · "${cpu.personality}"</div>
+      <div class="play-panel__bar${canMate ? ' full' : ''}"><div class="fill" style="width:${cpu.attraction}%;"></div></div>
+      <div class="play-panel__acts">
+        <button data-act="play"  data-id="${cpu.id}">🎾 Play</button>
+        <button data-act="snack" data-id="${cpu.id}">🍔 Snack</button>
+        <button data-act="gift"  data-id="${cpu.id}">💐 Gift (10🪙)</button>
+        ${canMate ? `<button class="mate-btn" data-act="mate" data-id="${cpu.id}">❤️ Become mates</button>` : ''}
+      </div>`;
+    ps.panelBody.querySelectorAll('button').forEach(b => {
       b.addEventListener('click', () => onPlayCentreClick(b.dataset.act, b.dataset.id));
     });
+    ps.panel.style.display = 'block';
+  }
+  function positionPlayPanel() {
+    const ps = G.playScene;
+    if (!ps || !ps.focusedId || ps.panel.style.display === 'none') return;
+    const cpu = ps.cpus.find(c => c.id === ps.focusedId);
+    if (!cpu) return;
+    const px = pdx(cpu.x);
+    const py = pdy(cpu.y) - 80;
+    ps.panel.style.left = Math.max(8, Math.min(ps.pxW - ps.panel.offsetWidth - 8, px - ps.panel.offsetWidth / 2)) + 'px';
+    ps.panel.style.top  = Math.max(8, py) + 'px';
   }
 
   function onPlayCentreClick(act, id) {
@@ -3668,7 +3949,7 @@
     const founder = activePet();
     if (!founder) return;
     if (founder.meters.energy < 8) {
-      thoughtInPlayCentre(cpu.id, 'Too tired!');
+      showPlaySceneThought(cpu.id, 'Too tired!');
       return;
     }
     let bonus = 0;
@@ -3677,7 +3958,7 @@
       case 'play':  bonus = 12 + Math.floor(Math.random() * 5); cost.energy = 6; cost.happy = -6; break;
       case 'snack': bonus = 10 + Math.floor(Math.random() * 5); cost.energy = 2; cost.hunger = -8; break;
       case 'gift':
-        if (G.save.coins < 10) { thoughtInPlayCentre(cpu.id, 'Need 10 coins!'); return; }
+        if (G.save.coins < 10) { showPlaySceneThought(cpu.id, 'Need 10 coins!'); return; }
         G.save.coins -= 10;
         bonus = 18 + Math.floor(Math.random() * 6);
         cost.happy = 4;
@@ -3691,23 +3972,42 @@
     cpu.lastVisitAt = Date.now();
     saveNow();
     beep(700 + bonus * 8, 'triangle', 0.15, 0.05);
-    renderPlayCentre();
+    renderPlayPanel();
     if (cpu.attraction >= 100) beep(1200, 'square', 0.2, 0.08);
   }
 
-  function thoughtInPlayCentre(cpuId, text) {
-    const card = document.querySelector(`[data-portrait="${cpuId}"]`);
-    if (!card) return;
-    const holder = card.closest('.play-card');
+  // Small floating message on the scene canvas — used for "Need coins"
+  // or "Too tired" hints.  Kept ephemeral, drawn once per call.
+  function showPlaySceneThought(cpuId, text) {
+    const ps = G.playScene;
+    if (!ps) return;
+    const cpu = ps.cpus.find(c => c.id === cpuId);
+    if (!cpu) return;
     const el = document.createElement('div');
     el.className = 'thought';
     el.textContent = text;
-    el.style.position = 'absolute';
-    el.style.left = '50%';
-    el.style.top = '10px';
-    holder.style.position = 'relative';
-    holder.appendChild(el);
+    el.style.left = pdx(cpu.x) + 'px';
+    el.style.top  = (pdy(cpu.y) - 100) + 'px';
+    document.getElementById('play-scene').appendChild(el);
     setTimeout(() => el.remove(), 2500);
+  }
+
+  // Tap the scene to move the player pet.  If a CPU is tapped, walk
+  // straight to them; otherwise walk to the tap position.
+  function onPlaySceneTap(cx, cy) {
+    const ps = G.playScene;
+    if (!ps) return;
+    // Test each CPU first.
+    for (const c of ps.cpus) {
+      const cpx = pdx(c.x), cpy = pdy(c.y);
+      if (Math.hypot(cx - cpx, cy - cpy) < 42) {
+        ps.player.tx = c.x - 12 * (c.x > ps.player.x ? 1 : -1);
+        ps.player.ty = c.y;
+        return;
+      }
+    }
+    ps.player.tx = clamp((cx / ps.pxW) * 100, 6, 94);
+    ps.player.ty = 52 + Math.random() * 4;
   }
 
   function confirmMate(cpu) {
@@ -3732,30 +4032,29 @@
     G.save.pets.push(mate);
     G.save.playCentre = null;
     saveNow();
-    const list = document.getElementById('play-list');
+    // Overlay a cheer message on the scene, then head back home.
+    const scene = document.getElementById('play-scene');
     const cheer = document.createElement('div');
     cheer.className = 'pair-cheer';
-    cheer.style.position = 'relative';
-    cheer.style.padding = '2rem 1rem';
-    cheer.style.borderRadius = '20px';
     cheer.innerHTML = `<h3>💜 ${active.name} & ${cpu.name} — a pair!</h3>`;
-    list.innerHTML = '';
-    list.appendChild(cheer);
+    scene.appendChild(cheer);
+    if (G.playScene && G.playScene.panel) G.playScene.panel.style.display = 'none';
     beep(880, 'square', 0.2, 0.08);
     setTimeout(() => beep(1175, 'square', 0.2, 0.08), 120);
     setTimeout(() => beep(1568, 'square', 0.3, 0.10), 240);
     setTimeout(() => {
+      cheer.remove();
+      G.playScene = null;
       setScreen('habitat');
       renderPetSelector();
       renderStagebar();
       const activeRt = petRuntimeFor(active.id);
       if (activeRt) thoughtAt(activeRt.x, activeRt.y - 25, 'Welcome home 💜', 3200);
-    }, 1600);
+    }, 1800);
   }
 
   function leavePlayCentre() {
-    // If any CPUs are close to 100, cache the roster; otherwise refresh
-    // on next visit so meets feel fresh.
+    G.playScene = null;
     setScreen('habitat');
     renderStagebar();
     updatePlayCentreButton();
