@@ -298,6 +298,8 @@
     .stage {
       position: relative;
       width: min(640px, 95vw);
+      /* 4/3 on desktop, taller on mobile so the scene isn't a
+         letterboxed sliver in portrait — see @media below. */
       aspect-ratio: 4 / 3;
       max-height: calc(100dvh - 340px);
       min-height: 260px;
@@ -309,6 +311,25 @@
       touch-action: manipulation;
     }
     .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+    /* Give the stage more room on phones by loosening the aspect ratio
+       and reserving less vertical budget for the surrounding chrome. */
+    @media (max-width: 540px) {
+      main { padding: 0.15rem 0.5rem 1.25rem; gap: 0.5rem; }
+      .title { font-size: 1.4rem; margin: 0 0 0.1rem; }
+      .subtitle { font-size: 0.85rem; margin: 0 0 0.25rem; }
+      .stage {
+        aspect-ratio: 4 / 4.2;                   /* nearly square — more vertical room */
+        max-height: calc(100dvh - 260px);
+      }
+      .hud-pill { flex: 1 1 66px; min-width: 66px; padding: 0.2rem 0.3rem 0.35rem; }
+      .hud-pill .top { font-size: 0.6rem; }
+      .hud-pill .icon { font-size: 0.9rem; }
+      .stagebar .chip { padding: 0.15rem 0.55rem; font-size: 0.8rem; }
+      .actions { gap: 0.35rem; }
+      .action { padding: 0.35rem 0.15rem; font-size: 0.7rem; }
+      .action .emoji { font-size: 1.25rem; }
+    }
     .thought {
       position: absolute; pointer-events: none;
       background: var(--paper);
@@ -2742,9 +2763,12 @@
   }
   window.addEventListener('resize', () => { if (G.screen === 'habitat') sizeCanvas(); });
 
-  // Design space: 100 units wide × 75 units tall.  Convert to pixels.
+  // Design space: 100 units wide × 100 units tall.  Convert to pixels.
+  // (y=72 is the ground line, pets stand at y≈80.  The stage aspect
+  //  ratio decides how those units stretch on real pixels — square-ish
+  //  on mobile, wider on desktop.)
   function dx(x) { return (x / 100) * G._pxW; }
-  function dy(y) { return (y / 75)  * G._pxH; }
+  function dy(y) { return (y / 100) * G._pxH; }
 
   function loop(nowMs) {
     if (G.screen !== 'habitat') {
@@ -3275,7 +3299,7 @@
       // Thoughts stay at the world position they were emitted at —
       // pets move on afterwards but their idea drifts in place.
       const px = (th.x / 100) * rect.width;
-      const py = (th.y / 75)  * rect.height;
+      const py = (th.y / 100) * rect.height;
       th.el.style.left = px + 'px';
       th.el.style.top = py + 'px';
     }
@@ -3320,7 +3344,7 @@
       G.stage.appendChild(el);
       const rect = G.stage.getBoundingClientRect();
       el.style.left = ((sourceX / 100) * rect.width) + 'px';
-      el.style.top  = ((sourceY / 75)  * rect.height) + 'px';
+      el.style.top  = ((sourceY / 100) * rect.height) + 'px';
       setTimeout(() => el.remove(), 1200);
     }
   }
@@ -3479,7 +3503,7 @@
     for (const pet of livePets()) {
       const rt = petRuntimeFor(pet.id);
       const px = (rt.x / 100) * rect.width;
-      const py = (rt.y / 75)  * rect.height;
+      const py = (rt.y / 100) * rect.height;
       const d  = Math.hypot(cx - px, cy - py);
       const r  = Math.max(44, rect.width * 0.13);
       if (d < r && d < hitDist) { hit = pet; hitDist = d; }
