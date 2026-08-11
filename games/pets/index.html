@@ -2426,6 +2426,7 @@
       cause,
       generation: pet.generation || 1,
       wasMate: !pet.isFounder && !!pet.mateId,
+      parentIds: pet.parentIds || [],
     });
     // If this pet had a mate still living, clear the reciprocal reference.
     const mate = mateOf(pet);
@@ -4248,21 +4249,31 @@
 
   // Find any mated couples in the household and, if none of their eggs
   // are pending, schedule one.  Called every loop tick and on load.
+  // Max children per couple.  Once they hit this, no more eggs will
+  // schedule for that couple even if an existing child dies.
+  const MAX_CHILDREN_PER_COUPLE = 2;
+
   function schedulePendingEgg() {
     if (G.save.pendingEgg) return;
-    if ((livePets().length) >= 6) return;  // cap household size
-    // Find the first mated couple.
+    // Find the first mated couple that hasn't hit the family cap.
     for (const pet of livePets()) {
       const mate = mateOf(pet);
       if (!mate) continue;
       // Both must be at least teen-age.
       if (pet.age < 35 || mate.age < 35) continue;
+      // Count children of this couple — both currently alive and any
+      // that were born to them but are already in the family log.
+      const livingKids = childrenOf(pet).length;
+      const pastKids = (G.save.family || []).filter(f =>
+        f.parentIds && f.parentIds.includes(pet.id)
+      ).length;
+      if (livingKids + pastKids >= MAX_CHILDREN_PER_COUPLE) continue;
       const speciesKey = pet.species;
       const variant = inheritVariant(speciesKey, pet, mate);
       const gender = Math.random() < 0.5 ? 'm' : 'f';
       const name = CPU_NAMES[gender][Math.floor(Math.random() * CPU_NAMES[gender].length)];
       // First egg after a pairing comes half a gestation quicker.
-      const firstEgg = !livePets().some(p => p.parentIds && p.parentIds.includes(pet.id));
+      const firstEgg = livingKids + pastKids === 0;
       const wait = firstEgg ? EGG_GESTATION_MS * 0.5 : EGG_GESTATION_MS;
       G.save.pendingEgg = {
         id: 'e' + Date.now().toString(36),
