@@ -1296,8 +1296,9 @@
       // Present in v1 saves so future updates don't need to migrate.
       mate: null,            // { species, gender, variant, name, attraction }
       partneredSince: null,  // timestamp when the mate confirmed
-      pendingEgg: null,      // { readyAt, variant } once a couple lays one
-      family: [],            // ancestry log — { species, variant, gender, born, died, cause }
+      pendingEgg: null,      // { readyAt, variant, gender, name } — spawns after mating
+      children: [],          // living, hatched offspring in habitat — { species, variant, gender, name, born }
+      family: [],            // ancestry log — { species, variant, gender, name, born, died, cause, generation }
       generation: 1,
       // The Play Centre CPU roster is generated once per pet lifetime
       // so partners you meet feel consistent visit-to-visit.
@@ -1330,6 +1331,7 @@
       if (!('family'         in data)) data.family = [];
       if (!('generation'     in data)) data.generation = 1;
       if (!('playCentre'     in data)) data.playCentre = null;
+      if (!('children'       in data)) data.children = [];
       // Backfill gender/variant on the pet itself.
       if (data.pet && !('gender'  in data.pet)) data.pet.gender  = Math.random() < 0.5 ? 'm' : 'f';
       if (data.pet && !('variant' in data.pet)) data.pet.variant = 0;
@@ -1419,6 +1421,8 @@
 
   function killPet(cause) {
     if (!G.save || G.save.stage === 'dead') return;
+    // Give the lineage a chance to carry on first.
+    if (tryInheritance(cause)) return;
     G.save.stage = 'dead';
     G.save.history.died = Date.now();
     G.save.history.cause = cause;
@@ -1685,8 +1689,12 @@
 
     if (G.save.stage !== 'dead') {
       aiStep(dt);
+      stepChildAI(dt);
       drawScene(nowMs);
       if (G.save.mate) drawMate(nowMs);
+      drawChildren(nowMs);
+      drawPendingEgg(nowMs);
+      tickBreeding();
       updateThoughts(dt);
       updatePlayCentreButton();
     }
@@ -1964,16 +1972,17 @@
     const bob = Math.sin(t / 220 + G.walkT / 200) * (G.sleeping ? 0 : 2);
     const py = dy(G.pet.y) + bob;
 
-    ctx.save();
-    ctx.translate(px, py);
-    // The species draw function paints into a 100x100 box centered on
-    // origin.  Anchor the sprite so its feet sit at (0, 0).
-    const s = spriteSize / 100;
-    ctx.scale(G.pet.facing * s, s);
-    ctx.translate(-50, -100);
-    if (G.sleeping) { ctx.rotate(0); }
-    species.draw(ctx, G.pet.mood, t);
-    ctx.restore();
+    const filter = variantFilter(G.save.pet.species, G.save.pet.variant || 0);
+    withFilter(ctx, filter, () => {
+      ctx.save();
+      ctx.translate(px, py);
+      const s = spriteSize / 100;
+      ctx.scale(G.pet.facing * s, s);
+      ctx.translate(-50, -100);
+      if (G.sleeping) { ctx.rotate(0); }
+      species.draw(ctx, G.pet.mood, t);
+      ctx.restore();
+    });
 
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
@@ -2164,6 +2173,8 @@
     const rect = G.stage.getBoundingClientRect();
     const cx = (e.clientX - rect.left);
     const cy = (e.clientY - rect.top);
+    // Ready egg gets first dibs on taps.
+    if (tapHitsPendingEgg(cx, cy)) return;
     const petPx = (G.pet.x / 100) * rect.width;
     const petPy = (G.pet.y / 75)  * rect.height;
     const dist = Math.hypot(cx - petPx, cy - petPy);
@@ -2282,7 +2293,27 @@
         <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">💜 Mate</p>
         <div class="info-row"><span>Name</span><strong>${G.save.mate.name} ${G.save.mate.gender === 'f' ? '♀' : '♂'}</strong></div>
         <div class="info-row"><span>Variant</span><strong>${(SPECIES[G.save.mate.species].variants[G.save.mate.variant] || {name:'?'}).name}</strong></div>
-        <div class="info-row"><span>Together since</span><strong>${new Date(G.save.partneredSince).toLocaleDateString()}</strong></div>` : ''}`;
+        <div class="info-row"><span>Together since</span><strong>${new Date(G.save.partneredSince).toLocaleDateString()}</strong></div>` : ''}
+      ${(G.save.children && G.save.children.length) ? `
+        <hr style="margin:0.75rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
+        <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">👶 Children (${G.save.children.length})</p>
+        ${G.save.children.map(c => `<div class="info-row"><span>${c.name} ${c.gender === 'f' ? '♀' : '♂'}</span><strong>${(SPECIES[c.species].variants[c.variant] || {name:'?'}).name}</strong></div>`).join('')}` : ''}
+      ${G.save.pendingEgg ? `
+        <hr style="margin:0.75rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
+        <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">🥚 Egg</p>
+        <div class="info-row"><span>Status</span><strong>${Date.now() >= G.save.pendingEgg.readyAt ? 'Ready to hatch — tap it!' : 'Incubating…'}</strong></div>
+        ${Date.now() < G.save.pendingEgg.readyAt ? `<div class="info-row"><span>Hatches in</span><strong>${formatDuration(G.save.pendingEgg.readyAt - Date.now())}</strong></div>` : ''}` : ''}
+      ${(G.save.family && G.save.family.length) ? `
+        <hr style="margin:0.75rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
+        <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">📜 Family tree</p>
+        ${G.save.family.slice().reverse().slice(0, 8).map(f => `<div class="info-row"><span>Gen #${f.generation} ${f.name}${f.wasMate ? ' (mate)' : ''}</span><strong>${(SPECIES[f.species].variants[f.variant] || {name:'?'}).name}</strong></div>`).join('')}
+        ${G.save.family.length > 8 ? `<p style="text-align:center;color:#999;font-size:0.85rem;margin:0.35rem 0 0;">…and ${G.save.family.length - 8} more</p>` : ''}` : ''}`;
+  }
+  function formatDuration(ms) {
+    if (ms < 60_000) return Math.ceil(ms / 1000) + 's';
+    const m = Math.floor(ms / 60_000);
+    if (m < 60) return m + 'm';
+    return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
   }
 
   document.getElementById('btn-info').addEventListener('click', () => {
@@ -2493,12 +2524,15 @@
       const pctx = pc.getContext('2d');
       pctx.setTransform(1,0,0,1,0,0);
       pctx.clearRect(0,0,80,80);
-      pctx.save();
-      pctx.translate(40, 76);
-      pctx.scale(0.7, 0.7);
-      pctx.translate(-50, -100);
-      SPECIES[cpu.species].draw(pctx, 'happy', performance.now());
-      pctx.restore();
+      const filter = variantFilter(cpu.species, cpu.variant || 0);
+      withFilter(pctx, filter, () => {
+        pctx.save();
+        pctx.translate(40, 76);
+        pctx.scale(0.7, 0.7);
+        pctx.translate(-50, -100);
+        SPECIES[cpu.species].draw(pctx, 'happy', performance.now());
+        pctx.restore();
+      });
     }
     // Delegate button clicks.
     list.querySelectorAll('button').forEach(b => {
@@ -2622,13 +2656,16 @@
     const px = dx(mr.x);
     const bob = Math.sin(t / 240 + mr.walkT / 200) * 2;
     const py = dy(mr.y) + bob;
-    G.ctx.save();
-    G.ctx.translate(px, py);
-    const s = spriteSize / 100;
-    G.ctx.scale(mr.facing * s, s);
-    G.ctx.translate(-50, -100);
-    species.draw(G.ctx, 'happy', t);
-    G.ctx.restore();
+    const filter = variantFilter(G.save.mate.species, G.save.mate.variant || 0);
+    withFilter(G.ctx, filter, () => {
+      G.ctx.save();
+      G.ctx.translate(px, py);
+      const s = spriteSize / 100;
+      G.ctx.scale(mr.facing * s, s);
+      G.ctx.translate(-50, -100);
+      species.draw(G.ctx, 'happy', t);
+      G.ctx.restore();
+    });
     // Shadow
     G.ctx.fillStyle = 'rgba(0,0,0,0.22)';
     G.ctx.beginPath();
@@ -2644,8 +2681,318 @@
   }
 
   // ============================================================
-  //  Boot
+  //  v3 — variant colours, breeding, offspring, generations
   // ============================================================
+
+  // Time-until-next-egg, measured from the moment a couple pairs OR
+  // from the moment the last egg hatched.  Aim for one egg per real hour.
+  const EGG_GESTATION_MS = 60 * 60 * 1000;
+
+  // Applies a canvas filter that recolours a sprite based on its
+  // variant index.  Variant 0 is the "default" (identity).  Later
+  // variants shift the hue so the mate and children visibly differ
+  // from the base sprite even though the draw functions are shared.
+  function variantFilter(species, variantIdx) {
+    if (!variantIdx) return 'none';
+    const shifts = [0, 60, 190, 285];
+    const shift = shifts[variantIdx % shifts.length];
+    const sat = variantIdx === 3 ? 0.75 : 1.15;
+    return `hue-rotate(${shift}deg) saturate(${sat})`;
+  }
+  function withFilter(ctx, filter, fn) {
+    const prev = ctx.filter;
+    ctx.filter = filter;
+    try { fn(); } finally { ctx.filter = prev || 'none'; }
+  }
+
+  // How offspring inherit variant from parents.  40% player, 40% mate,
+  // 20% mutation (any other variant).
+  function inheritVariant(species) {
+    const variants = SPECIES[species].variants;
+    const roll = Math.random();
+    if (roll < 0.4) return G.save.pet.variant;
+    if (roll < 0.8) return G.save.mate.variant;
+    // mutation — any variant that isn't a parent's, if possible
+    const options = [];
+    for (let i = 0; i < variants.length; i++) {
+      if (i !== G.save.pet.variant && i !== G.save.mate.variant) options.push(i);
+    }
+    if (!options.length) return G.save.pet.variant;
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  // Ensure the next pending egg is scheduled (if any).  Called when
+  // pairing, hatching, or on load.
+  function schedulePendingEgg() {
+    if (!G.save.mate) return;
+    if (G.save.pendingEgg) return;
+    // Cap the household at 3 living offspring so the habitat doesn't
+    // get overwhelming — beyond that the couple stops laying until
+    // one grows up (or player promotes/dismisses one).
+    if ((G.save.children || []).length >= 3) return;
+    const gender = Math.random() < 0.5 ? 'm' : 'f';
+    const speciesKey = G.save.pet.species;
+    const variant = inheritVariant(speciesKey);
+    const nameList = CPU_NAMES[gender];
+    const name = nameList[Math.floor(Math.random() * nameList.length)];
+    // The very first egg comes ~half a gestation faster so the player
+    // sees the payoff of mating without a huge wait.
+    const firstEgg = !G.save.children || !G.save.children.length;
+    const wait = firstEgg ? EGG_GESTATION_MS * 0.5 : EGG_GESTATION_MS;
+    // If we're loading in with a lot of missed time, credit some of it.
+    const missed = Math.min(TUNE.OFFLINE_CAP_MS, Date.now() - (G.save.partneredSince || Date.now()));
+    G.save.pendingEgg = {
+      readyAt: Date.now() + Math.max(15_000, wait - Math.min(wait, missed * 0.1)),
+      species: speciesKey,
+      variant,
+      gender,
+      name,
+    };
+  }
+
+  // Called every second-ish from the loop when a couple exists.
+  function tickBreeding() {
+    if (!G.save.mate) return;
+    if (!G.save.pendingEgg) { schedulePendingEgg(); return; }
+    // Egg readiness is time-based; the visual + tap handled in draw.
+  }
+
+  function hatchPendingEgg() {
+    const p = G.save.pendingEgg;
+    if (!p) return;
+    if (Date.now() < p.readyAt) return;
+    const baby = {
+      species: p.species,
+      variant: p.variant,
+      gender: p.gender,
+      name: p.name,
+      born: Date.now(),
+    };
+    G.save.children = G.save.children || [];
+    G.save.children.push(baby);
+    G.save.pendingEgg = null;
+    saveNow();
+    thoughtAt(50, 30, `🎉 ${baby.name} hatched!`, 3500);
+    beep(880, 'square', 0.15, 0.08);
+    setTimeout(() => beep(1175, 'square', 0.15, 0.08), 90);
+    setTimeout(() => beep(1568, 'square', 0.2, 0.10), 180);
+    // Kick off a new gestation if there's room.
+    schedulePendingEgg();
+    // Ensure runtime state exists for the new baby.
+    ensureChildRuntime(G.save.children.length - 1);
+  }
+
+  // Runtime positions/AI for each child (not persisted).
+  function ensureChildRuntime(i) {
+    G.childRuntime = G.childRuntime || [];
+    if (!G.childRuntime[i]) {
+      const startX = 30 + i * 20;
+      G.childRuntime[i] = {
+        x: startX, y: 82,
+        tx: startX + (Math.random() * 20 - 10), ty: 82,
+        facing: Math.random() < 0.5 ? 1 : -1,
+        walkT: 0,
+        wanderT: 2000 + Math.random() * 3000,
+      };
+    }
+  }
+  function stepChildAI(dt) {
+    if (!G.save.children || !G.save.children.length) return;
+    G.childRuntime = G.childRuntime || [];
+    for (let i = 0; i < G.save.children.length; i++) {
+      ensureChildRuntime(i);
+      const cr = G.childRuntime[i];
+      cr.wanderT -= dt;
+      if (cr.wanderT <= 0) {
+        cr.tx = 15 + Math.random() * 70;
+        cr.ty = 80 + Math.random() * 3;
+        cr.wanderT = 2500 + Math.random() * 3500;
+      }
+      const dx1 = cr.tx - cr.x;
+      const dist = Math.abs(dx1);
+      const speed = 0.011;
+      if (dist > 0.4) {
+        const step = Math.min(dist, speed * dt);
+        cr.x += Math.sign(dx1) * step;
+        cr.facing = dx1 > 0 ? 1 : -1;
+        cr.walkT += dt;
+      }
+    }
+  }
+  function drawChildren(t) {
+    if (!G.save.children || !G.save.children.length) return;
+    for (let i = 0; i < G.save.children.length; i++) {
+      const c = G.save.children[i];
+      const cr = G.childRuntime && G.childRuntime[i];
+      if (!cr) continue;
+      // babies scale small and stay small for demo — a mini "baby" size
+      const spriteSize = 90 * 0.5;
+      const px = dx(cr.x);
+      const bob = Math.sin(t / 200 + cr.walkT / 180) * 1.5;
+      const py = dy(cr.y) + bob;
+      const filter = variantFilter(c.species, c.variant);
+      withFilter(G.ctx, filter, () => {
+        G.ctx.save();
+        G.ctx.translate(px, py);
+        const s = spriteSize / 100;
+        G.ctx.scale(cr.facing * s, s);
+        G.ctx.translate(-50, -100);
+        SPECIES[c.species].draw(G.ctx, 'happy', t);
+        G.ctx.restore();
+      });
+      // shadow
+      G.ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      G.ctx.beginPath();
+      G.ctx.ellipse(px, dy(cr.y) + 2, spriteSize * 0.24, spriteSize * 0.06, 0, 0, Math.PI * 2);
+      G.ctx.fill();
+      // Tiny name tag
+      G.ctx.fillStyle = '#fff';
+      G.ctx.strokeStyle = '#1a1a1a';
+      G.ctx.lineWidth = 2;
+      G.ctx.font = 'bold 10px "Baloo 2", sans-serif';
+      const w = G.ctx.measureText(c.name).width;
+      const tagX = px - w / 2 - 4;
+      const tagY = dy(cr.y) - spriteSize - 4;
+      G.ctx.beginPath();
+      // roundRect isn't in older browsers; hand-roll a small rounded rect.
+      const r = 5, xR = tagX, yR = tagY - 10, wR = w + 8, hR = 12;
+      G.ctx.moveTo(xR + r, yR);
+      G.ctx.lineTo(xR + wR - r, yR);
+      G.ctx.quadraticCurveTo(xR + wR, yR, xR + wR, yR + r);
+      G.ctx.lineTo(xR + wR, yR + hR - r);
+      G.ctx.quadraticCurveTo(xR + wR, yR + hR, xR + wR - r, yR + hR);
+      G.ctx.lineTo(xR + r, yR + hR);
+      G.ctx.quadraticCurveTo(xR, yR + hR, xR, yR + hR - r);
+      G.ctx.lineTo(xR, yR + r);
+      G.ctx.quadraticCurveTo(xR, yR, xR + r, yR);
+      G.ctx.closePath();
+      G.ctx.fill(); G.ctx.stroke();
+      G.ctx.fillStyle = '#1a1a1a';
+      G.ctx.fillText(c.name, tagX + 4, tagY);
+    }
+  }
+
+  // Draw the pending egg in the habitat, either as "cooking" or "ready".
+  function drawPendingEgg(t) {
+    if (!G.save.pendingEgg) return;
+    const ready = Date.now() >= G.save.pendingEgg.readyAt;
+    const nestX = 55;
+    const nestY = 82;
+    const scale = 0.6 + (ready ? Math.sin(t / 300) * 0.05 : 0);
+    // Nest
+    G.ctx.fillStyle = '#78350f';
+    G.ctx.beginPath();
+    G.ctx.ellipse(dx(nestX), dy(nestY) + 3, 22 * scale, 6, 0, 0, Math.PI * 2);
+    G.ctx.fill();
+    // Egg
+    const eggColor = ready ? '#fef3c7' : '#e5e7eb';
+    const trimColor = ready ? '#65a30d' : '#9ca3af';
+    G.ctx.fillStyle = eggColor;
+    G.ctx.strokeStyle = '#1a1a1a';
+    G.ctx.lineWidth = 3;
+    G.ctx.beginPath();
+    G.ctx.ellipse(dx(nestX), dy(nestY) - 6 * scale, 12 * scale, 15 * scale, 0, 0, Math.PI * 2);
+    G.ctx.fill(); G.ctx.stroke();
+    // Squiggle
+    G.ctx.strokeStyle = trimColor;
+    G.ctx.lineWidth = 3;
+    G.ctx.beginPath();
+    G.ctx.moveTo(dx(nestX) - 8 * scale, dy(nestY) - 7 * scale);
+    G.ctx.quadraticCurveTo(dx(nestX), dy(nestY) - 12 * scale, dx(nestX) + 8 * scale, dy(nestY) - 4 * scale);
+    G.ctx.stroke();
+    // Ready label
+    if (ready) {
+      G.ctx.fillStyle = '#dc2626';
+      G.ctx.font = 'bold 12px "Baloo 2", sans-serif';
+      const label = 'TAP TO HATCH!';
+      const w = G.ctx.measureText(label).width;
+      G.ctx.fillText(label, dx(nestX) - w / 2, dy(nestY) - 26);
+    }
+    // Store pixel bounds for click-hit detection.
+    G._eggHit = {
+      x: dx(nestX) - 14 * scale,
+      y: dy(nestY) - 22 * scale,
+      w: 28 * scale,
+      h: 30 * scale,
+      ready,
+    };
+  }
+
+  // Called from onStageTap — returns true if the tap hit the egg.
+  function tapHitsPendingEgg(cx, cy) {
+    if (!G._eggHit || !G._eggHit.ready) return false;
+    const b = G._eggHit;
+    if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) {
+      hatchPendingEgg();
+      return true;
+    }
+    return false;
+  }
+
+  // On old-age death, if there's an heir, promote them to be the new
+  // active pet and carry on the lineage.
+  function tryInheritance(cause) {
+    if (cause !== 'old age') return false;   // only old age passes the torch
+    if (!G.save.children || !G.save.children.length) return false;
+    // Log the departing pet into family.
+    G.save.family = G.save.family || [];
+    G.save.family.push({
+      species: G.save.pet.species,
+      variant: G.save.pet.variant,
+      gender: G.save.pet.gender,
+      name: G.save.pet.name,
+      born: G.save.history.born,
+      died: Date.now(),
+      cause: 'old age',
+      generation: G.save.generation,
+    });
+    // Promote first child.
+    const heir = G.save.children.shift();
+    G.save.pet = {
+      species: heir.species,
+      name: heir.name,
+      gender: heir.gender,
+      variant: heir.variant,
+      born: heir.born,
+    };
+    // The mate may also be aging — retire them along with the parent.
+    // (v3 keeps this simple: parents die together, next generation
+    // starts single, seeks a fresh play-centre partner.)
+    if (G.save.mate) {
+      G.save.family.push({
+        species: G.save.mate.species,
+        variant: G.save.mate.variant,
+        gender: G.save.mate.gender,
+        name: G.save.mate.name,
+        born: G.save.partneredSince,
+        died: Date.now(),
+        cause: 'old age',
+        generation: G.save.generation,
+        wasMate: true,
+      });
+    }
+    G.save.mate = null;
+    G.save.partneredSince = null;
+    G.save.pendingEgg = null;
+    G.save.playCentre = null;
+    G.save.generation = (G.save.generation || 1) + 1;
+    G.save.stage = 'baby';
+    G.save.age = 0;
+    G.save.meters = { hunger: 80, happy: 80, clean: 80, energy: 80 };
+    G.save.sickSince = null;
+    G.save.history = { born: heir.born, died: null, cause: null };
+    G.mateRuntime = null;
+    saveNow();
+    // Cheer!
+    setScreen('habitat');
+    renderHUD();
+    renderStagebar();
+    thoughtAt(50, 30, `${heir.name} carries the line on! ✨`, 4200);
+    beep(660, 'square', 0.2, 0.08);
+    setTimeout(() => beep(880, 'square', 0.2, 0.08), 120);
+    setTimeout(() => beep(1175, 'square', 0.3, 0.10), 240);
+    return true;
+  }
 
   function boot() {
     // Wire up egg-stage tap
