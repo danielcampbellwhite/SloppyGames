@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6775423540653672" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-6775423540653672" />
+  <title>Sloppy Pets — Sloppy Games</title>
+  <meta name="description" content="A virtual pet you keep and care for over real days. Pick a biome, hatch your egg, then feed, play, clean and nurture your pet as it grows up. Saves in your browser." />
+  <link rel="icon" type="image/png" href="../../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple: #9333ea;
+      --purple-dark: #6b21a8;
+      --purple-light: #c084fc;
+      --lime: #84cc16;
+      --lime-dark: #65a30d;
+      --pink: #ec4899;
+      --cyan: #06b6d4;
+      --yellow: #facc15;
+      --orange: #f97316;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --green: #22c55e;
+      --brown: #8b5a2b;
+      --ink: #1a1a1a;
+      --paper: #ffffff;
+      --bg: #fffdf6;
+      --shadow: rgba(26, 26, 26, 0.2);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Fredoka', system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    h1, h2, h3 { font-family: 'Baloo 2', sans-serif; font-weight: 800; margin: 0; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      gap: 0.5rem;
+    }
+    .back, .icon-btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      text-decoration: none; color: var(--ink);
+      font-family: 'Baloo 2', sans-serif; font-weight: 700;
+      padding: 0.5rem 0.9rem; border-radius: 999px;
+      border: 3px solid var(--ink); background: var(--paper);
+      box-shadow: 4px 4px 0 var(--ink);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    .back:hover, .icon-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .back:active, .icon-btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .topbar-right { display: flex; gap: 0.5rem; align-items: center; }
+    .topbar img { height: 44px; filter: drop-shadow(0 3px 0 var(--shadow)); }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.25rem 1rem 2rem;
+      gap: 0.75rem;
+      max-width: 780px;
+      width: 100%;
+      margin: 0 auto;
+      position: relative;
+    }
+    .title {
+      text-align: center;
+      font-size: clamp(1.6rem, 4.5vw, 2.4rem);
+      line-height: 1.1;
+    }
+    .title .accent {
+      background: var(--lime);
+      padding: 0 0.4rem;
+      border-radius: 10px;
+      box-shadow: 3px 3px 0 var(--ink);
+      display: inline-block;
+      transform: rotate(-1deg);
+    }
+    .subtitle { text-align: center; max-width: 620px; color: #444; margin: -0.25rem 0 0.5rem; font-size: 0.95rem; }
+
+    /* ---------- Screens ---------- */
+    .screen { width: 100%; display: none; flex-direction: column; align-items: center; gap: 1rem; }
+    .screen.active { display: flex; }
+
+    /* ---------- Biome select ---------- */
+    .biome-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      width: 100%;
+    }
+    .biome-card {
+      cursor: pointer;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 20px;
+      box-shadow: 6px 6px 0 var(--ink);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      text-align: left;
+      padding: 0;
+      font-family: inherit;
+      color: inherit;
+    }
+    .biome-card:hover { transform: translate(-3px,-3px); box-shadow: 9px 9px 0 var(--ink); }
+    .biome-card:active { transform: translate(3px,3px); box-shadow: 2px 2px 0 var(--ink); }
+    .biome-card__art {
+      aspect-ratio: 16 / 10;
+      border-bottom: 3px solid var(--ink);
+      position: relative;
+      overflow: hidden;
+    }
+    .biome-card__body { padding: 0.9rem 1rem 1.1rem; }
+    .biome-card__body h3 { font-size: 1.35rem; margin-bottom: 0.15rem; }
+    .biome-card__body p { margin: 0.2rem 0 0; font-size: 0.9rem; color: #555; }
+    .biome-card__pets { margin-top: 0.5rem; font-size: 0.8rem; color: #777; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; font-family: 'Baloo 2', sans-serif; }
+
+    /* Biome art (background layers) */
+    .art-sky { position: absolute; inset: 0; }
+    .art-forest .art-sky { background: linear-gradient(180deg, #bef264 0%, #84cc16 60%, #4d7c0f 100%); }
+    .art-sea    .art-sky { background: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 45%, #0369a1 100%); }
+    .art-tropical .art-sky { background: linear-gradient(180deg, #fde68a 0%, #fbbf24 45%, #ea580c 100%); }
+    .art-forest::after {
+      content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 40%;
+      background: radial-gradient(circle at 20% 100%, #14532d 0 20%, transparent 22%),
+                  radial-gradient(circle at 50% 100%, #166534 0 22%, transparent 25%),
+                  radial-gradient(circle at 85% 100%, #14532d 0 18%, transparent 22%);
+    }
+    .art-sea::after {
+      content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 55%;
+      background:
+        radial-gradient(ellipse 40% 90% at 20% 100%, #ec4899 0 15%, transparent 18%),
+        radial-gradient(ellipse 30% 70% at 55% 100%, #f97316 0 15%, transparent 18%),
+        radial-gradient(ellipse 40% 80% at 82% 100%, #a855f7 0 15%, transparent 18%),
+        linear-gradient(180deg, transparent, rgba(0,0,0,0.15));
+    }
+    .art-tropical::after {
+      content: ''; position: absolute; left: 8%; right: 8%; bottom: 0; height: 45%;
+      background:
+        radial-gradient(ellipse 8% 40% at 20% 100%, #78350f 0 60%, transparent 62%),
+        radial-gradient(ellipse 8% 40% at 80% 100%, #78350f 0 60%, transparent 62%),
+        radial-gradient(ellipse 22% 12% at 20% 60%, #16a34a 0 60%, transparent 62%),
+        radial-gradient(ellipse 22% 12% at 80% 60%, #16a34a 0 60%, transparent 62%);
+    }
+
+    /* ---------- Egg screen ---------- */
+    .egg-stage {
+      width: min(500px, 92vw);
+      aspect-ratio: 4 / 3;
+      border: 4px solid var(--ink);
+      border-radius: 24px;
+      box-shadow: 0 8px 0 var(--ink);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .egg-sky { position: absolute; inset: 0; }
+    .biome-forest   .egg-sky { background: linear-gradient(180deg, #bef264, #4d7c0f); }
+    .biome-sea      .egg-sky { background: linear-gradient(180deg, #7dd3fc, #0369a1); }
+    .biome-tropical .egg-sky { background: linear-gradient(180deg, #fde68a, #ea580c); }
+    .egg-nest {
+      position: absolute; left: 50%; bottom: 8%;
+      width: 60%; height: 12%;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at center, #78350f 0 60%, transparent 62%);
+      border-radius: 50%;
+    }
+    .egg-shape {
+      position: absolute;
+      left: 50%;
+      bottom: 15%;
+      width: 32%;
+      transform: translateX(-50%);
+      animation: eggWobble 3s ease-in-out infinite;
+    }
+    .egg-shape svg { width: 100%; height: auto; display: block; filter: drop-shadow(0 6px 0 rgba(0,0,0,0.3)); }
+    @keyframes eggWobble {
+      0%, 100% { transform: translateX(-50%) rotate(-2deg); }
+      50%      { transform: translateX(-50%) rotate(2deg); }
+    }
+    .egg-shape.warming { animation: eggShake 0.4s ease-in-out infinite; }
+    @keyframes eggShake {
+      0%, 100% { transform: translateX(-50%) rotate(0deg); }
+      25%      { transform: translateX(-52%) rotate(-6deg); }
+      75%      { transform: translateX(-48%) rotate(6deg); }
+    }
+    .egg-cta {
+      position: absolute; left: 0; right: 0; top: 8%;
+      text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 800;
+      font-size: clamp(1rem, 3vw, 1.3rem);
+      color: var(--ink);
+      text-shadow: 2px 2px 0 rgba(255,255,255,0.6);
+    }
+    .egg-progress {
+      position: absolute; left: 10%; right: 10%; bottom: 4%;
+      height: 14px; background: rgba(0,0,0,0.25); border: 2px solid var(--ink); border-radius: 999px; overflow: hidden;
+    }
+    .egg-progress .fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--yellow), var(--orange)); transition: width 0.2s ease; }
+    .egg-tap-hint {
+      position: absolute; left: 0; right: 0; bottom: 25%;
+      text-align: center; font-family: 'Baloo 2', sans-serif; font-weight: 700;
+      color: rgba(0,0,0,0.5);
+      pointer-events: none;
+      animation: hintFade 2s ease-in-out infinite;
+    }
+    @keyframes hintFade { 0%,100% { opacity: 0.4; } 50% { opacity: 0.9; } }
+
+    /* Hatch confetti */
+    .confetti {
+      position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+    }
+    .confetti span {
+      position: absolute; top: -20px;
+      width: 10px; height: 14px;
+      background: var(--purple);
+      animation: confettiFall 2s linear forwards;
+    }
+
+    /* ---------- Habitat screen ---------- */
+    .habitat-wrap { width: 100%; display: flex; flex-direction: column; gap: 0.6rem; align-items: center; }
+
+    .hud {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 640px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .hud-pill {
+      flex: 1 1 90px;
+      min-width: 90px;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 14px;
+      box-shadow: 3px 3px 0 var(--ink);
+      padding: 0.3rem 0.5rem 0.5rem;
+    }
+    .hud-pill .top {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.3rem;
+      font-family: 'Baloo 2', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #555;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .hud-pill .icon { font-size: 1rem; }
+    .hud-pill .bar { height: 8px; background: rgba(0,0,0,0.15); border-radius: 999px; overflow: hidden; margin-top: 0.25rem; }
+    .hud-pill .bar .fill { height: 100%; transition: width 0.3s ease, background 0.3s ease; }
+    .hud-pill.hunger .fill { background: linear-gradient(90deg, #fb923c, #ea580c); }
+    .hud-pill.happy  .fill { background: linear-gradient(90deg, #f472b6, #db2777); }
+    .hud-pill.clean  .fill { background: linear-gradient(90deg, #38bdf8, #0284c7); }
+    .hud-pill.energy .fill { background: linear-gradient(90deg, #a3e635, #65a30d); }
+    .hud-pill.low .fill { background: linear-gradient(90deg, #f87171, #dc2626) !important; animation: pulseWarn 1s ease-in-out infinite; }
+    @keyframes pulseWarn { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .stagebar {
+      display: flex; gap: 0.5rem; align-items: center; justify-content: center; flex-wrap: wrap;
+      width: 100%; max-width: 640px;
+      font-family: 'Baloo 2', sans-serif;
+    }
+    .stagebar .chip {
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      box-shadow: 3px 3px 0 var(--ink);
+      padding: 0.25rem 0.75rem;
+      font-weight: 700; font-size: 0.9rem;
+    }
+    .stagebar .chip strong { color: var(--purple-dark); }
+    .stagebar .chip.coins { background: linear-gradient(180deg, #fef3c7, #fde68a); }
+
+    .stage {
+      position: relative;
+      width: min(640px, 95vw);
+      aspect-ratio: 4 / 3;
+      max-height: calc(100dvh - 340px);
+      min-height: 260px;
+      border: 4px solid var(--ink);
+      border-radius: 22px;
+      box-shadow: 0 8px 0 var(--ink);
+      overflow: hidden;
+      background: #cfe8ff;
+      touch-action: manipulation;
+    }
+    .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .thought {
+      position: absolute; pointer-events: none;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 18px;
+      box-shadow: 3px 3px 0 var(--ink);
+      padding: 0.15rem 0.55rem;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transform: translate(-50%, -100%);
+      animation: thoughtIn 0.3s ease-out, thoughtOut 0.3s ease-in 2.5s forwards;
+    }
+    .thought::after {
+      content: '';
+      position: absolute;
+      left: 50%; bottom: -6px; transform: translateX(-50%);
+      width: 10px; height: 10px;
+      background: var(--paper);
+      border-right: 3px solid var(--ink);
+      border-bottom: 3px solid var(--ink);
+      transform-origin: center;
+      transform: translateX(-50%) rotate(45deg);
+    }
+    @keyframes thoughtIn { from { opacity: 0; transform: translate(-50%, -80%); } to { opacity: 1; transform: translate(-50%, -100%); } }
+    @keyframes thoughtOut { to { opacity: 0; transform: translate(-50%, -120%); } }
+
+    .float-coin {
+      position: absolute; pointer-events: none;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      color: #ca8a04;
+      text-shadow: 2px 2px 0 var(--ink);
+      transform: translate(-50%, -50%);
+      animation: floatUp 1.1s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translate(-50%, -20%); }
+      20% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -140%); }
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 640px;
+    }
+    .action {
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.5rem 0.3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .action:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .action:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+    .action .emoji { font-size: 1.6rem; line-height: 1; }
+    .action.on { background: var(--yellow); }
+    .action:disabled, .action[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+    @media (max-width: 480px) {
+      .actions { grid-template-columns: repeat(5, 1fr); }
+      .action { padding: 0.4rem 0.15rem; font-size: 0.72rem; }
+      .action .emoji { font-size: 1.4rem; }
+    }
+
+    /* ---------- Modal ---------- */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(26,26,26,0.55);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+    .modal-backdrop.active { display: flex; }
+    .modal {
+      background: var(--paper);
+      border: 4px solid var(--ink);
+      border-radius: 22px;
+      box-shadow: 0 8px 0 var(--ink);
+      max-width: 560px;
+      width: 100%;
+      max-height: 90dvh;
+      overflow-y: auto;
+      padding: 1.25rem;
+      position: relative;
+    }
+    .modal h2 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    .modal .close {
+      position: absolute; top: 0.6rem; right: 0.6rem;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 3px solid var(--ink);
+      background: var(--paper);
+      box-shadow: 3px 3px 0 var(--ink);
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.1rem;
+      cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .modal .close:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--ink); }
+
+    .shop-list { display: grid; grid-template-columns: 1fr; gap: 0.6rem; margin-top: 0.75rem; }
+    @media (min-width: 480px) { .shop-list { grid-template-columns: 1fr 1fr; } }
+    .shop-item {
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      padding: 0.7rem;
+      background: #fff;
+      box-shadow: 3px 3px 0 var(--ink);
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .shop-item .row { display: flex; align-items: center; gap: 0.5rem; }
+    .shop-item .emoji { font-size: 1.7rem; line-height: 1; }
+    .shop-item .name { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; }
+    .shop-item .desc { font-size: 0.85rem; color: #444; }
+    .shop-item button {
+      margin-top: auto;
+      background: var(--lime);
+      border: 3px solid var(--ink);
+      color: var(--ink);
+      border-radius: 999px;
+      box-shadow: 3px 3px 0 var(--ink);
+      padding: 0.35rem 0.75rem;
+      font-family: 'Baloo 2', sans-serif; font-weight: 800;
+      cursor: pointer;
+    }
+    .shop-item button:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--ink); }
+    .shop-item button:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); }
+    .shop-item.owned button { background: #d1d5db; cursor: default; }
+    .shop-item.locked button { background: #fee2e2; cursor: not-allowed; }
+
+    /* Info modal about your pet */
+    .info-row { display: flex; justify-content: space-between; padding: 0.35rem 0; border-bottom: 2px dotted rgba(0,0,0,0.15); font-size: 0.95rem; }
+    .info-row:last-child { border-bottom: none; }
+    .info-row strong { font-family: 'Baloo 2', sans-serif; }
+
+    /* Dead / restart screen */
+    .dead-card {
+      background: var(--paper);
+      border: 4px solid var(--ink);
+      border-radius: 22px;
+      box-shadow: 0 8px 0 var(--ink);
+      padding: 1.5rem;
+      text-align: center;
+      max-width: 500px;
+    }
+    .dead-card h2 { font-size: 1.6rem; margin-bottom: 0.5rem; }
+    .dead-card p { margin: 0.4rem 0; }
+    .dead-card .memorial {
+      margin: 1rem auto;
+      width: 140px; height: 140px;
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      background: #fef3c7;
+      display: grid; place-items: center;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .dead-card .memorial canvas { width: 100%; height: 100%; }
+
+    .primary-btn {
+      background: var(--lime);
+      color: var(--ink);
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.7rem 1.4rem;
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.05rem;
+      cursor: pointer;
+      margin-top: 0.75rem;
+    }
+    .primary-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .primary-btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+
+    .ghost-btn {
+      background: var(--paper);
+      color: var(--ink);
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      box-shadow: 4px 4px 0 var(--ink);
+      padding: 0.6rem 1.2rem;
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .ghost-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+    .ghost-btn:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--ink); }
+
+    /* Sick indicator */
+    .sick-mark {
+      position: absolute; top: 8px; right: 8px;
+      background: var(--red); color: #fff;
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      padding: 0.15rem 0.55rem;
+      font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 0.85rem;
+      box-shadow: 3px 3px 0 var(--ink);
+      z-index: 3;
+    }
+    .day-time {
+      position: absolute; top: 8px; left: 8px;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      padding: 0.1rem 0.5rem;
+      font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.8rem;
+      box-shadow: 3px 3px 0 var(--ink);
+      z-index: 3;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .egg-shape, .egg-shape.warming { animation: none !important; }
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="../../">← Back</a>
+    <img src="../../assets/logo.png" alt="Sloppy Games" />
+    <div class="topbar-right">
+      <button class="icon-btn" id="btn-shop" title="Shop">🛒 Shop</button>
+      <button class="icon-btn" id="btn-info" title="Info">ℹ️</button>
+    </div>
+  </div>
+
+  <main>
+    <h1 class="title">Sloppy <span class="accent">Pets</span></h1>
+    <p class="subtitle" id="subtitle">Pick a biome, hatch your egg, then look after your new pet as it grows.</p>
+
+    <!-- Biome selection -->
+    <section id="screen-biome" class="screen">
+      <div class="biome-grid" id="biome-grid"></div>
+    </section>
+
+    <!-- Egg incubation -->
+    <section id="screen-egg" class="screen">
+      <div class="egg-stage" id="egg-stage">
+        <div class="egg-sky"></div>
+        <div class="egg-cta" id="egg-cta">Tap the egg to keep it warm</div>
+        <div class="egg-tap-hint">👆 tap tap tap</div>
+        <div class="egg-nest"></div>
+        <div class="egg-shape" id="egg-shape"></div>
+        <div class="egg-progress"><div class="fill" id="egg-fill"></div></div>
+        <div class="confetti" id="confetti"></div>
+      </div>
+      <div style="display:flex; gap: 0.5rem;">
+        <button class="ghost-btn" id="egg-back">← Pick another biome</button>
+      </div>
+    </section>
+
+    <!-- Habitat / main play -->
+    <section id="screen-habitat" class="screen">
+      <div class="stagebar">
+        <span class="chip">Stage <strong id="chip-stage">Baby</strong></span>
+        <span class="chip">Age <strong id="chip-age">0d 0h</strong></span>
+        <span class="chip coins">🪙 <strong id="chip-coins">0</strong></span>
+      </div>
+      <div class="hud" id="hud"></div>
+      <div class="stage" id="stage">
+        <div class="day-time" id="day-time">🌞 Day</div>
+        <div class="sick-mark" id="sick-mark" style="display:none;">🤢 Sick</div>
+        <canvas id="canvas"></canvas>
+      </div>
+      <div class="actions" id="actions"></div>
+    </section>
+
+    <!-- Death / restart -->
+    <section id="screen-dead" class="screen">
+      <div class="dead-card">
+        <h2 id="dead-title">Your pet has passed on</h2>
+        <div class="memorial"><canvas id="memorial-canvas" width="140" height="140"></canvas></div>
+        <p id="dead-body">Every Sloppy Pet's tale comes to an end. A new egg is waiting for you.</p>
+        <p id="dead-stats" style="color:#666;font-size:0.9rem;"></p>
+        <button class="primary-btn" id="btn-new-egg">🥚 Start a new egg</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Shop modal -->
+  <div class="modal-backdrop" id="modal-shop">
+    <div class="modal">
+      <button class="close" data-close="modal-shop" aria-label="Close">✕</button>
+      <h2>🛒 Sloppy Pet Shop</h2>
+      <p style="margin:0.25rem 0 0.5rem;color:#555;">Earn coins over time and by taking good care of your pet.</p>
+      <p style="margin:0 0 0.5rem;font-family:'Baloo 2',sans-serif;font-weight:800;">Coins: 🪙 <span id="shop-coins">0</span></p>
+      <div class="shop-list" id="shop-list"></div>
+    </div>
+  </div>
+
+  <!-- Info modal -->
+  <div class="modal-backdrop" id="modal-info">
+    <div class="modal">
+      <button class="close" data-close="modal-info" aria-label="Close">✕</button>
+      <h2 id="info-name">Your pet</h2>
+      <div id="info-body"></div>
+      <hr style="margin:1rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
+      <details>
+        <summary style="cursor:pointer;font-family:'Baloo 2',sans-serif;font-weight:700;">⚠️ Danger zone</summary>
+        <p style="margin:0.5rem 0;color:#555;font-size:0.9rem;">
+          This erases your pet and your save so you can start over from scratch.
+        </p>
+        <button class="ghost-btn" id="btn-reset" style="background:#fee2e2;">Reset my save</button>
+      </details>
+    </div>
+  </div>
+
+  <footer style="text-align:center;padding:1rem;color:#666;font-size:0.9rem;">
+    Made with 💜💚 by the Sloppy Games team. Your pet is saved in this browser only.
+  </footer>
+
+  <script>
+  // ============================================================
+  //  Sloppy Pets — a persistent virtual pet
+  //  Save schema is versioned; unknown fields are ignored.
+  // ============================================================
+
+  const SAVE_KEY = 'sloppy.pets.v1';
+  const SAVE_VERSION = 1;
+
+  // Real-time tunings (all in ms).  Keep these clustered — future
+  // updates may re-balance without touching game code.
+  const TUNE = {
+    // Age moves 0 -> 100 over LIFESPAN_MS of real time.  ~4 real days.
+    LIFESPAN_MS: 4 * 24 * 60 * 60 * 1000,
+    // How often each meter drops one point (ms per -1).
+    DECAY_MS: {
+      hunger: 8  * 60 * 1000,   // -1 every 8 minutes
+      happy:  12 * 60 * 1000,
+      clean:  15 * 60 * 1000,
+      energy: 10 * 60 * 1000,
+    },
+    // Coins slowly accrue while the page is visible.
+    COIN_TICK_MS: 60 * 1000,     // +1 coin per minute of active play
+    // Egg hatches on 30 taps OR 3 real minutes with the tab open.
+    EGG_TAPS_TO_HATCH: 30,
+    EGG_PASSIVE_MS: 3 * 60 * 1000,
+    // Sickness thresholds
+    SICK_AFTER_MS: 60 * 60 * 1000,  // any meter stuck at 0 for 1 hour -> sick
+    DEATH_AFTER_SICK_MS: 6 * 60 * 60 * 1000, // sick 6 hours untreated -> dies
+    // How often we save automatically.
+    AUTOSAVE_MS: 5000,
+    // Maximum time we credit for offline decay in one gulp (24h) so a
+    // pet doesn't die instantly if you leave for a week.
+    OFFLINE_CAP_MS: 24 * 60 * 60 * 1000,
+  };
+
+  const STAGES = [
+    { key: 'baby',  label: 'Baby',  min: 0,   max: 15,  scale: 0.55 },
+    { key: 'child', label: 'Child', min: 15,  max: 35,  scale: 0.70 },
+    { key: 'teen',  label: 'Teen',  min: 35,  max: 55,  scale: 0.85 },
+    { key: 'adult', label: 'Adult', min: 55,  max: 80,  scale: 1.00 },
+    { key: 'elder', label: 'Elder', min: 80,  max: 100, scale: 1.10 },
+  ];
+
+  // ============================================================
+  //  Biomes and species
+  // ============================================================
+
+  const BIOMES = {
+    forest: {
+      key: 'forest',
+      label: 'Forest',
+      blurb: 'Leafy trees, mossy ground, sunlit clearings. Cosy woodland pets live here.',
+      sky: ['#bef264', '#4d7c0f'],
+      ground: '#166534',
+      dayTint: 'rgba(255,255,220,0.0)',
+      nightTint: 'rgba(20,20,60,0.4)',
+      pets: ['sprout', 'foxy', 'owlet'],
+    },
+    sea: {
+      key: 'sea',
+      label: 'Sea',
+      blurb: 'Coral gardens, gentle currents, bubbles drifting up. Watery pets thrive here.',
+      sky: ['#7dd3fc', '#0369a1'],
+      ground: '#0e7490',
+      dayTint: 'rgba(180,220,255,0.15)',
+      nightTint: 'rgba(0,10,40,0.5)',
+      pets: ['blubby', 'turty', 'squig'],
+    },
+    tropical: {
+      key: 'tropical',
+      label: 'Tropical',
+      blurb: 'Warm sand, palm trees, sunset skies. Bright, cheeky pets love it here.',
+      sky: ['#fde68a', '#ea580c'],
+      ground: '#facc15',
+      dayTint: 'rgba(255,240,200,0.05)',
+      nightTint: 'rgba(30,10,60,0.4)',
+      pets: ['pango', 'slothy', 'cocoo'],
+    },
+  };
+
+  // Each species has a draw() function that renders the sprite into
+  // ctx at (0, 0) with a bounding box of 100x100 (design units).  The
+  // engine handles positioning, scaling and mirroring.
+  const SPECIES = {
+    sprout: {
+      key: 'sprout', name: 'Sprout',
+      biome: 'forest',
+      personality: 'A leafy little woodland pup that giggles when the sun hits its head.',
+      like: 'sunshine', hates: 'cold water',
+      draw(ctx, mood, t) {
+        // body
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        ctx.fillStyle = '#84cc16';
+        blob(ctx, 50, 60, 42, 34);
+        // belly patch
+        ctx.fillStyle = '#d9f99d';
+        ellipse(ctx, 50, 72, 22, 14, true);
+        // legs
+        ctx.fillStyle = '#65a30d';
+        blob(ctx, 30, 88, 12, 8);
+        blob(ctx, 70, 88, 12, 8);
+        // leaves on head
+        ctx.fillStyle = '#22c55e';
+        leaf(ctx, 42, 28, -30);
+        leaf(ctx, 58, 28,  30);
+        // stem
+        ctx.strokeStyle = '#166534'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(50, 34); ctx.lineTo(50, 26); ctx.stroke();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        // face
+        drawFace(ctx, mood, t, 'small');
+        ctx.restore();
+      }
+    },
+    foxy: {
+      key: 'foxy', name: 'Foxy', biome: 'forest',
+      personality: 'A curious little fox that darts about and steals crumbs when you look away.',
+      like: 'playing', hates: 'being alone',
+      draw(ctx, mood, t) {
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body
+        ctx.fillStyle = '#f97316';
+        blob(ctx, 50, 62, 40, 30);
+        // belly
+        ctx.fillStyle = '#fef3c7';
+        ellipse(ctx, 50, 74, 22, 12, true);
+        // legs
+        ctx.fillStyle = '#c2410c';
+        blob(ctx, 30, 88, 10, 7);
+        blob(ctx, 70, 88, 10, 7);
+        // ears (triangles)
+        ctx.fillStyle = '#f97316';
+        triangle(ctx, 30, 34, 22, 18, 38, 18);
+        triangle(ctx, 70, 34, 62, 18, 78, 18);
+        // tail
+        ctx.fillStyle = '#fb923c';
+        wag(ctx, 88, 60, 20, 6, t);
+        // face
+        drawFace(ctx, mood, t, 'wide');
+        // snout
+        ctx.fillStyle = '#fef3c7';
+        ellipse(ctx, 50, 56, 12, 8, true);
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(50, 54, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    },
+    owlet: {
+      key: 'owlet', name: 'Owlet', biome: 'forest',
+      personality: 'A round little owl chick that blinks slowly and hoots at 4am.',
+      like: 'quiet', hates: 'loud noises',
+      draw(ctx, mood, t) {
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        ctx.fillStyle = '#a16207';
+        blob(ctx, 50, 60, 40, 38);
+        // belly
+        ctx.fillStyle = '#fde68a';
+        ellipse(ctx, 50, 68, 24, 20, true);
+        // tufts
+        ctx.fillStyle = '#a16207';
+        triangle(ctx, 32, 26, 22, 12, 40, 22);
+        triangle(ctx, 68, 26, 60, 22, 78, 12);
+        // wings
+        ctx.fillStyle = '#78350f';
+        ellipse(ctx, 20, 62, 8, 22, true);
+        ellipse(ctx, 80, 62, 8, 22, true);
+        // beak
+        ctx.fillStyle = '#f97316';
+        triangle(ctx, 50, 58, 44, 52, 56, 52);
+        // eyes (big)
+        drawFace(ctx, mood, t, 'huge');
+        ctx.restore();
+      }
+    },
+    blubby: {
+      key: 'blubby', name: 'Blubby', biome: 'sea',
+      personality: 'A wobbly pink jellyfish. Bubbles when it laughs. Just don\'t touch its top.',
+      like: 'gentle currents', hates: 'being rushed',
+      draw(ctx, mood, t) {
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // bell
+        ctx.fillStyle = '#ec4899';
+        ctx.beginPath();
+        ctx.moveTo(10, 58);
+        ctx.bezierCurveTo(10, 20, 90, 20, 90, 58);
+        ctx.lineTo(88, 62);
+        ctx.bezierCurveTo(70, 74, 30, 74, 12, 62);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // tentacles
+        ctx.strokeStyle = '#f472b6'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+        for (let i = 0; i < 5; i++) {
+          const x = 22 + i * 14;
+          const sway = Math.sin(t / 400 + i) * 6;
+          ctx.beginPath();
+          ctx.moveTo(x, 66);
+          ctx.quadraticCurveTo(x + sway, 82, x + sway / 2, 96);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        drawFace(ctx, mood, t, 'wide', 46);
+        ctx.restore();
+      }
+    },
+    turty: {
+      key: 'turty', name: 'Turty', biome: 'sea',
+      personality: 'A cheerful sea turtle that loves a good back scratch.',
+      like: 'algae snacks', hates: 'plastic bags',
+      draw(ctx, mood, t) {
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // flippers
+        ctx.fillStyle = '#16a34a';
+        wag(ctx, 12, 62, 16, 10, t, 0.5);
+        wag(ctx, 88, 62, -16, 10, t, 0.5, Math.PI);
+        // shell
+        ctx.fillStyle = '#22c55e';
+        blob(ctx, 50, 62, 36, 28);
+        // shell patches
+        ctx.fillStyle = '#14532d';
+        hex(ctx, 40, 60, 8);
+        hex(ctx, 60, 60, 8);
+        hex(ctx, 50, 48, 8);
+        hex(ctx, 50, 72, 8);
+        // head
+        ctx.fillStyle = '#16a34a';
+        ellipse(ctx, 50, 34, 16, 14);
+        drawFace(ctx, mood, t, 'small', 32);
+        ctx.restore();
+      }
+    },
+    squig: {
+      key: 'squig', name: 'Squig', biome: 'sea',
+      personality: 'A quiet purple squid. Blows ink rings when it\'s happy.',
+      like: 'dim light', hates: 'flashes',
+      draw(ctx, mood, t) {
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body (mantle)
+        ctx.fillStyle = '#9333ea';
+        ctx.beginPath();
+        ctx.moveTo(30, 20);
+        ctx.bezierCurveTo(70, 10, 78, 30, 74, 60);
+        ctx.lineTo(26, 60);
+        ctx.bezierCurveTo(22, 30, 30, 20, 30, 20);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // tentacles
+        ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+        for (let i = 0; i < 6; i++) {
+          const x = 28 + i * 9;
+          const sway = Math.sin(t / 500 + i * 0.7) * 5;
+          ctx.beginPath();
+          ctx.moveTo(x, 60);
+          ctx.quadraticCurveTo(x + sway, 78, x + sway / 2, 94);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        drawFace(ctx, mood, t, 'wide', 42);
+        ctx.restore();
+      }
+    },
+    pango: {
+      key: 'pango', name: 'Pango', biome: 'tropical',
+      personality: 'A cheeky toucan chick with a beak twice the size of its head.',
+      like: 'fruit', hates: 'silence',
+      draw(ctx, mood, t) {
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body
+        ctx.fillStyle = '#1a1a1a';
+        blob(ctx, 50, 62, 34, 32);
+        // belly
+        ctx.fillStyle = '#facc15';
+        ellipse(ctx, 50, 68, 22, 18, true);
+        // wings
+        ctx.fillStyle = '#111';
+        ellipse(ctx, 24, 60, 8, 20, true);
+        ellipse(ctx, 76, 60, 8, 20, true);
+        // huge beak
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.moveTo(30, 46);
+        ctx.quadraticCurveTo(50, 30, 78, 44);
+        ctx.quadraticCurveTo(60, 58, 30, 52);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // beak tip
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.moveTo(70, 45);
+        ctx.quadraticCurveTo(80, 46, 78, 44);
+        ctx.quadraticCurveTo(76, 46, 70, 47);
+        ctx.closePath();
+        ctx.fill();
+        // eyes tucked above beak
+        drawFace(ctx, mood, t, 'wide', 34, true);
+        ctx.restore();
+      }
+    },
+    slothy: {
+      key: 'slothy', name: 'Slothy', biome: 'tropical',
+      personality: 'A tiny sloth. Moves slower than syrup. Perfect cuddler.',
+      like: 'naps', hates: 'being hurried',
+      draw(ctx, mood, t) {
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body
+        ctx.fillStyle = '#a8a29e';
+        blob(ctx, 50, 60, 38, 34);
+        // face patch
+        ctx.fillStyle = '#fef3c7';
+        ellipse(ctx, 50, 46, 26, 20, true);
+        // eye bands
+        ctx.fillStyle = '#7c2d12';
+        ctx.beginPath(); ctx.ellipse(40, 46, 8, 4, -0.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(60, 46, 8, 4, 0.2, 0, Math.PI * 2); ctx.fill();
+        // eyes (sleepy)
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(40, 47, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(60, 47, 2.5, 0, Math.PI * 2); ctx.fill();
+        // arms hanging
+        ctx.strokeStyle = '#78716c'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(24, 60); ctx.quadraticCurveTo(10, 80, 22, 92); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(76, 60); ctx.quadraticCurveTo(90, 80, 78, 92); ctx.stroke();
+        // smile
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(44, 58); ctx.quadraticCurveTo(50, 62, 56, 58); ctx.stroke();
+        ctx.restore();
+      }
+    },
+    cocoo: {
+      key: 'cocoo', name: 'Cocoo', biome: 'tropical',
+      personality: 'A grumpy little coconut crab. Snaps its claws when excited.',
+      like: 'snacks', hates: 'gulls',
+      draw(ctx, mood, t) {
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body
+        ctx.fillStyle = '#dc2626';
+        blob(ctx, 50, 66, 34, 22);
+        // eyes on stalks
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(40, 56); ctx.lineTo(38, 42); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(60, 56); ctx.lineTo(62, 42); ctx.stroke();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(38, 40, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(62, 40, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(39, 41, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(63, 41, 2.5, 0, Math.PI * 2); ctx.fill();
+        // claws (with wave)
+        ctx.fillStyle = '#b91c1c';
+        const s = Math.sin(t / 200) * 3;
+        blob(ctx, 16 + s, 68, 12, 10);
+        blob(ctx, 84 - s, 68, 12, 10);
+        // legs
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+        for (let i = 0; i < 3; i++) {
+          const y = 74 + i * 4;
+          ctx.beginPath(); ctx.moveTo(28, y); ctx.lineTo(18, y + 8); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(72, y); ctx.lineTo(82, y + 8); ctx.stroke();
+        }
+        // mouth
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        if (mood === 'happy') { ctx.beginPath(); ctx.moveTo(44, 66); ctx.quadraticCurveTo(50, 72, 56, 66); ctx.stroke(); }
+        else                  { ctx.beginPath(); ctx.moveTo(44, 68); ctx.lineTo(56, 68); ctx.stroke(); }
+        ctx.restore();
+      }
+    },
+  };
+
+  // Variant metadata — attaches to each species after the fact.  Each
+  // entry names a colour morph.  In this v1 the sprite art is fixed
+  // per species (variant recolours are the next commit) but the field
+  // is saved so future updates don't have to migrate.
+  const VARIANTS = {
+    sprout: [
+      { name: 'Meadow',  swatch: '#84cc16' },
+      { name: 'Bramble', swatch: '#166534' },
+      { name: 'Rosy',    swatch: '#ec4899' },
+      { name: 'Frosty',  swatch: '#a5f3fc' },
+    ],
+    foxy: [
+      { name: 'Ember',   swatch: '#f97316' },
+      { name: 'Ashen',   swatch: '#71717a' },
+      { name: 'Cocoa',   swatch: '#78350f' },
+      { name: 'Snow',    swatch: '#f5f5f4' },
+    ],
+    owlet: [
+      { name: 'Nutmeg',  swatch: '#a16207' },
+      { name: 'Slate',   swatch: '#475569' },
+      { name: 'Milky',   swatch: '#fef3c7' },
+      { name: 'Coalie',  swatch: '#1a1a1a' },
+    ],
+    blubby: [
+      { name: 'Bubblegum', swatch: '#ec4899' },
+      { name: 'Sunset',    swatch: '#f97316' },
+      { name: 'Deep Blue', swatch: '#1d4ed8' },
+      { name: 'Mint',      swatch: '#5eead4' },
+    ],
+    turty: [
+      { name: 'Reef',    swatch: '#22c55e' },
+      { name: 'Kelp',    swatch: '#166534' },
+      { name: 'Coral',   swatch: '#fb7185' },
+      { name: 'Golden',  swatch: '#facc15' },
+    ],
+    squig: [
+      { name: 'Amethyst', swatch: '#9333ea' },
+      { name: 'Indigo',   swatch: '#3730a3' },
+      { name: 'Rose',     swatch: '#f43f5e' },
+      { name: 'Aqua',     swatch: '#06b6d4' },
+    ],
+    pango: [
+      { name: 'Classic',  swatch: '#facc15' },
+      { name: 'Ruby',     swatch: '#dc2626' },
+      { name: 'Sky',      swatch: '#3b82f6' },
+      { name: 'Cream',    swatch: '#fef3c7' },
+    ],
+    slothy: [
+      { name: 'Mocha',    swatch: '#a8a29e' },
+      { name: 'Honey',    swatch: '#facc15' },
+      { name: 'Rain',     swatch: '#94a3b8' },
+      { name: 'Pinkie',   swatch: '#fbcfe8' },
+    ],
+    cocoo: [
+      { name: 'Chilli',   swatch: '#dc2626' },
+      { name: 'Sunburn',  swatch: '#f97316' },
+      { name: 'Coral',    swatch: '#fb7185' },
+      { name: 'Ghost',    swatch: '#f5f5f4' },
+    ],
+  };
+  for (const key of Object.keys(SPECIES)) {
+    SPECIES[key].variants = VARIANTS[key] || [{ name: 'Default', swatch: '#9333ea' }];
+  }
+
+  // ---------- Draw helpers (all draw into the design 100x100 box) ----------
+  function blob(ctx, cx, cy, rx, ry) {
+    ctx.beginPath();
+    ctx.moveTo(cx - rx, cy);
+    ctx.bezierCurveTo(cx - rx, cy - ry * 1.3, cx + rx, cy - ry * 1.3, cx + rx, cy);
+    ctx.bezierCurveTo(cx + rx, cy + ry * 1.3, cx - rx, cy + ry * 1.3, cx - rx, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+  function ellipse(ctx, cx, cy, rx, ry, noStroke) {
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (!noStroke) ctx.stroke();
+  }
+  function triangle(ctx, ax, ay, bx, by, cx, cy) {
+    ctx.beginPath();
+    ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+  function leaf(ctx, cx, cy, tilt) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(tilt * Math.PI / 180);
+    ctx.beginPath();
+    ctx.moveTo(-8, 0);
+    ctx.quadraticCurveTo(0, -12, 8, 0);
+    ctx.quadraticCurveTo(0, 6, -8, 0);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+  function hex(ctx, cx, cy, r) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+  function wag(ctx, cx, cy, len, thick, t, freq = 1, phase = 0) {
+    const swing = Math.sin(t / 300 * freq + phase) * 8;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.quadraticCurveTo(cx + len / 2, cy - swing, cx + len, cy);
+    ctx.quadraticCurveTo(cx + len / 2, cy + thick - swing, cx, cy + thick);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+  // Universal face renderer for most pets.  size = small|wide|huge.
+  function drawFace(ctx, mood, t, size, eyeY, above) {
+    eyeY = eyeY || 50;
+    const cfg = { small: {er: 4, sr: 1.8, gap: 12}, wide: {er: 5, sr: 2.3, gap: 14}, huge: {er: 9, sr: 4, gap: 18} }[size] || {er: 4, sr: 2, gap: 12};
+    // eye whites
+    if (size === 'huge') {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(50 - cfg.gap, eyeY, cfg.er, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(50 + cfg.gap, eyeY, cfg.er, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    // pupils
+    ctx.fillStyle = '#1a1a1a';
+    const blink = (Math.floor(t / 3200) % 5 === 0) && (t % 3200 < 180);
+    if (blink) {
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(50 - cfg.gap - 3, eyeY); ctx.lineTo(50 - cfg.gap + 3, eyeY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(50 + cfg.gap - 3, eyeY); ctx.lineTo(50 + cfg.gap + 3, eyeY); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(50 - cfg.gap, eyeY, cfg.sr, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(50 + cfg.gap, eyeY, cfg.sr, 0, Math.PI * 2); ctx.fill();
+    }
+    // mouth
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    const my = eyeY + (size === 'huge' ? 16 : 12);
+    if (mood === 'happy') { ctx.beginPath(); ctx.moveTo(44, my); ctx.quadraticCurveTo(50, my + 6, 56, my); ctx.stroke(); }
+    else if (mood === 'sad') { ctx.beginPath(); ctx.moveTo(44, my + 2); ctx.quadraticCurveTo(50, my - 4, 56, my + 2); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.moveTo(44, my); ctx.lineTo(56, my); ctx.stroke(); }
+    // reset stroke
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+  }
+
+  // ============================================================
+  //  Save / load
+  // ============================================================
+
+  function newSave(biomeKey) {
+    const now = Date.now();
+    return {
+      version: SAVE_VERSION,
+      createdAt: now,
+      lastVisit: now,
+      biome: biomeKey,
+      stage: 'egg',
+      pet: null,             // filled in on hatch — { species, name, gender, variant, born }
+      meters: { hunger: 80, happy: 80, clean: 80, energy: 80 },
+      age: 0,                // 0..100
+      incubation: 0,         // 0..100 while stage === 'egg'
+      eggStartedAt: now,
+      coins: 0,
+      ownedItems: {},
+      sickSince: null,
+      // Reserved fields for the play-centre / mating expansion.
+      // Present in v1 saves so future updates don't need to migrate.
+      mate: null,            // { species, gender, variant, name, attraction }
+      partneredSince: null,  // timestamp when the mate confirmed
+      pendingEgg: null,      // { readyAt, variant } once a couple lays one
+      family: [],            // ancestry log — { species, variant, gender, born, died, cause }
+      generation: 1,
+      history: { born: null, died: null, cause: null },
+    };
+  }
+
+  function loadSave() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || typeof data !== 'object') return null;
+      if (data.version !== SAVE_VERSION) return null;
+      // Guard against corrupted meter values.
+      if (!data.meters) data.meters = { hunger: 80, happy: 80, clean: 80, energy: 80 };
+      for (const k of ['hunger','happy','clean','energy']) {
+        data.meters[k] = clamp(Number(data.meters[k]) || 0, 0, 100);
+      }
+      data.age = clamp(Number(data.age) || 0, 0, 100);
+      data.incubation = clamp(Number(data.incubation) || 0, 0, 100);
+      data.coins = Math.max(0, Math.floor(Number(data.coins) || 0));
+      data.ownedItems = data.ownedItems || {};
+      // Backfill any mating-related fields so loads from a pre-mating
+      // v1 save keep working after the play-centre update ships.
+      if (!('mate'           in data)) data.mate = null;
+      if (!('partneredSince' in data)) data.partneredSince = null;
+      if (!('pendingEgg'     in data)) data.pendingEgg = null;
+      if (!('family'         in data)) data.family = [];
+      if (!('generation'     in data)) data.generation = 1;
+      // Backfill gender/variant on the pet itself.
+      if (data.pet && !('gender'  in data.pet)) data.pet.gender  = Math.random() < 0.5 ? 'm' : 'f';
+      if (data.pet && !('variant' in data.pet)) data.pet.variant = 0;
+      return data;
+    } catch (e) {
+      console.warn('Sloppy Pets: save is corrupt, starting over.', e);
+      return null;
+    }
+  }
+
+  function saveNow() {
+    if (!G.save) return;
+    G.save.lastVisit = Date.now();
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(G.save));
+    } catch (e) {
+      // localStorage may be disabled; play continues in memory only.
+    }
+  }
+
+  function wipeSave() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  }
+
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+  // ============================================================
+  //  Time advancement (idle decay)
+  // ============================================================
+
+  // Advance meters + age + sickness by dtMs.  Called both live (small
+  // deltas from rAF) and on load-with-history (offline delta, capped).
+  function advanceTime(dtMs) {
+    if (!G.save || !G.save.pet) return;
+    if (G.save.stage === 'dead') return;
+
+    // Age: continuous progression from 0..100 over LIFESPAN_MS.
+    G.save.age = clamp(G.save.age + (dtMs / TUNE.LIFESPAN_MS) * 100, 0, 100);
+
+    // Meter decay (skip energy when sleeping).
+    for (const k of ['hunger','happy','clean','energy']) {
+      if (k === 'energy' && G.sleeping) continue;
+      const rate = TUNE.DECAY_MS[k];
+      G.save.meters[k] = clamp(G.save.meters[k] - (dtMs / rate), 0, 100);
+    }
+    if (G.sleeping) {
+      // Recover energy while sleeping (~+40/hour).
+      G.save.meters.energy = clamp(G.save.meters.energy + (dtMs / (3600 * 1000)) * 40, 0, 100);
+    }
+
+    // Sickness: if any meter is at 0, start ticking.  Reset when
+    // meters recover.
+    const anyZero = ['hunger','happy','clean','energy'].some(k => G.save.meters[k] <= 0);
+    if (anyZero) {
+      if (!G.save.sickSince) G.save.sickSince = Date.now();
+      const sickFor = Date.now() - G.save.sickSince;
+      if (sickFor > TUNE.SICK_AFTER_MS + TUNE.DEATH_AFTER_SICK_MS) {
+        killPet('neglect');
+        return;
+      }
+    } else {
+      G.save.sickSince = null;
+    }
+
+    // Old age.
+    if (G.save.age >= 100) {
+      killPet('old age');
+      return;
+    }
+  }
+
+  // Update stage from age (called after advanceTime).
+  function updateStage() {
+    if (!G.save || !G.save.pet) return;
+    if (G.save.stage === 'egg' || G.save.stage === 'dead') return;
+    for (const s of STAGES) {
+      if (G.save.age >= s.min && G.save.age < s.max) {
+        if (G.save.stage !== s.key) {
+          G.save.stage = s.key;
+          thoughtAt(50, 30, 'I grew! ✨');
+        }
+        return;
+      }
+    }
+    // Above 100 handled by killPet.
+  }
+
+  function killPet(cause) {
+    if (!G.save || G.save.stage === 'dead') return;
+    G.save.stage = 'dead';
+    G.save.history.died = Date.now();
+    G.save.history.cause = cause;
+    saveNow();
+    setScreen('dead');
+    renderDead();
+  }
+
+  function isSick() {
+    return G.save && G.save.sickSince && (Date.now() - G.save.sickSince) > TUNE.SICK_AFTER_MS;
+  }
+
+  // ============================================================
+  //  Game state (in-memory, not persisted)
+  // ============================================================
+
+  const G = {
+    save: null,
+    screen: null,
+    // Habitat runtime
+    stage: null,
+    canvas: null,
+    ctx: null,
+    lastFrame: 0,
+    lastDecay: 0,
+    lastCoin: 0,
+    sleeping: false,
+    // Pet position (design space: 0..100 both axes; sprite anchored at foot)
+    pet: { x: 50, y: 80, tx: 50, ty: 80, facing: 1, bob: 0, mood: 'happy' },
+    walkT: 0,
+    thoughts: [],
+    thoughtCooldown: 0,
+    coinFloaters: [],
+    // Audio
+    audio: null,
+    audioReady: false,
+  };
+
+  // ============================================================
+  //  Screen router
+  // ============================================================
+
+  function setScreen(name) {
+    G.screen = name;
+    for (const s of ['biome','egg','habitat','dead']) {
+      const el = document.getElementById('screen-' + s);
+      if (el) el.classList.toggle('active', s === name);
+    }
+    // Sub-screens tweak subtitle + biome tint.
+    const sub = document.getElementById('subtitle');
+    if (name === 'biome') {
+      sub.textContent = 'Pick a biome, hatch your egg, then look after your new pet as it grows.';
+    } else if (name === 'egg') {
+      sub.textContent = 'Tap the egg to keep it warm. Keep going until it hatches!';
+    } else if (name === 'habitat') {
+      const bi = BIOMES[G.save.biome];
+      sub.textContent = `${G.save.pet ? G.save.pet.name : 'Your pet'} lives in the ${bi.label}. Look after them every day.`;
+    } else if (name === 'dead') {
+      sub.textContent = 'A quiet moment for a beloved friend.';
+    }
+    // Biome class on <body> so the egg screen tints correctly.
+    document.body.classList.remove('biome-forest','biome-sea','biome-tropical');
+    if (G.save) document.body.classList.add('biome-' + G.save.biome);
+  }
+
+  // ============================================================
+  //  Biome selection screen
+  // ============================================================
+
+  function renderBiomeSelect() {
+    const grid = document.getElementById('biome-grid');
+    grid.innerHTML = '';
+    for (const key of Object.keys(BIOMES)) {
+      const b = BIOMES[key];
+      const pets = b.pets.map(p => SPECIES[p].name).join(', ');
+      const btn = document.createElement('button');
+      btn.className = 'biome-card';
+      btn.innerHTML = `
+        <div class="biome-card__art art-${key}"><div class="art-sky"></div></div>
+        <div class="biome-card__body">
+          <h3>${b.label}</h3>
+          <p>${b.blurb}</p>
+          <div class="biome-card__pets">Pets: ${pets}</div>
+        </div>`;
+      btn.addEventListener('click', () => {
+        G.save = newSave(key);
+        saveNow();
+        setScreen('egg');
+        prepareEggScreen();
+      });
+      grid.appendChild(btn);
+    }
+  }
+
+  // ============================================================
+  //  Egg screen
+  // ============================================================
+
+  function prepareEggScreen() {
+    const shape = document.getElementById('egg-shape');
+    shape.innerHTML = eggSVG(G.save.biome);
+    updateEggFill();
+    // If already partway through incubation (from a prior visit), keep it.
+    // Reset the passive-timer anchor to now.
+    G._eggAnchor = Date.now();
+  }
+
+  function eggSVG(biomeKey) {
+    const pat = biomeKey === 'forest' ? {a:'#facc15', b:'#65a30d'} :
+                biomeKey === 'sea'    ? {a:'#e0f2fe', b:'#0284c7'} :
+                                        {a:'#fef3c7', b:'#f97316'};
+    return `<svg viewBox="0 0 100 130" preserveAspectRatio="xMidYMid meet">
+      <ellipse cx="50" cy="70" rx="46" ry="58" fill="${pat.a}" stroke="#1a1a1a" stroke-width="5"/>
+      <path d="M 20 60 Q 30 46, 40 60 Q 50 74, 60 60 Q 70 46, 80 60"
+            stroke="${pat.b}" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <ellipse cx="34" cy="42" rx="6" ry="4" fill="rgba(255,255,255,0.55)"/>
+    </svg>`;
+  }
+
+  function updateEggFill() {
+    const fill = document.getElementById('egg-fill');
+    if (fill) fill.style.width = G.save.incubation + '%';
+  }
+
+  function tapEgg(x, y) {
+    if (G.save.incubation >= 100) return;
+    G.save.incubation = clamp(G.save.incubation + (100 / TUNE.EGG_TAPS_TO_HATCH), 0, 100);
+    updateEggFill();
+    beep(700 + Math.random() * 80, 'sine', 0.12, 0.06);
+    // small shake
+    const shape = document.getElementById('egg-shape');
+    shape.classList.add('warming');
+    clearTimeout(G._shakeT);
+    G._shakeT = setTimeout(() => shape.classList.remove('warming'), 260);
+    if (G.save.incubation >= 100) hatch();
+  }
+
+  function hatch() {
+    const bi = BIOMES[G.save.biome];
+    const pool = bi.pets;
+    const speciesKey = pool[Math.floor(Math.random() * pool.length)];
+    const species = SPECIES[speciesKey];
+    // Gender is 50/50 so mating (added later) has a partner pool that
+    // works.  Variant chooses one of the species' colour palettes.
+    const gender = Math.random() < 0.5 ? 'm' : 'f';
+    const variant = Math.floor(Math.random() * (species.variants ? species.variants.length : 1));
+    G.save.pet = {
+      species: speciesKey,
+      name: species.name,
+      gender: gender,
+      variant: variant,
+      born: Date.now(),
+    };
+    G.save.history.born = Date.now();
+    G.save.stage = 'baby';
+    G.save.age = 0;
+    G.save.incubation = 100;
+    saveNow();
+    confetti();
+    beep(880, 'square', 0.15, 0.08);
+    setTimeout(() => beep(1175, 'square', 0.15, 0.08), 90);
+    setTimeout(() => beep(1568, 'square', 0.15, 0.10), 180);
+    setTimeout(() => {
+      setScreen('habitat');
+      startHabitat();
+      thoughtAt(50, 30, `Hi! I'm ${species.name}!`, 3500);
+    }, 900);
+  }
+
+  function confetti() {
+    const box = document.getElementById('confetti');
+    box.innerHTML = '';
+    const colors = ['#9333ea','#84cc16','#ec4899','#facc15','#06b6d4','#f97316'];
+    for (let i = 0; i < 60; i++) {
+      const s = document.createElement('span');
+      s.style.left = Math.random() * 100 + '%';
+      s.style.background = colors[Math.floor(Math.random() * colors.length)];
+      s.style.animationDelay = (Math.random() * 0.5) + 's';
+      s.style.transform = `rotate(${Math.random() * 360}deg)`;
+      s.style.animation = `confettiFall ${1.5 + Math.random()}s linear ${Math.random() * 0.5}s forwards`;
+      box.appendChild(s);
+    }
+    // ensure keyframe exists (once)
+    if (!document.getElementById('confetti-kf')) {
+      const style = document.createElement('style');
+      style.id = 'confetti-kf';
+      style.textContent = `@keyframes confettiFall { to { transform: translateY(140%) rotate(720deg); } }`;
+      document.head.appendChild(style);
+    }
+  }
+
+  // ============================================================
+  //  Habitat: canvas rendering + AI wandering
+  // ============================================================
+
+  function startHabitat() {
+    G.stage = document.getElementById('stage');
+    G.canvas = document.getElementById('canvas');
+    G.ctx = G.canvas.getContext('2d');
+    renderHUD();
+    renderActions();
+    sizeCanvas();
+    G.lastFrame = performance.now();
+    G.lastDecay = Date.now();
+    G.lastCoin = Date.now();
+    // pet starts somewhere in the middle-lower area
+    G.pet.x = 50; G.pet.y = 80; G.pet.tx = 30 + Math.random() * 40; G.pet.ty = 78;
+    G.pet.facing = 1;
+    requestAnimationFrame(loop);
+  }
+
+  function sizeCanvas() {
+    if (!G.canvas || !G.stage) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = G.stage.getBoundingClientRect();
+    G.canvas.width  = Math.floor(rect.width  * dpr);
+    G.canvas.height = Math.floor(rect.height * dpr);
+    // Reset transform then apply DPR scale.  Design space = 100 wide/75 tall.
+    G.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    G.ctx.scale(dpr, dpr);
+    G._pxW = rect.width;
+    G._pxH = rect.height;
+  }
+  window.addEventListener('resize', () => { if (G.screen === 'habitat') sizeCanvas(); });
+
+  // Design space: 100 units wide × 75 units tall.  Convert to pixels.
+  function dx(x) { return (x / 100) * G._pxW; }
+  function dy(y) { return (y / 75)  * G._pxH; }
+
+  function loop(nowMs) {
+    if (G.screen !== 'habitat') return;
+    const dt = Math.min(nowMs - G.lastFrame, 200);   // clamp huge jumps
+    G.lastFrame = nowMs;
+
+    // Live decay: apply incremental time since we last did.
+    const nowStamp = Date.now();
+    const decayDelta = nowStamp - G.lastDecay;
+    if (decayDelta > 1000) {
+      advanceTime(decayDelta);
+      updateStage();
+      G.lastDecay = nowStamp;
+      renderHUD();
+      renderStagebar();
+      updateSickBadge();
+    }
+    // Coin income while page is visible.
+    if (nowStamp - G.lastCoin >= TUNE.COIN_TICK_MS) {
+      const inc = Math.floor((nowStamp - G.lastCoin) / TUNE.COIN_TICK_MS);
+      G.save.coins += inc;
+      G.lastCoin += inc * TUNE.COIN_TICK_MS;
+      renderStagebar();
+    }
+
+    if (G.save.stage !== 'dead') {
+      aiStep(dt);
+      drawScene(nowMs);
+      updateThoughts(dt);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function aiStep(dt) {
+    // Pick moods based on meters + sleep.
+    const m = G.save.meters;
+    const avg = (m.hunger + m.happy + m.clean + m.energy) / 4;
+    G.pet.mood = G.sleeping ? 'sleep' : (avg > 55 ? 'happy' : avg > 25 ? 'neutral' : 'sad');
+
+    // Sleepy? Head to a corner and stop.
+    if (G.sleeping || m.energy < 12) {
+      G.pet.tx = 20; G.pet.ty = 82;
+    } else if (m.hunger < 20 && G.save.ownedItems.bowl) {
+      // Head towards the food bowl.
+      G.pet.tx = 78; G.pet.ty = 82;
+    } else if (m.happy < 20 && G.save.ownedItems.toy) {
+      G.pet.tx = 62; G.pet.ty = 82;
+    } else {
+      // Random wander every 3-6 seconds.
+      G.wanderT = (G.wanderT || 0) - dt;
+      if (G.wanderT <= 0) {
+        G.pet.tx = 20 + Math.random() * 60;
+        G.pet.ty = 78 + Math.random() * 4;
+        G.wanderT = 3000 + Math.random() * 3000;
+      }
+    }
+
+    // Walk toward (tx, ty).
+    const dx1 = G.pet.tx - G.pet.x;
+    const dy1 = G.pet.ty - G.pet.y;
+    const dist = Math.hypot(dx1, dy1);
+    let speed = 0.012;   // design units per ms
+    if (G.pet.mood === 'sad') speed *= 0.5;
+    if (G.sleeping) speed = 0;
+    if (dist > 0.4 && speed > 0) {
+      const step = Math.min(dist, speed * dt);
+      G.pet.x += (dx1 / dist) * step;
+      G.pet.y += (dy1 / dist) * step;
+      G.pet.facing = dx1 > 0 ? 1 : -1;
+      G.walkT += dt;
+    }
+
+    // Random thought bubbles when needs are pressing.
+    G.thoughtCooldown -= dt;
+    if (G.thoughtCooldown <= 0) {
+      G.thoughtCooldown = 8000 + Math.random() * 12000;
+      if (G.sleeping) thoughtAt(G.pet.x, G.pet.y - 25, '💤');
+      else if (m.hunger < 30) thoughtAt(G.pet.x, G.pet.y - 25, '🍔?');
+      else if (m.clean < 30)  thoughtAt(G.pet.x, G.pet.y - 25, '🛁?');
+      else if (m.happy < 30)  thoughtAt(G.pet.x, G.pet.y - 25, '🎾?');
+      else if (m.energy < 30) thoughtAt(G.pet.x, G.pet.y - 25, '😴');
+      else if (Math.random() < 0.5) thoughtAt(G.pet.x, G.pet.y - 25, ['💜','✨','🎶','🌟','🙂'][Math.floor(Math.random() * 5)]);
+    }
+  }
+
+  function drawScene(nowMs) {
+    const ctx = G.ctx;
+    const bi = BIOMES[G.save.biome];
+    // Background
+    const g = ctx.createLinearGradient(0, 0, 0, G._pxH);
+    g.addColorStop(0, bi.sky[0]);
+    g.addColorStop(1, bi.sky[1]);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, G._pxW, G._pxH);
+    // Ground
+    ctx.fillStyle = bi.ground;
+    ctx.fillRect(0, G._pxH * 0.72, G._pxW, G._pxH * 0.28);
+    // Biome props
+    drawBiomeProps(bi.key, nowMs);
+    // Owned items
+    drawOwnedItems();
+    // Pet
+    drawPet(nowMs);
+    // Coin floaters
+    drawCoinFloaters(nowMs);
+    // Sleep 'Z's
+    if (G.sleeping) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.font = 'bold 24px "Baloo 2", sans-serif';
+      const zx = dx(G.pet.x + 6);
+      const zy = dy(G.pet.y - 15);
+      const drift = (nowMs / 300) % 20;
+      ctx.fillText('z', zx, zy - drift);
+      ctx.fillText('z', zx + 8, zy - drift - 8);
+      ctx.fillText('Z', zx + 16, zy - drift - 16);
+    }
+    // Sickness overlay
+    if (isSick()) {
+      ctx.fillStyle = 'rgba(80, 220, 80, 0.15)';
+      ctx.fillRect(0, 0, G._pxW, G._pxH);
+    }
+    // Day/night tint
+    const hour = new Date().getHours();
+    if (hour < 6 || hour >= 20) {
+      ctx.fillStyle = bi.nightTint;
+      ctx.fillRect(0, 0, G._pxW, G._pxH);
+    } else {
+      ctx.fillStyle = bi.dayTint;
+      ctx.fillRect(0, 0, G._pxW, G._pxH);
+    }
+  }
+
+  function drawBiomeProps(key, t) {
+    const ctx = G.ctx;
+    ctx.save();
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 3;
+    if (key === 'forest') {
+      // Trees left and right
+      drawTree(dx(12), dy(72), 40);
+      drawTree(dx(90), dy(72), 34);
+      // Flowers
+      drawFlower(dx(38), dy(74), '#ec4899');
+      drawFlower(dx(65), dy(74), '#facc15');
+    } else if (key === 'sea') {
+      // Bubbles
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      for (let i = 0; i < 6; i++) {
+        const bx = ((t / 60 + i * 90) % G._pxW);
+        const by = G._pxH - ((t / 40 + i * 60) % G._pxH);
+        ctx.beginPath();
+        ctx.arc(bx, by, 3 + (i % 3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Coral clumps
+      drawCoral(dx(18), dy(74), '#f472b6');
+      drawCoral(dx(82), dy(74), '#a855f7');
+      // Seaweed sway
+      drawSeaweed(dx(50), dy(74), t);
+    } else if (key === 'tropical') {
+      // Palm trees
+      drawPalm(dx(12), dy(72), t);
+      drawPalm(dx(90), dy(72), t, -1);
+      // Coconuts on ground
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath(); ctx.arc(dx(40), dy(76), 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(dx(64), dy(76), 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawTree(x, y, h) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(x - 4, y - h * 0.4, 8, h * 0.4);
+    ctx.strokeRect(x - 4, y - h * 0.4, 8, h * 0.4);
+    ctx.fillStyle = '#166534';
+    ctx.beginPath();
+    ctx.arc(x, y - h * 0.55, h * 0.35, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.arc(x - 10, y - h * 0.45, h * 0.25, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+  }
+  function drawFlower(x, y, color) {
+    const ctx = G.ctx;
+    ctx.fillStyle = color;
+    for (let i = 0; i < 5; i++) {
+      const a = i * (Math.PI * 2 / 5);
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * 4, y - 3 + Math.sin(a) * 4, 3, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    }
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath(); ctx.arc(x, y - 3, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+  function drawCoral(x, y, color) {
+    const ctx = G.ctx;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x - 12, y);
+    ctx.bezierCurveTo(x - 12, y - 22, x - 4, y - 20, x, y - 8);
+    ctx.bezierCurveTo(x + 4, y - 20, x + 12, y - 22, x + 12, y);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+  function drawSeaweed(x, y, t) {
+    const ctx = G.ctx;
+    ctx.strokeStyle = '#166534';
+    ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + Math.sin(t / 400) * 8, y - 15, x + Math.sin(t / 300) * 5, y - 28);
+    ctx.stroke();
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+  }
+  function drawPalm(x, y, t, dir = 1) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(x - 3, y - 40, 6, 40);
+    ctx.strokeRect(x - 3, y - 40, 6, 40);
+    const sway = Math.sin(t / 900) * 4 * dir;
+    ctx.fillStyle = '#16a34a';
+    for (let i = 0; i < 5; i++) {
+      const angle = -Math.PI / 2 + (i - 2) * 0.45 + sway * 0.02;
+      const px = x + Math.cos(angle) * 18;
+      const py = y - 40 + Math.sin(angle) * 18;
+      ctx.beginPath();
+      ctx.ellipse(px, py, 12, 4, angle, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    }
+  }
+
+  function drawOwnedItems() {
+    const items = G.save.ownedItems || {};
+    if (items.bowl) drawBowl(dx(78), dy(85));
+    if (items.toy)  drawToy(dx(62), dy(85));
+    if (items.bed)  drawBed(dx(20), dy(85));
+    if (items.bath) drawBubbleBath(dx(38), dy(85));
+  }
+  function drawBowl(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.ellipse(x, y, 14, 5, 0, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(x, y - 2, 6, Math.PI, 0);
+    ctx.fill(); ctx.stroke();
+  }
+  function drawToy(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#84cc16';
+    ctx.beginPath();
+    ctx.arc(x, y - 4, 6, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#65a30d';
+    ctx.beginPath();
+    ctx.moveTo(x - 4, y - 8); ctx.lineTo(x + 4, y - 8); ctx.lineTo(x, y - 14); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+  function drawBed(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#c084fc';
+    ctx.beginPath();
+    ctx.moveTo(x - 16, y);
+    ctx.quadraticCurveTo(x, y - 12, x + 16, y);
+    ctx.lineTo(x + 16, y + 3); ctx.lineTo(x - 16, y + 3);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ede9fe';
+    ctx.beginPath();
+    ctx.ellipse(x, y - 4, 10, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  function drawBubbleBath(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#7dd3fc';
+    ctx.beginPath();
+    ctx.moveTo(x - 14, y - 6);
+    ctx.lineTo(x - 12, y + 3);
+    ctx.lineTo(x + 12, y + 3);
+    ctx.lineTo(x + 14, y - 6);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.arc(x - 8 + i * 8, y - 8, 3, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    }
+  }
+
+  function drawPet(t) {
+    const ctx = G.ctx;
+    const species = SPECIES[G.save.pet.species];
+    const stage = STAGES.find(s => s.key === G.save.stage) || STAGES[3];
+    const spriteSize = 90 * stage.scale;   // pixels
+    const px = dx(G.pet.x);
+    const bob = Math.sin(t / 220 + G.walkT / 200) * (G.sleeping ? 0 : 2);
+    const py = dy(G.pet.y) + bob;
+
+    ctx.save();
+    ctx.translate(px, py);
+    // The species draw function paints into a 100x100 box centered on
+    // origin.  Anchor the sprite so its feet sit at (0, 0).
+    const s = spriteSize / 100;
+    ctx.scale(G.pet.facing * s, s);
+    ctx.translate(-50, -100);
+    if (G.sleeping) { ctx.rotate(0); }
+    species.draw(ctx, G.pet.mood, t);
+    ctx.restore();
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(px, dy(G.pet.y) + 2, spriteSize * 0.25, spriteSize * 0.06, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ============================================================
+  //  Thought bubbles (positioned in design space over the canvas)
+  // ============================================================
+
+  function thoughtAt(x, y, text, ttl) {
+    ttl = ttl || 2800;
+    const el = document.createElement('div');
+    el.className = 'thought';
+    el.textContent = text;
+    G.stage.appendChild(el);
+    G.thoughts.push({ el, x, y, ttl, born: performance.now() });
+    // remove after fade-out completes
+    setTimeout(() => { el.remove(); }, ttl + 300);
+  }
+  function updateThoughts(dt) {
+    if (!G._pxW) return;
+    const rect = G.stage.getBoundingClientRect();
+    for (const th of G.thoughts) {
+      // Follow pet if this is a live thought (x/y match pet).
+      const isPetBubble = Math.abs(th.x - G.pet.x) < 5 && Math.abs(th.y - (G.pet.y - 25)) < 8;
+      if (isPetBubble) { th.x = G.pet.x; th.y = G.pet.y - 25; }
+      const px = (th.x / 100) * rect.width;
+      const py = (th.y / 75)  * rect.height;
+      th.el.style.left = px + 'px';
+      th.el.style.top = py + 'px';
+    }
+  }
+
+  function drawCoinFloaters(t) {
+    const now = performance.now();
+    G.coinFloaters = G.coinFloaters.filter(c => now - c.born < 1100);
+  }
+
+  // ============================================================
+  //  Coins & shop
+  // ============================================================
+
+  function grantCoins(n, sourceX, sourceY) {
+    G.save.coins += n;
+    renderStagebar();
+    if (sourceX != null) {
+      const el = document.createElement('div');
+      el.className = 'float-coin';
+      el.textContent = '+' + n + ' 🪙';
+      G.stage.appendChild(el);
+      const rect = G.stage.getBoundingClientRect();
+      el.style.left = ((sourceX / 100) * rect.width) + 'px';
+      el.style.top  = ((sourceY / 75)  * rect.height) + 'px';
+      setTimeout(() => el.remove(), 1200);
+    }
+  }
+
+  const SHOP_ITEMS = [
+    { id: 'bowl', emoji: '🍚', name: 'Food Bowl',    desc: 'A cheerful bowl. Pet visits it when hungry.', price: 120 },
+    { id: 'toy',  emoji: '🎾', name: 'Squeaky Toy',  desc: 'Pet drifts over to play. Small happy bonus.',  price: 150 },
+    { id: 'bath', emoji: '🛁', name: 'Bubble Bath',  desc: 'Bath action gives +extra cleanliness.',        price: 180 },
+    { id: 'bed',  emoji: '🛏️', name: 'Comfy Bed',    desc: 'Pet sleeps faster and recovers more energy.',   price: 220 },
+  ];
+
+  function openShop() {
+    const list = document.getElementById('shop-list');
+    document.getElementById('shop-coins').textContent = G.save.coins;
+    list.innerHTML = '';
+    for (const item of SHOP_ITEMS) {
+      const owned = !!(G.save.ownedItems && G.save.ownedItems[item.id]);
+      const canAfford = G.save.coins >= item.price;
+      const cell = document.createElement('div');
+      cell.className = 'shop-item' + (owned ? ' owned' : (!canAfford ? ' locked' : ''));
+      cell.innerHTML = `
+        <div class="row">
+          <span class="emoji">${item.emoji}</span>
+          <span class="name">${item.name}</span>
+        </div>
+        <div class="desc">${item.desc}</div>
+        <button>${owned ? '✓ Owned' : (canAfford ? `Buy — 🪙 ${item.price}` : `🔒 ${item.price} coins`)}</button>`;
+      const btn = cell.querySelector('button');
+      btn.addEventListener('click', () => {
+        if (owned) return;
+        if (G.save.coins < item.price) return;
+        G.save.coins -= item.price;
+        G.save.ownedItems[item.id] = true;
+        saveNow();
+        openShop();
+        renderStagebar();
+        beep(660, 'triangle', 0.18, 0.08);
+      });
+      list.appendChild(cell);
+    }
+    openModal('modal-shop');
+  }
+
+  // ============================================================
+  //  Actions bar (feed, play, bath, tap, sleep)
+  // ============================================================
+
+  const ACTIONS = [
+    { id: 'feed',  emoji: '🍔', label: 'Feed'  },
+    { id: 'play',  emoji: '🎾', label: 'Play'  },
+    { id: 'bath',  emoji: '🛁', label: 'Bath'  },
+    { id: 'tap',   emoji: '💜', label: 'Love'  },
+    { id: 'sleep', emoji: '😴', label: 'Sleep' },
+  ];
+
+  function renderActions() {
+    const wrap = document.getElementById('actions');
+    wrap.innerHTML = '';
+    for (const a of ACTIONS) {
+      const btn = document.createElement('button');
+      btn.className = 'action';
+      btn.dataset.id = a.id;
+      btn.innerHTML = `<span class="emoji">${a.emoji}</span><span>${a.label}</span>`;
+      btn.addEventListener('click', () => doAction(a.id));
+      wrap.appendChild(btn);
+    }
+  }
+
+  function doAction(id) {
+    if (!G.save || !G.save.pet || G.save.stage === 'dead') return;
+    const m = G.save.meters;
+    switch (id) {
+      case 'feed': {
+        const bump = G.save.ownedItems.bowl ? 42 : 32;
+        const wasHungry = m.hunger < 60;
+        m.hunger = clamp(m.hunger + bump, 0, 100);
+        m.clean  = clamp(m.clean - 5, 0, 100);
+        thoughtAt(G.pet.x, G.pet.y - 25, wasHungry ? 'Yummy! 😋' : '🙂');
+        beep(520, 'sine', 0.22, 0.06);
+        if (wasHungry) grantCoins(3, G.pet.x, G.pet.y - 25);
+        break;
+      }
+      case 'play': {
+        if (m.energy < 15) { thoughtAt(G.pet.x, G.pet.y - 25, 'Too tired 😴'); return; }
+        const bump = G.save.ownedItems.toy ? 32 : 24;
+        m.happy  = clamp(m.happy  + bump, 0, 100);
+        m.energy = clamp(m.energy - 8,   0, 100);
+        m.hunger = clamp(m.hunger - 4,   0, 100);
+        thoughtAt(G.pet.x, G.pet.y - 25, ['Yay!','🎉','Wheee!','Again!'][Math.floor(Math.random()*4)]);
+        beep(880, 'triangle', 0.15, 0.05);
+        setTimeout(() => beep(1175, 'triangle', 0.15, 0.05), 90);
+        // pet jumps to a new spot
+        G.pet.tx = 20 + Math.random() * 60;
+        G.pet.ty = 78 + Math.random() * 4;
+        G.wanderT = 4000;
+        grantCoins(1, G.pet.x, G.pet.y - 25);
+        break;
+      }
+      case 'bath': {
+        const bump = G.save.ownedItems.bath ? 55 : 40;
+        const wasDirty = m.clean < 60;
+        m.clean = clamp(m.clean + bump, 0, 100);
+        m.happy = clamp(m.happy - 5, 0, 100);   // pets don't always love baths
+        thoughtAt(G.pet.x, G.pet.y - 25, wasDirty ? 'Sparkly! ✨' : 'ugh 💧');
+        beep(1200, 'sine', 0.3, 0.05);
+        if (wasDirty) grantCoins(3, G.pet.x, G.pet.y - 25);
+        break;
+      }
+      case 'tap': {
+        m.happy = clamp(m.happy + 6, 0, 100);
+        thoughtAt(G.pet.x, G.pet.y - 25, ['💜','✨','🥰','🙂'][Math.floor(Math.random()*4)]);
+        beep(700 + Math.random() * 200, 'sine', 0.1, 0.04);
+        break;
+      }
+      case 'sleep': {
+        G.sleeping = !G.sleeping;
+        // update the pill
+        const btn = document.querySelector('.action[data-id="sleep"]');
+        if (btn) btn.classList.toggle('on', G.sleeping);
+        if (G.sleeping) { thoughtAt(G.pet.x, G.pet.y - 25, '💤'); beep(300, 'sine', 0.4, 0.05); }
+        else            { thoughtAt(G.pet.x, G.pet.y - 25, '☀️'); beep(660, 'triangle', 0.15, 0.05); }
+        break;
+      }
+    }
+    renderHUD();
+    saveNow();
+  }
+
+  // Tap on the stage counts as a "tap the pet" if near it, else general love.
+  function onStageTap(e) {
+    if (!G.save || !G.save.pet || G.save.stage !== 'baby' && G.save.stage !== 'child' && G.save.stage !== 'teen' && G.save.stage !== 'adult' && G.save.stage !== 'elder') return;
+    const rect = G.stage.getBoundingClientRect();
+    const cx = (e.clientX - rect.left);
+    const cy = (e.clientY - rect.top);
+    const petPx = (G.pet.x / 100) * rect.width;
+    const petPy = (G.pet.y / 75)  * rect.height;
+    const dist = Math.hypot(cx - petPx, cy - petPy);
+    if (dist < Math.max(48, rect.width * 0.15)) {
+      doAction('tap');
+    } else {
+      // walk to the tap
+      const tx = clamp((cx / rect.width) * 100, 10, 90);
+      G.pet.tx = tx;
+      G.pet.ty = 80;
+      G.wanderT = 5000;
+    }
+  }
+
+  // ============================================================
+  //  HUD / stage bar
+  // ============================================================
+
+  const METERS_ORDER = [
+    { key: 'hunger', label: 'Full',  icon: '🍔' },
+    { key: 'happy',  label: 'Happy', icon: '💜' },
+    { key: 'clean',  label: 'Clean', icon: '🛁' },
+    { key: 'energy', label: 'Rest',  icon: '⚡' },
+  ];
+  function renderHUD() {
+    const hud = document.getElementById('hud');
+    if (!hud) return;
+    if (!hud.children.length) {
+      // First render — build DOM
+      for (const m of METERS_ORDER) {
+        const el = document.createElement('div');
+        el.className = 'hud-pill ' + m.key;
+        el.innerHTML = `<div class="top"><span class="icon">${m.icon}</span><span>${m.label}</span></div><div class="bar"><div class="fill"></div></div>`;
+        hud.appendChild(el);
+      }
+    }
+    for (const m of METERS_ORDER) {
+      const el = hud.querySelector('.hud-pill.' + m.key);
+      const v  = G.save.meters[m.key];
+      const fill = el.querySelector('.fill');
+      fill.style.width = v + '%';
+      el.classList.toggle('low', v < 20);
+    }
+    renderStagebar();
+  }
+  function renderStagebar() {
+    const st = STAGES.find(s => s.key === G.save.stage);
+    const stName = st ? st.label : G.save.stage;
+    document.getElementById('chip-stage').textContent = stName;
+    // Age display as "Xd Yh" of real time since birth.
+    const born = G.save.history.born || G.save.createdAt;
+    const ms = Date.now() - born;
+    const days = Math.floor(ms / (24 * 3600 * 1000));
+    const hrs  = Math.floor((ms % (24 * 3600 * 1000)) / (3600 * 1000));
+    document.getElementById('chip-age').textContent = `${days}d ${hrs}h`;
+    document.getElementById('chip-coins').textContent = G.save.coins;
+  }
+  function updateSickBadge() {
+    const mark = document.getElementById('sick-mark');
+    if (!mark) return;
+    mark.style.display = isSick() ? 'block' : 'none';
+    // day/night
+    const dayBadge = document.getElementById('day-time');
+    if (dayBadge) {
+      const h = new Date().getHours();
+      const night = h < 6 || h >= 20;
+      dayBadge.textContent = night ? '🌙 Night' : '🌞 Day';
+    }
+  }
+
+  // ============================================================
+  //  Modals + info panel + reset
+  // ============================================================
+
+  function openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('active'); }
+  function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('active'); }
+
+  document.querySelectorAll('[data-close]').forEach(btn => {
+    btn.addEventListener('click', () => closeModal(btn.dataset.close));
+  });
+  document.querySelectorAll('.modal-backdrop').forEach(bd => {
+    bd.addEventListener('click', (e) => { if (e.target === bd) bd.classList.remove('active'); });
+  });
+
+  function renderInfo() {
+    if (!G.save) {
+      document.getElementById('info-name').textContent = 'No pet yet';
+      document.getElementById('info-body').innerHTML = '<p>Pick a biome to hatch your first egg.</p>';
+      return;
+    }
+    if (!G.save.pet) {
+      document.getElementById('info-name').textContent = 'Your egg';
+      document.getElementById('info-body').innerHTML = `
+        <p>Your ${BIOMES[G.save.biome].label} egg is incubating. Keep it warm!</p>
+        <p>Incubation: <strong>${Math.floor(G.save.incubation)}%</strong></p>`;
+      return;
+    }
+    const sp = SPECIES[G.save.pet.species];
+    const stage = STAGES.find(s => s.key === G.save.stage);
+    const born = new Date(G.save.history.born).toLocaleString();
+    const variant = sp.variants[G.save.pet.variant] || sp.variants[0];
+    const genderText = G.save.pet.gender === 'f' ? '♀ Female' : '♂ Male';
+    document.getElementById('info-name').textContent = `${G.save.pet.name} — ${sp.name}`;
+    document.getElementById('info-body').innerHTML = `
+      <p style="margin-top:0.5rem;">${sp.personality}</p>
+      <div class="info-row"><span>Biome</span><strong>${BIOMES[G.save.biome].label}</strong></div>
+      <div class="info-row"><span>Stage</span><strong>${stage ? stage.label : G.save.stage}</strong></div>
+      <div class="info-row"><span>Gender</span><strong>${genderText}</strong></div>
+      <div class="info-row"><span>Variant</span><strong>${variant.name} <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #1a1a1a;background:${variant.swatch};vertical-align:middle;margin-left:4px;"></span></strong></div>
+      <div class="info-row"><span>Generation</span><strong>#${G.save.generation || 1}</strong></div>
+      <div class="info-row"><span>Born</span><strong>${born}</strong></div>
+      <div class="info-row"><span>Loves</span><strong>${sp.like}</strong></div>
+      <div class="info-row"><span>Hates</span><strong>${sp.hates}</strong></div>
+      <div class="info-row"><span>Coins</span><strong>🪙 ${G.save.coins}</strong></div>`;
+  }
+
+  document.getElementById('btn-info').addEventListener('click', () => {
+    renderInfo();
+    openModal('modal-info');
+  });
+  document.getElementById('btn-shop').addEventListener('click', () => openShop());
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    if (confirm('Really reset? Your pet will be gone forever.')) {
+      wipeSave();
+      closeModal('modal-info');
+      location.reload();
+    }
+  });
+  document.getElementById('egg-back').addEventListener('click', () => {
+    if (!G.save || (G.save.stage === 'egg' && G.save.incubation < 100)) {
+      wipeSave();
+      G.save = null;
+      renderBiomeSelect();
+      setScreen('biome');
+    }
+  });
+  document.getElementById('btn-new-egg').addEventListener('click', () => {
+    // restart flow: keep coins so shop rewards feel earned across pets? No,
+    // simpler: fresh biome pick, fresh coins.  Wipe save.
+    wipeSave();
+    G.save = null;
+    renderBiomeSelect();
+    setScreen('biome');
+  });
+
+  // ============================================================
+  //  Dead screen
+  // ============================================================
+
+  function renderDead() {
+    const born = G.save.history.born || G.save.createdAt;
+    const died = G.save.history.died || Date.now();
+    const lifeMs = died - born;
+    const days = Math.floor(lifeMs / (24 * 3600 * 1000));
+    const hrs  = Math.floor((lifeMs % (24 * 3600 * 1000)) / (3600 * 1000));
+    const cause = G.save.history.cause === 'old age' ? 'passed on peacefully at a ripe old age' : 'wasn\'t looked after well enough';
+    document.getElementById('dead-title').textContent = `Goodbye, ${G.save.pet ? G.save.pet.name : 'friend'}`;
+    document.getElementById('dead-body').textContent = `${G.save.pet ? G.save.pet.name : 'Your pet'} ${cause}.`;
+    document.getElementById('dead-stats').textContent = `Lifespan: ${days}d ${hrs}h · Stage: ${G.save.stage}`;
+    // Memorial: draw species faded on the little canvas.
+    const mc = document.getElementById('memorial-canvas');
+    const mctx = mc.getContext('2d');
+    mctx.setTransform(1,0,0,1,0,0);
+    mctx.clearRect(0,0,140,140);
+    mctx.save();
+    mctx.translate(70, 130);
+    mctx.scale(1.15, 1.15);
+    mctx.translate(-50, -100);
+    mctx.globalAlpha = 0.7;
+    if (G.save.pet) SPECIES[G.save.pet.species].draw(mctx, 'sad', 0);
+    mctx.restore();
+    // faded overlay
+    mctx.fillStyle = 'rgba(255,255,255,0.35)';
+    mctx.fillRect(0,0,140,140);
+  }
+
+  // ============================================================
+  //  Audio (tiny Web Audio wrapper)
+  // ============================================================
+
+  function ensureAudio() {
+    if (G.audioReady) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      G.audio = new AC();
+      G.audioReady = true;
+    } catch (e) {}
+  }
+  function beep(freq, type, dur, vol) {
+    if (!G.audioReady) return;
+    try {
+      const o = G.audio.createOscillator();
+      const g = G.audio.createGain();
+      o.frequency.value = freq; o.type = type || 'sine';
+      g.gain.value = 0;
+      o.connect(g); g.connect(G.audio.destination);
+      const t = G.audio.currentTime;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol || 0.05, t + 0.01);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+
+  // ============================================================
+  //  Boot
+  // ============================================================
+
+  function boot() {
+    // Wire up egg-stage tap
+    const eggStage = document.getElementById('egg-stage');
+    eggStage.addEventListener('pointerdown', (e) => {
+      ensureAudio();
+      tapEgg(e.clientX, e.clientY);
+    });
+
+    // Wire up habitat tap
+    document.getElementById('stage').addEventListener('pointerdown', (e) => {
+      ensureAudio();
+      onStageTap(e);
+    });
+    document.addEventListener('click', ensureAudio, { once: true });
+
+    // Load save
+    G.save = loadSave();
+
+    if (!G.save) {
+      renderBiomeSelect();
+      setScreen('biome');
+      return;
+    }
+
+    // Apply offline decay (capped) since last visit.
+    const now = Date.now();
+    const away = Math.max(0, Math.min(TUNE.OFFLINE_CAP_MS, now - (G.save.lastVisit || now)));
+    // If we were mid-egg, credit some passive incubation.
+    if (G.save.stage === 'egg') {
+      const passive = (away / TUNE.EGG_PASSIVE_MS) * 100;
+      G.save.incubation = clamp(G.save.incubation + passive, 0, 100);
+      if (G.save.incubation >= 100) {
+        // Auto-hatch on return.
+        setScreen('egg');
+        prepareEggScreen();
+        setTimeout(hatch, 250);
+        return;
+      }
+      setScreen('egg');
+      prepareEggScreen();
+      return;
+    }
+
+    if (G.save.stage === 'dead') {
+      setScreen('dead');
+      renderDead();
+      return;
+    }
+
+    // Otherwise a live pet: apply decay and boot into habitat.
+    advanceTime(away);
+    updateStage();
+    if (G.save.stage === 'dead') {
+      setScreen('dead');
+      renderDead();
+      return;
+    }
+    setScreen('habitat');
+    startHabitat();
+  }
+
+  // Save whenever the tab is hidden / closed.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) saveNow();
+    else if (G.save && G.save.pet && G.save.stage !== 'dead') {
+      // Just returned — credit missed time up to cap.
+      const away = Math.max(0, Math.min(TUNE.OFFLINE_CAP_MS, Date.now() - (G.save.lastVisit || Date.now())));
+      if (away > 30_000) {
+        advanceTime(away);
+        updateStage();
+        if (G.save.stage !== 'dead') {
+          renderHUD();
+          renderStagebar();
+        }
+      }
+      G.lastDecay = Date.now();
+      saveNow();
+    }
+  });
+  window.addEventListener('beforeunload', saveNow);
+  setInterval(saveNow, TUNE.AUTOSAVE_MS);
+
+  // Boot on DOM ready.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+  </script>
+</body>
+</html>

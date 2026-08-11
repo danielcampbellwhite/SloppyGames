@@ -1221,3 +1221,48 @@ a.game-card:hover h3 { text-decoration: underline; text-decoration-thickness: 3p
 .sw-tile--present { background: #facc15; border-color: #ca8a04; }
 .sw-tile--absent  { background: #a8a29e; color: #fff; border-color: #57534e; }
 @media (max-width: 380px) { .sw-tile { width: 22px; height: 22px; font-size: 0.7rem; } }
+
+/* Sloppy Pets thumbnail */
+.game-thumb--pets {
+  background: linear-gradient(180deg, #bef264 0%, #84cc16 55%, #4d7c0f 100%);
+  position: relative;
+  overflow: hidden;
+}
+.thumb-pets { display: contents; }
+.pets-sky {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.55) 0 8%, transparent 10%),
+              radial-gradient(circle at 75% 30%, rgba(255,255,255,0.35) 0 6%, transparent 8%);
+}
+.pets-hill {
+  position: absolute; left: -10%; right: -10%; bottom: -14%;
+  height: 55%;
+  background: radial-gradient(ellipse at 30% 0%, #14532d 0 22%, transparent 24%),
+              radial-gradient(ellipse at 78% 0%, #166534 0 22%, transparent 24%);
+}
+.pets-egg {
+  position: absolute; left: 50%; bottom: 12%;
+  width: 34%; transform: translateX(-50%);
+  animation: petsEggWobble 3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 0 rgba(0,0,0,0.25));
+}
+.pets-egg svg { width: 100%; height: auto; display: block; }
+@keyframes petsEggWobble {
+  0%, 100% { transform: translateX(-50%) rotate(-3deg); }
+  50%      { transform: translateX(-50%) rotate(3deg); }
+}
+.pets-heart {
+  position: absolute; top: 14%; left: 18%;
+  font-size: 1.6rem;
+  filter: drop-shadow(0 2px 0 rgba(0,0,0,0.3));
+  animation: petsFloat 2.4s ease-in-out infinite;
+}
+.pets-sparkle {
+  position: absolute; top: 22%; right: 18%;
+  font-size: 1.4rem;
+  animation: petsFloat 2.4s ease-in-out infinite 0.6s;
+}
+@keyframes petsFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-6px) scale(1.1); }
+}

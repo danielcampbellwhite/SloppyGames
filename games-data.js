@@ -8,6 +8,7 @@ const CATEGORIES = [
   { slug: 'maths',   label: 'Maths',     path: '/maths/' },
   { slug: 'learn',   label: 'Learn',     path: '/learn/' },
   { slug: 'create',  label: 'Create',    path: '/create/' },
+  { slug: 'pets',    label: 'Pets',      path: '/pets/' },
 ];
 
 // Games are ordered oldest → newest. "Newest" features pulls from the end.
@@ -172,6 +173,14 @@ const GAMES = [
     category: 'puzzles',
     thumb: 'splatwords',
   },
+  {
+    slug: 'pets',
+    title: 'Sloppy Pets',
+    description: 'A virtual pet you keep across real days. Pick a biome, hatch your egg, then feed, play, clean and nurture your pet as it grows.',
+    href: '/games/pets/',
+    category: 'pets',
+    thumb: 'pets',
+  },
 ];
 
 // ---------- Render helpers ----------
@@ -270,6 +279,15 @@ function thumbHTML(slug) {
       <span class="su-cell">8</span><span class="su-cell"></span><span class="su-cell">6</span><span class="su-cell sep">1</span><span class="su-cell">4</span>
       <span class="su-cell sep-row"></span><span class="su-cell sep-row">3</span><span class="su-cell sep-row"></span><span class="su-cell sep-row sep">5</span><span class="su-cell sep-row"></span>
       <span class="su-cell">7</span><span class="su-cell"></span><span class="su-cell">1</span><span class="su-cell sep"></span><span class="su-cell">8</span>
+    </span>`;
+    case 'pets': return `<span class="thumb-pets">
+      <span class="pets-sky"></span>
+      <span class="pets-hill"></span>
+      <span class="pets-egg" aria-hidden="true">
+        <svg viewBox="0 0 100 130"><ellipse cx="50" cy="70" rx="46" ry="58" fill="#facc15" stroke="#1a1a1a" stroke-width="5"/><path d="M 20 60 Q 30 46, 40 60 Q 50 74, 60 60 Q 70 46, 80 60" stroke="#65a30d" stroke-width="6" fill="none" stroke-linecap="round"/><ellipse cx="34" cy="42" rx="6" ry="4" fill="rgba(255,255,255,0.55)"/></svg>
+      </span>
+      <span class="pets-heart">💜</span>
+      <span class="pets-sparkle">✨</span>
     </span>`;
     case 'splatwords': return `<span class="thumb-sw">
       <span class="sw-row">
