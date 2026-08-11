@@ -530,6 +530,45 @@
       z-index: 3;
     }
 
+    /* ---------- Pet selector strip ---------- */
+    .pet-selector {
+      display: flex;
+      gap: 0.4rem;
+      width: 100%;
+      max-width: 640px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .pet-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem 0.2rem 0.2rem;
+      box-shadow: 3px 3px 0 var(--ink);
+      cursor: pointer;
+      font-family: inherit;
+      color: inherit;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
+    }
+    .pet-chip:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--ink); }
+    .pet-chip.selected { background: linear-gradient(180deg, #fde68a, #fbbf24); }
+    .pet-chip.sick { background: linear-gradient(180deg, #fecaca, #f87171); }
+    .pet-chip canvas {
+      width: 34px; height: 34px;
+      border: 2px solid var(--ink);
+      border-radius: 50%;
+      background: #fff9c4;
+      display: block;
+      flex-shrink: 0;
+    }
+    .pet-chip__label { text-align: left; line-height: 1.1; }
+    .pet-chip__name  { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 0.85rem; }
+    .pet-chip__stage { font-size: 0.7rem; color: #555; }
+    .pet-chip__stage .sw { display: inline-block; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--ink); vertical-align: middle; margin-left: 2px; }
+
     /* ---------- Play Centre ---------- */
     .play-header {
       display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
@@ -675,6 +714,7 @@
         <span class="chip">Age <strong id="chip-age">0d 0h</strong></span>
         <span class="chip coins">🪙 <strong id="chip-coins">0</strong></span>
       </div>
+      <div class="pet-selector" id="pet-selector" style="display:none;"></div>
       <div class="hud" id="hud"></div>
       <div class="stage" id="stage">
         <div class="day-time" id="day-time">🌞 Day</div>
@@ -747,7 +787,10 @@
   // ============================================================
 
   const SAVE_KEY = 'sloppy.pets.v1';
-  const SAVE_VERSION = 1;
+  // v2 restructures save.pet + save.mate + save.children[] into a
+  // single save.pets[] array where every entry is a full pet with its
+  // own meters, age and stage.  loadSave() migrates v1 saves silently.
+  const SAVE_VERSION = 2;
 
   // Bump this when the play-centre CPU roster should be regenerated
   // (kept per-save so partners feel stable rather than shuffled).
@@ -1276,6 +1319,40 @@
   //  Save / load
   // ============================================================
 
+  // ---------- v2 helpers ----------
+  let _petIdCounter = 0;
+  function newPetId() {
+    _petIdCounter += 1;
+    return 'p' + Date.now().toString(36) + '_' + _petIdCounter;
+  }
+  function freshMeters() { return { hunger: 80, happy: 80, clean: 80, energy: 80 }; }
+
+  // Build a "full pet" entry — always has meters, age, stage, sickness
+  // and identity fields.  Used for the founding pet, mates joining the
+  // household, and hatched offspring.
+  function makePet(o) {
+    return {
+      id: o.id || newPetId(),
+      species: o.species,
+      name: o.name,
+      gender: o.gender,
+      variant: o.variant || 0,
+      born: o.born || Date.now(),
+      age: o.age != null ? o.age : 0,          // 0..100
+      stage: o.stage || 'baby',
+      meters: o.meters || freshMeters(),
+      sickSince: o.sickSince || null,
+      // Cross-references — set once by mating / hatching.
+      mateId: o.mateId || null,
+      parentIds: o.parentIds || [],
+      // The founder pet is the one that hatched from the very first
+      // biome egg.  Only founders (and their promoted heirs) can visit
+      // the play centre to find a partner.
+      isFounder: !!o.isFounder,
+      generation: o.generation || 1,
+    };
+  }
+
   function newSave(biomeKey) {
     const now = Date.now();
     return {
@@ -1283,26 +1360,20 @@
       createdAt: now,
       lastVisit: now,
       biome: biomeKey,
-      stage: 'egg',
-      pet: null,             // filled in on hatch — { species, name, gender, variant, born }
-      meters: { hunger: 80, happy: 80, clean: 80, energy: 80 },
-      age: 0,                // 0..100
-      incubation: 0,         // 0..100 while stage === 'egg'
+      stage: 'egg',                            // egg | live | dead — top-level phase
+      pets: [],                                // populated on hatch
+      activePetId: null,                       // whose HUD is showing / play-centre eligible
+      incubation: 0,                           // 0..100 while stage === 'egg'
       eggStartedAt: now,
       coins: 0,
       ownedItems: {},
-      sickSince: null,
-      // Reserved fields for the play-centre / mating expansion.
-      // Present in v1 saves so future updates don't need to migrate.
-      mate: null,            // { species, gender, variant, name, attraction }
-      partneredSince: null,  // timestamp when the mate confirmed
-      pendingEgg: null,      // { readyAt, variant, gender, name } — spawns after mating
-      children: [],          // living, hatched offspring in habitat — { species, variant, gender, name, born }
-      family: [],            // ancestry log — { species, variant, gender, name, born, died, cause, generation }
-      generation: 1,
-      // The Play Centre CPU roster is generated once per pet lifetime
-      // so partners you meet feel consistent visit-to-visit.
-      playCentre: null,      // { generated, roster: [{ id, species, gender, variant, name, personality, attraction }] }
+      // Post-mating persistent egg (only one at a time; when the couple
+      // still has capacity we schedule the next one after hatch).
+      pendingEgg: null,                        // { id, parentIds, readyAt, species, variant, gender, name }
+      family: [],                              // ancestry log — { species, variant, gender, name, born, died, cause, generation, wasMate }
+      generation: 1,                           // generation of the CURRENT founder
+      playCentre: null,                        // roster while dating
+      // Kept from v1 for compatibility with the biome tint layer.
       history: { born: null, died: null, cause: null },
     };
   }
@@ -1313,33 +1384,138 @@
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (!data || typeof data !== 'object') return null;
-      if (data.version !== SAVE_VERSION) return null;
-      // Guard against corrupted meter values.
-      if (!data.meters) data.meters = { hunger: 80, happy: 80, clean: 80, energy: 80 };
-      for (const k of ['hunger','happy','clean','energy']) {
-        data.meters[k] = clamp(Number(data.meters[k]) || 0, 0, 100);
+      // Ancient (pre-v1) or unrecognised versions get discarded.
+      if (data.version !== 1 && data.version !== 2) return null;
+      // Migrate v1 → v2 in memory.
+      let migrated = data;
+      if (data.version === 1) migrated = migrateV1toV2(data);
+      // Field-level defaults for any missing v2 fields.
+      migrated.coins = Math.max(0, Math.floor(Number(migrated.coins) || 0));
+      migrated.ownedItems = migrated.ownedItems || {};
+      migrated.family = migrated.family || [];
+      migrated.generation = migrated.generation || 1;
+      migrated.pets = Array.isArray(migrated.pets) ? migrated.pets : [];
+      // Clean up each pet's fields.
+      for (const p of migrated.pets) {
+        p.meters = p.meters || freshMeters();
+        for (const k of ['hunger','happy','clean','energy']) {
+          p.meters[k] = clamp(Number(p.meters[k]) || 0, 0, 100);
+        }
+        p.age = clamp(Number(p.age) || 0, 0, 100);
+        p.parentIds = p.parentIds || [];
+        p.variant = p.variant || 0;
+        p.gender = p.gender || (Math.random() < 0.5 ? 'm' : 'f');
+        if (!p.id) p.id = newPetId();
+        if (!p.stage) p.stage = 'baby';
       }
-      data.age = clamp(Number(data.age) || 0, 0, 100);
-      data.incubation = clamp(Number(data.incubation) || 0, 0, 100);
-      data.coins = Math.max(0, Math.floor(Number(data.coins) || 0));
-      data.ownedItems = data.ownedItems || {};
-      // Backfill any mating-related fields so loads from a pre-mating
-      // v1 save keep working after the play-centre update ships.
-      if (!('mate'           in data)) data.mate = null;
-      if (!('partneredSince' in data)) data.partneredSince = null;
-      if (!('pendingEgg'     in data)) data.pendingEgg = null;
-      if (!('family'         in data)) data.family = [];
-      if (!('generation'     in data)) data.generation = 1;
-      if (!('playCentre'     in data)) data.playCentre = null;
-      if (!('children'       in data)) data.children = [];
-      // Backfill gender/variant on the pet itself.
-      if (data.pet && !('gender'  in data.pet)) data.pet.gender  = Math.random() < 0.5 ? 'm' : 'f';
-      if (data.pet && !('variant' in data.pet)) data.pet.variant = 0;
-      return data;
+      if (!migrated.activePetId && migrated.pets.length) {
+        migrated.activePetId = migrated.pets[0].id;
+      }
+      migrated.incubation = clamp(Number(migrated.incubation) || 0, 0, 100);
+      return migrated;
     } catch (e) {
       console.warn('Sloppy Pets: save is corrupt, starting over.', e);
       return null;
     }
+  }
+
+  // v1 → v2 migration.  Preserves as much as possible: founder pet
+  // keeps meters/age/stage, mate becomes a full pet with fresh meters,
+  // each child likewise starts as a healthy baby.
+  function migrateV1toV2(old) {
+    const founder = old.pet ? makePet({
+      species: old.pet.species,
+      name: old.pet.name,
+      gender: old.pet.gender,
+      variant: old.pet.variant || 0,
+      born: old.pet.born || old.createdAt,
+      age: old.age || 0,
+      stage: old.stage === 'egg' || old.stage === 'dead' ? 'baby' : old.stage,
+      meters: old.meters || freshMeters(),
+      sickSince: old.sickSince || null,
+      isFounder: true,
+      generation: old.generation || 1,
+    }) : null;
+    const pets = [];
+    let mate = null;
+    if (founder) pets.push(founder);
+    if (old.mate && founder) {
+      mate = makePet({
+        species: old.mate.species,
+        name: old.mate.name,
+        gender: old.mate.gender,
+        variant: old.mate.variant || 0,
+        born: old.partneredSince || founder.born,
+        age: founder.age,
+        stage: founder.stage,
+        meters: freshMeters(),
+        mateId: founder.id,
+        isFounder: false,
+        generation: founder.generation,
+      });
+      founder.mateId = mate.id;
+      pets.push(mate);
+    }
+    if (Array.isArray(old.children) && founder) {
+      for (const c of old.children) {
+        pets.push(makePet({
+          species: c.species,
+          name: c.name,
+          gender: c.gender,
+          variant: c.variant || 0,
+          born: c.born || Date.now(),
+          age: 0,
+          stage: 'baby',
+          meters: freshMeters(),
+          parentIds: mate ? [founder.id, mate.id] : [founder.id],
+          isFounder: false,
+          generation: founder.generation + 1,
+        }));
+      }
+    }
+    return {
+      version: 2,
+      createdAt: old.createdAt,
+      lastVisit: old.lastVisit,
+      biome: old.biome,
+      stage: old.stage === 'egg' ? 'egg' : (old.stage === 'dead' ? 'dead' : 'live'),
+      pets,
+      activePetId: founder ? founder.id : null,
+      incubation: old.incubation || 0,
+      eggStartedAt: old.eggStartedAt || old.createdAt,
+      coins: old.coins || 0,
+      ownedItems: old.ownedItems || {},
+      pendingEgg: old.pendingEgg && founder && mate ? {
+        id: 'e' + Date.now().toString(36),
+        parentIds: [founder.id, mate.id],
+        readyAt: old.pendingEgg.readyAt,
+        species: old.pendingEgg.species,
+        variant: old.pendingEgg.variant,
+        gender: old.pendingEgg.gender,
+        name: old.pendingEgg.name,
+      } : null,
+      family: old.family || [],
+      generation: old.generation || 1,
+      playCentre: old.playCentre || null,
+      history: old.history || { born: null, died: null, cause: null },
+    };
+  }
+
+  // ---------- Handy readers over save.pets[] ----------
+  function petById(id) {
+    if (!G.save) return null;
+    return (G.save.pets || []).find(p => p.id === id) || null;
+  }
+  function activePet()    { return G.save ? petById(G.save.activePetId) : null; }
+  function livePets()     { return G.save ? (G.save.pets || []) : []; }
+  function selectedPet()  {
+    if (!G.save) return null;
+    return petById(G.selectedPetId) || activePet();
+  }
+  function mateOf(pet)    { return pet ? petById(pet.mateId) : null; }
+  function childrenOf(pet) {
+    if (!pet) return [];
+    return livePets().filter(p => p.parentIds && p.parentIds.includes(pet.id));
   }
 
   function saveNow() {
@@ -1362,77 +1538,154 @@
   //  Time advancement (idle decay)
   // ============================================================
 
-  // Advance meters + age + sickness by dtMs.  Called both live (small
-  // deltas from rAF) and on load-with-history (offline delta, capped).
+  // Advance meters + age + sickness by dtMs for every living pet in
+  // the household.  Called both live (small deltas from rAF) and on
+  // load-with-history (offline delta, capped).
   function advanceTime(dtMs) {
-    if (!G.save || !G.save.pet) return;
-    if (G.save.stage === 'dead') return;
-
-    // Age: continuous progression from 0..100 over LIFESPAN_MS.
-    G.save.age = clamp(G.save.age + (dtMs / TUNE.LIFESPAN_MS) * 100, 0, 100);
-
-    // Meter decay (skip energy when sleeping).
+    if (!G.save) return;
+    if (G.save.stage !== 'live') return;
+    const pets = livePets().slice();   // copy — deaths mutate G.save.pets
+    for (const pet of pets) {
+      advancePet(pet, dtMs);
+    }
+  }
+  function advancePet(pet, dtMs) {
+    if (!pet) return;
+    pet.age = clamp(pet.age + (dtMs / TUNE.LIFESPAN_MS) * 100, 0, 100);
+    const petSleeping = !!(G.sleepingIds && G.sleepingIds.has(pet.id));
     for (const k of ['hunger','happy','clean','energy']) {
-      if (k === 'energy' && G.sleeping) continue;
+      if (k === 'energy' && petSleeping) continue;
       const rate = TUNE.DECAY_MS[k];
-      G.save.meters[k] = clamp(G.save.meters[k] - (dtMs / rate), 0, 100);
+      pet.meters[k] = clamp(pet.meters[k] - (dtMs / rate), 0, 100);
     }
-    if (G.sleeping) {
-      // Recover energy while sleeping (~+40/hour).
-      G.save.meters.energy = clamp(G.save.meters.energy + (dtMs / (3600 * 1000)) * 40, 0, 100);
+    if (petSleeping) {
+      pet.meters.energy = clamp(pet.meters.energy + (dtMs / (3600 * 1000)) * 40, 0, 100);
     }
-
-    // Sickness: if any meter is at 0, start ticking.  Reset when
-    // meters recover.
-    const anyZero = ['hunger','happy','clean','energy'].some(k => G.save.meters[k] <= 0);
+    const anyZero = ['hunger','happy','clean','energy'].some(k => pet.meters[k] <= 0);
     if (anyZero) {
-      if (!G.save.sickSince) G.save.sickSince = Date.now();
-      const sickFor = Date.now() - G.save.sickSince;
+      if (!pet.sickSince) pet.sickSince = Date.now();
+      const sickFor = Date.now() - pet.sickSince;
       if (sickFor > TUNE.SICK_AFTER_MS + TUNE.DEATH_AFTER_SICK_MS) {
-        killPet('neglect');
+        killPet(pet.id, 'neglect');
         return;
       }
     } else {
-      G.save.sickSince = null;
+      pet.sickSince = null;
     }
-
-    // Old age.
-    if (G.save.age >= 100) {
-      killPet('old age');
+    if (pet.age >= 100) {
+      killPet(pet.id, 'old age');
       return;
     }
   }
 
-  // Update stage from age (called after advanceTime).
+  // Update stage from age for every pet.
   function updateStage() {
-    if (!G.save || !G.save.pet) return;
-    if (G.save.stage === 'egg' || G.save.stage === 'dead') return;
-    for (const s of STAGES) {
-      if (G.save.age >= s.min && G.save.age < s.max) {
-        if (G.save.stage !== s.key) {
-          G.save.stage = s.key;
-          thoughtAt(50, 30, 'I grew! ✨');
+    if (!G.save) return;
+    if (G.save.stage !== 'live') return;
+    for (const pet of livePets()) {
+      const prev = pet.stage;
+      for (const s of STAGES) {
+        if (pet.age >= s.min && pet.age < s.max) {
+          if (pet.stage !== s.key) {
+            pet.stage = s.key;
+            if (pet.id === G.save.activePetId) thoughtAt(50, 30, `${pet.name} grew! ✨`);
+          }
+          break;
         }
-        return;
+      }
+      // Announce cross-stage transitions for any pet.
+      if (prev !== pet.stage && pet.id !== G.save.activePetId) {
+        thoughtAt(50, 30, `${pet.name} is now ${STAGES.find(s => s.key === pet.stage).label}!`);
       }
     }
-    // Above 100 handled by killPet.
   }
 
-  function killPet(cause) {
-    if (!G.save || G.save.stage === 'dead') return;
-    // Give the lineage a chance to carry on first.
-    if (tryInheritance(cause)) return;
+  // Kill one specific pet (by id).  Records the death in save.family,
+  // fixes up mate cross-references, promotes an heir if the founder
+  // died of old age, and clears the household if everyone is gone.
+  function killPet(petId, cause) {
+    if (!G.save) return;
+    const pet = petById(petId);
+    if (!pet) return;
+    // Log the death.
+    G.save.family = G.save.family || [];
+    G.save.family.push({
+      species: pet.species,
+      variant: pet.variant,
+      gender: pet.gender,
+      name: pet.name,
+      born: pet.born,
+      died: Date.now(),
+      cause,
+      generation: pet.generation || 1,
+      wasMate: !pet.isFounder && !!pet.mateId,
+    });
+    // If this pet had a mate still living, clear the reciprocal reference.
+    const mate = mateOf(pet);
+    if (mate) mate.mateId = null;
+    // Remove from live roster.
+    G.save.pets = G.save.pets.filter(p => p.id !== pet.id);
+    delete G.petRuntime[pet.id];
+    G.sleepingIds && G.sleepingIds.delete && G.sleepingIds.delete(pet.id);
+    // Show a floating memorial thought.
+    thoughtAt(50, 30, `${pet.name} has passed on (${cause}).`, 4200);
+    beep(220, 'sine', 0.5, 0.08);
+    // If the founder died, try to pass the torch to a child (old age
+    // increments the generation counter; other causes just promote the
+    // next available pet without ceremony).
+    if (pet.id === G.save.activePetId) {
+      if (pet.isFounder && cause === 'old age') tryPromoteHeirOf(pet);
+      const newActive = livePets().find(p => p.isFounder) || livePets()[0];
+      if (newActive) {
+        G.save.activePetId = newActive.id;
+        newActive.isFounder = true;
+        G.selectedPetId = newActive.id;
+      }
+    }
+    // The household ends only when there is truly nobody left.
+    if (!livePets().length) { endHousehold(); return; }
+    // If the selected pet was the one that died, pick another.
+    if (G.selectedPetId === pet.id) G.selectedPetId = G.save.activePetId;
+    saveNow();
+    if (G.screen === 'habitat') { renderPetSelector(); renderHUD(); renderStagebar(); }
+  }
+
+  // Called when there are simply no pets left.
+  function endHousehold() {
     G.save.stage = 'dead';
     G.save.history.died = Date.now();
-    G.save.history.cause = cause;
+    G.save.history.cause = 'household ended';
     saveNow();
     setScreen('dead');
     renderDead();
   }
 
-  function isSick() {
-    return G.save && G.save.sickSince && (Date.now() - G.save.sickSince) > TUNE.SICK_AFTER_MS;
+  // Try to promote an heir of the given (dying) pet — used for
+  // old-age deaths of the founder.  Increments generation.  Returns
+  // true if promotion succeeded.
+  function tryPromoteHeirOf(dyingPet) {
+    const heirs = childrenOf(dyingPet);
+    if (!heirs.length) return false;
+    // Pick the oldest (highest age) heir.
+    heirs.sort((a, b) => b.age - a.age);
+    const heir = heirs[0];
+    heir.isFounder = true;
+    heir.generation = (dyingPet.generation || 1) + 1;
+    G.save.generation = heir.generation;
+    G.save.activePetId = heir.id;
+    G.selectedPetId = heir.id;
+    // The heir now inherits the ability to visit the play centre.
+    G.save.playCentre = null;
+    thoughtAt(50, 30, `${heir.name} carries the line on! ✨`, 4200);
+    beep(660, 'square', 0.2, 0.08);
+    setTimeout(() => beep(880, 'square', 0.2, 0.08), 120);
+    setTimeout(() => beep(1175, 'square', 0.3, 0.10), 240);
+    return true;
+  }
+
+  function isSick(pet) {
+    pet = pet || selectedPet();
+    return !!(pet && pet.sickSince && (Date.now() - pet.sickSince) > TUNE.SICK_AFTER_MS);
   }
 
   // ============================================================
@@ -1449,10 +1702,14 @@
     lastFrame: 0,
     lastDecay: 0,
     lastCoin: 0,
-    sleeping: false,
-    // Pet position (design space: 0..100 both axes; sprite anchored at foot)
-    pet: { x: 50, y: 80, tx: 50, ty: 80, facing: 1, bob: 0, mood: 'happy' },
-    walkT: 0,
+    // Per-pet sleep toggles keyed by pet.id.
+    sleepingIds: new Set(),
+    // Runtime position + AI state for each pet keyed by pet.id.
+    // Positions are in design space (0..100 both axes; feet anchored).
+    petRuntime: {},           // { petId: { x, y, tx, ty, facing, walkT, wanderT, mood } }
+    // Which pet the HUD + action buttons are focused on.
+    selectedPetId: null,
+    // The currently-active pet the AI treats as the "camera focus".
     thoughts: [],
     thoughtCooldown: 0,
     coinFloaters: [],
@@ -1480,9 +1737,10 @@
       sub.textContent = 'Tap the egg to keep it warm. Keep going until it hatches!';
     } else if (name === 'habitat') {
       const bi = BIOMES[G.save.biome];
-      const pn = G.save.pet ? G.save.pet.name : 'Your pet';
-      const mate = G.save.mate ? ` (with ${G.save.mate.name} 💜)` : '';
-      sub.textContent = `${pn}${mate} lives in the ${bi.label}. Look after them every day.`;
+      const pets = livePets();
+      if (pets.length === 0) sub.textContent = 'Your household is empty.';
+      else if (pets.length === 1) sub.textContent = `${pets[0].name} lives in the ${bi.label}. Look after them every day.`;
+      else sub.textContent = `${pets.length} pets to look after in the ${bi.label} — tap a pet to select who your actions apply to.`;
     } else if (name === 'play') {
       sub.textContent = 'Meet other pets of the same species. Play together to grow attraction — hit 100 and you can become mates!';
     } else if (name === 'dead') {
@@ -1570,21 +1828,22 @@
     const pool = bi.pets;
     const speciesKey = pool[Math.floor(Math.random() * pool.length)];
     const species = SPECIES[speciesKey];
-    // Gender is 50/50 so mating (added later) has a partner pool that
-    // works.  Variant chooses one of the species' colour palettes.
     const gender = Math.random() < 0.5 ? 'm' : 'f';
     const variant = Math.floor(Math.random() * (species.variants ? species.variants.length : 1));
-    G.save.pet = {
+    const founder = makePet({
       species: speciesKey,
       name: species.name,
-      gender: gender,
-      variant: variant,
+      gender, variant,
       born: Date.now(),
-    };
-    G.save.history.born = Date.now();
-    G.save.stage = 'baby';
-    G.save.age = 0;
+      isFounder: true,
+      generation: 1,
+    });
+    G.save.pets = [founder];
+    G.save.activePetId = founder.id;
+    G.selectedPetId = founder.id;
+    G.save.stage = 'live';
     G.save.incubation = 100;
+    G.save.history.born = Date.now();
     saveNow();
     confetti();
     beep(880, 'square', 0.15, 0.08);
@@ -1627,16 +1886,38 @@
     G.stage = document.getElementById('stage');
     G.canvas = document.getElementById('canvas');
     G.ctx = G.canvas.getContext('2d');
+    // Ensure a valid selected pet (defaults to active).
+    if (!G.selectedPetId || !petById(G.selectedPetId)) {
+      G.selectedPetId = G.save.activePetId;
+    }
+    renderPetSelector();
     renderHUD();
     renderActions();
     sizeCanvas();
     G.lastFrame = performance.now();
     G.lastDecay = Date.now();
     G.lastCoin = Date.now();
-    // pet starts somewhere in the middle-lower area
-    G.pet.x = 50; G.pet.y = 80; G.pet.tx = 30 + Math.random() * 40; G.pet.ty = 78;
-    G.pet.facing = 1;
     requestAnimationFrame(loop);
+  }
+
+  // Runtime state for a single pet id — created lazily on first draw.
+  function petRuntimeFor(id) {
+    if (!G.petRuntime) G.petRuntime = {};
+    if (!G.petRuntime[id]) {
+      const idx = livePets().findIndex(p => p.id === id);
+      const startX = 30 + (idx * 15) % 55;
+      G.petRuntime[id] = {
+        x: startX,
+        y: 80,
+        tx: startX + (Math.random() * 20 - 10),
+        ty: 80,
+        facing: Math.random() < 0.5 ? 1 : -1,
+        walkT: 0,
+        wanderT: 2000 + Math.random() * 3000,
+        mood: 'happy',
+      };
+    }
+    return G.petRuntime[id];
   }
 
   function sizeCanvas() {
@@ -1658,17 +1939,15 @@
   function dy(y) { return (y / 75)  * G._pxH; }
 
   function loop(nowMs) {
-    // Keep the RAF chain alive across screens so we can pause work but
-    // still resume drawing when the player returns to the habitat.
     if (G.screen !== 'habitat') {
       G.lastFrame = nowMs;
       requestAnimationFrame(loop);
       return;
     }
-    const dt = Math.min(nowMs - G.lastFrame, 200);   // clamp huge jumps
+    const dt = Math.min(nowMs - G.lastFrame, 200);
     G.lastFrame = nowMs;
 
-    // Live decay: apply incremental time since we last did.
+    // Live decay tick, batched to once per second.
     const nowStamp = Date.now();
     const decayDelta = nowStamp - G.lastDecay;
     if (decayDelta > 1000) {
@@ -1677,9 +1956,9 @@
       G.lastDecay = nowStamp;
       renderHUD();
       renderStagebar();
+      renderPetSelector();
       updateSickBadge();
     }
-    // Coin income while page is visible.
     if (nowStamp - G.lastCoin >= TUNE.COIN_TICK_MS) {
       const inc = Math.floor((nowStamp - G.lastCoin) / TUNE.COIN_TICK_MS);
       G.save.coins += inc;
@@ -1687,12 +1966,10 @@
       renderStagebar();
     }
 
-    if (G.save.stage !== 'dead') {
-      aiStep(dt);
-      stepChildAI(dt);
+    if (G.save.stage === 'live') {
+      stepAllPets(dt);
       drawScene(nowMs);
-      if (G.save.mate) drawMate(nowMs);
-      drawChildren(nowMs);
+      drawAllPets(nowMs);
       drawPendingEgg(nowMs);
       tickBreeding();
       updateThoughts(dt);
@@ -1701,56 +1978,152 @@
     requestAnimationFrame(loop);
   }
 
-  function aiStep(dt) {
-    // Pick moods based on meters + sleep.
-    const m = G.save.meters;
-    const avg = (m.hunger + m.happy + m.clean + m.energy) / 4;
-    G.pet.mood = G.sleeping ? 'sleep' : (avg > 55 ? 'happy' : avg > 25 ? 'neutral' : 'sad');
+  function stepAllPets(dt) {
+    const pets = livePets();
+    for (const pet of pets) {
+      const rt = petRuntimeFor(pet.id);
+      const m = pet.meters;
+      const petSleeping = G.sleepingIds && G.sleepingIds.has(pet.id);
+      const avg = (m.hunger + m.happy + m.clean + m.energy) / 4;
+      rt.mood = petSleeping ? 'sleep' : (avg > 55 ? 'happy' : avg > 25 ? 'neutral' : 'sad');
 
-    // Sleepy? Head to a corner and stop.
-    if (G.sleeping || m.energy < 12) {
-      G.pet.tx = 20; G.pet.ty = 82;
-    } else if (m.hunger < 20 && G.save.ownedItems.bowl) {
-      // Head towards the food bowl.
-      G.pet.tx = 78; G.pet.ty = 82;
-    } else if (m.happy < 20 && G.save.ownedItems.toy) {
-      G.pet.tx = 62; G.pet.ty = 82;
-    } else {
-      // Random wander every 3-6 seconds.
-      G.wanderT = (G.wanderT || 0) - dt;
-      if (G.wanderT <= 0) {
-        G.pet.tx = 20 + Math.random() * 60;
-        G.pet.ty = 78 + Math.random() * 4;
-        G.wanderT = 3000 + Math.random() * 3000;
+      // Target selection: goal-driven, else random wander.
+      const items = G.save.ownedItems || {};
+      if (petSleeping || m.energy < 12)                         { rt.tx = 20; rt.ty = 82; }
+      else if (m.hunger < 20 && items.bowl)                     { rt.tx = 78; rt.ty = 82; }
+      else if (m.happy  < 20 && items.toy)                      { rt.tx = 62; rt.ty = 82; }
+      else {
+        rt.wanderT -= dt;
+        if (rt.wanderT <= 0) {
+          rt.tx = 15 + Math.random() * 70;
+          rt.ty = 78 + Math.random() * 4;
+          rt.wanderT = 2500 + Math.random() * 3500;
+        }
+      }
+
+      // Walk toward target.
+      const dx1 = rt.tx - rt.x;
+      const dy1 = rt.ty - rt.y;
+      const dist = Math.hypot(dx1, dy1);
+      let speed = 0.012;
+      if (rt.mood === 'sad') speed *= 0.5;
+      if (petSleeping) speed = 0;
+      // Elders are a bit slower; babies a bit bouncier.
+      if (pet.stage === 'elder') speed *= 0.7;
+      if (pet.stage === 'baby')  speed *= 0.85;
+      if (dist > 0.4 && speed > 0) {
+        const step = Math.min(dist, speed * dt);
+        rt.x += (dx1 / dist) * step;
+        rt.y += (dy1 / dist) * step;
+        rt.facing = dx1 > 0 ? 1 : -1;
+        rt.walkT += dt;
       }
     }
 
-    // Walk toward (tx, ty).
-    const dx1 = G.pet.tx - G.pet.x;
-    const dy1 = G.pet.ty - G.pet.y;
-    const dist = Math.hypot(dx1, dy1);
-    let speed = 0.012;   // design units per ms
-    if (G.pet.mood === 'sad') speed *= 0.5;
-    if (G.sleeping) speed = 0;
-    if (dist > 0.4 && speed > 0) {
-      const step = Math.min(dist, speed * dt);
-      G.pet.x += (dx1 / dist) * step;
-      G.pet.y += (dy1 / dist) * step;
-      G.pet.facing = dx1 > 0 ? 1 : -1;
-      G.walkT += dt;
-    }
-
-    // Random thought bubbles when needs are pressing.
+    // Random thought bubbles from the currently-selected pet.
     G.thoughtCooldown -= dt;
     if (G.thoughtCooldown <= 0) {
       G.thoughtCooldown = 8000 + Math.random() * 12000;
-      if (G.sleeping) thoughtAt(G.pet.x, G.pet.y - 25, '💤');
-      else if (m.hunger < 30) thoughtAt(G.pet.x, G.pet.y - 25, '🍔?');
-      else if (m.clean < 30)  thoughtAt(G.pet.x, G.pet.y - 25, '🛁?');
-      else if (m.happy < 30)  thoughtAt(G.pet.x, G.pet.y - 25, '🎾?');
-      else if (m.energy < 30) thoughtAt(G.pet.x, G.pet.y - 25, '😴');
-      else if (Math.random() < 0.5) thoughtAt(G.pet.x, G.pet.y - 25, ['💜','✨','🎶','🌟','🙂'][Math.floor(Math.random() * 5)]);
+      const sel = selectedPet();
+      if (sel) {
+        const rt = petRuntimeFor(sel.id);
+        const m = sel.meters;
+        const asleep = G.sleepingIds.has(sel.id);
+        if (asleep)                thoughtAt(rt.x, rt.y - 25, '💤');
+        else if (m.hunger < 30)    thoughtAt(rt.x, rt.y - 25, '🍔?');
+        else if (m.clean  < 30)    thoughtAt(rt.x, rt.y - 25, '🛁?');
+        else if (m.happy  < 30)    thoughtAt(rt.x, rt.y - 25, '🎾?');
+        else if (m.energy < 30)    thoughtAt(rt.x, rt.y - 25, '😴');
+        else if (Math.random() < 0.5) thoughtAt(rt.x, rt.y - 25, ['💜','✨','🎶','🌟','🙂'][Math.floor(Math.random() * 5)]);
+      }
     }
+  }
+
+  function drawAllPets(nowMs) {
+    // Draw in age order so babies stand in front of adults.
+    const pets = livePets().slice().sort((a, b) => a.age - b.age);
+    for (const pet of pets) {
+      drawOnePet(pet, nowMs);
+    }
+  }
+
+  function drawOnePet(pet, t) {
+    const ctx = G.ctx;
+    const species = SPECIES[pet.species];
+    const stage = STAGES.find(s => s.key === pet.stage) || STAGES[3];
+    const rt = petRuntimeFor(pet.id);
+    const spriteSize = 90 * stage.scale;
+    const px = dx(rt.x);
+    const asleep = G.sleepingIds && G.sleepingIds.has(pet.id);
+    const bob = Math.sin(t / 220 + rt.walkT / 200) * (asleep ? 0 : 2);
+    const py = dy(rt.y) + bob;
+    const isSelected = pet.id === G.selectedPetId;
+
+    // Selection ring
+    if (isSelected) {
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.ellipse(px, dy(rt.y) + 3, spriteSize * 0.28, spriteSize * 0.08, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = 4;
+    }
+
+    // Shadow (before sprite)
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(px, dy(rt.y) + 2, spriteSize * 0.25, spriteSize * 0.06, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const filter = variantFilter(pet.species, pet.variant || 0);
+    withFilter(ctx, filter, () => {
+      ctx.save();
+      ctx.translate(px, py);
+      const s = spriteSize / 100;
+      ctx.scale(rt.facing * s, s);
+      ctx.translate(-50, -100);
+      species.draw(ctx, rt.mood, t);
+      ctx.restore();
+    });
+
+    // Sleeping Z's
+    if (asleep) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.font = 'bold 18px "Baloo 2", sans-serif';
+      const zx = px + spriteSize * 0.2;
+      const zy = py - spriteSize * 0.35;
+      const drift = (t / 300) % 20;
+      ctx.fillText('z', zx, zy - drift);
+      ctx.fillText('z', zx + 6, zy - drift - 8);
+      ctx.fillText('Z', zx + 12, zy - drift - 16);
+    }
+
+    // Name tag above head
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 10px "Baloo 2", sans-serif';
+    const label = pet.name + (pet.sickSince ? ' 🤢' : '');
+    const w = ctx.measureText(label).width;
+    const tagX = px - w / 2 - 4;
+    const tagY = dy(rt.y) - spriteSize - 4;
+    ctx.beginPath();
+    const r = 5, xR = tagX, yR = tagY - 10, wR = w + 8, hR = 12;
+    ctx.moveTo(xR + r, yR);
+    ctx.lineTo(xR + wR - r, yR);
+    ctx.quadraticCurveTo(xR + wR, yR, xR + wR, yR + r);
+    ctx.lineTo(xR + wR, yR + hR - r);
+    ctx.quadraticCurveTo(xR + wR, yR + hR, xR + wR - r, yR + hR);
+    ctx.lineTo(xR + r, yR + hR);
+    ctx.quadraticCurveTo(xR, yR + hR, xR, yR + hR - r);
+    ctx.lineTo(xR, yR + r);
+    ctx.quadraticCurveTo(xR, yR, xR + r, yR);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillText(label, tagX + 4, tagY);
   }
 
   function drawScene(nowMs) {
@@ -1769,24 +2142,11 @@
     drawBiomeProps(bi.key, nowMs);
     // Owned items
     drawOwnedItems();
-    // Pet
-    drawPet(nowMs);
     // Coin floaters
     drawCoinFloaters(nowMs);
-    // Sleep 'Z's
-    if (G.sleeping) {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.font = 'bold 24px "Baloo 2", sans-serif';
-      const zx = dx(G.pet.x + 6);
-      const zy = dy(G.pet.y - 15);
-      const drift = (nowMs / 300) % 20;
-      ctx.fillText('z', zx, zy - drift);
-      ctx.fillText('z', zx + 8, zy - drift - 8);
-      ctx.fillText('Z', zx + 16, zy - drift - 16);
-    }
-    // Sickness overlay
-    if (isSick()) {
-      ctx.fillStyle = 'rgba(80, 220, 80, 0.15)';
+    // Sickness overlay — any pet sick tints the scene faintly green.
+    if (livePets().some(p => isSick(p))) {
+      ctx.fillStyle = 'rgba(80, 220, 80, 0.12)';
       ctx.fillRect(0, 0, G._pxW, G._pxH);
     }
     // Day/night tint
@@ -1963,33 +2323,7 @@
     }
   }
 
-  function drawPet(t) {
-    const ctx = G.ctx;
-    const species = SPECIES[G.save.pet.species];
-    const stage = STAGES.find(s => s.key === G.save.stage) || STAGES[3];
-    const spriteSize = 90 * stage.scale;   // pixels
-    const px = dx(G.pet.x);
-    const bob = Math.sin(t / 220 + G.walkT / 200) * (G.sleeping ? 0 : 2);
-    const py = dy(G.pet.y) + bob;
-
-    const filter = variantFilter(G.save.pet.species, G.save.pet.variant || 0);
-    withFilter(ctx, filter, () => {
-      ctx.save();
-      ctx.translate(px, py);
-      const s = spriteSize / 100;
-      ctx.scale(G.pet.facing * s, s);
-      ctx.translate(-50, -100);
-      if (G.sleeping) { ctx.rotate(0); }
-      species.draw(ctx, G.pet.mood, t);
-      ctx.restore();
-    });
-
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(px, dy(G.pet.y) + 2, spriteSize * 0.25, spriteSize * 0.06, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  // drawPet() has been replaced by drawAllPets() → drawOnePet() in v4.
 
   // ============================================================
   //  Thought bubbles (positioned in design space over the canvas)
@@ -1997,6 +2331,7 @@
 
   function thoughtAt(x, y, text, ttl) {
     ttl = ttl || 2800;
+    if (!G.stage) return;   // pre-habitat boot — thoughts have no home yet
     const el = document.createElement('div');
     el.className = 'thought';
     el.textContent = text;
@@ -2010,8 +2345,8 @@
     const rect = G.stage.getBoundingClientRect();
     for (const th of G.thoughts) {
       // Follow pet if this is a live thought (x/y match pet).
-      const isPetBubble = Math.abs(th.x - G.pet.x) < 5 && Math.abs(th.y - (G.pet.y - 25)) < 8;
-      if (isPetBubble) { th.x = G.pet.x; th.y = G.pet.y - 25; }
+      // Thoughts stay at the world position they were emitted at —
+      // pets move on afterwards but their idea drifts in place.
       const px = (th.x / 100) * rect.width;
       const py = (th.y / 75)  * rect.height;
       th.el.style.left = px + 'px';
@@ -2108,58 +2443,61 @@
   }
 
   function doAction(id) {
-    if (!G.save || !G.save.pet || G.save.stage === 'dead') return;
-    const m = G.save.meters;
+    if (!G.save || G.save.stage !== 'live') return;
+    const pet = selectedPet();
+    if (!pet) return;
+    const rt = petRuntimeFor(pet.id);
+    const m = pet.meters;
     switch (id) {
       case 'feed': {
         const bump = G.save.ownedItems.bowl ? 42 : 32;
         const wasHungry = m.hunger < 60;
         m.hunger = clamp(m.hunger + bump, 0, 100);
         m.clean  = clamp(m.clean - 5, 0, 100);
-        thoughtAt(G.pet.x, G.pet.y - 25, wasHungry ? 'Yummy! 😋' : '🙂');
+        thoughtAt(rt.x, rt.y - 25, wasHungry ? 'Yummy! 😋' : '🙂');
         beep(520, 'sine', 0.22, 0.06);
-        if (wasHungry) grantCoins(3, G.pet.x, G.pet.y - 25);
+        if (wasHungry) grantCoins(3, rt.x, rt.y - 25);
         break;
       }
       case 'play': {
-        if (m.energy < 15) { thoughtAt(G.pet.x, G.pet.y - 25, 'Too tired 😴'); return; }
+        if (m.energy < 15) { thoughtAt(rt.x, rt.y - 25, 'Too tired 😴'); return; }
         const bump = G.save.ownedItems.toy ? 32 : 24;
         m.happy  = clamp(m.happy  + bump, 0, 100);
         m.energy = clamp(m.energy - 8,   0, 100);
         m.hunger = clamp(m.hunger - 4,   0, 100);
-        thoughtAt(G.pet.x, G.pet.y - 25, ['Yay!','🎉','Wheee!','Again!'][Math.floor(Math.random()*4)]);
+        thoughtAt(rt.x, rt.y - 25, ['Yay!','🎉','Wheee!','Again!'][Math.floor(Math.random()*4)]);
         beep(880, 'triangle', 0.15, 0.05);
         setTimeout(() => beep(1175, 'triangle', 0.15, 0.05), 90);
-        // pet jumps to a new spot
-        G.pet.tx = 20 + Math.random() * 60;
-        G.pet.ty = 78 + Math.random() * 4;
-        G.wanderT = 4000;
-        grantCoins(1, G.pet.x, G.pet.y - 25);
+        rt.tx = 20 + Math.random() * 60; rt.ty = 78 + Math.random() * 4;
+        rt.wanderT = 4000;
+        grantCoins(1, rt.x, rt.y - 25);
         break;
       }
       case 'bath': {
         const bump = G.save.ownedItems.bath ? 55 : 40;
         const wasDirty = m.clean < 60;
         m.clean = clamp(m.clean + bump, 0, 100);
-        m.happy = clamp(m.happy - 5, 0, 100);   // pets don't always love baths
-        thoughtAt(G.pet.x, G.pet.y - 25, wasDirty ? 'Sparkly! ✨' : 'ugh 💧');
+        m.happy = clamp(m.happy - 5, 0, 100);
+        thoughtAt(rt.x, rt.y - 25, wasDirty ? 'Sparkly! ✨' : 'ugh 💧');
         beep(1200, 'sine', 0.3, 0.05);
-        if (wasDirty) grantCoins(3, G.pet.x, G.pet.y - 25);
+        if (wasDirty) grantCoins(3, rt.x, rt.y - 25);
         break;
       }
       case 'tap': {
         m.happy = clamp(m.happy + 6, 0, 100);
-        thoughtAt(G.pet.x, G.pet.y - 25, ['💜','✨','🥰','🙂'][Math.floor(Math.random()*4)]);
+        thoughtAt(rt.x, rt.y - 25, ['💜','✨','🥰','🙂'][Math.floor(Math.random()*4)]);
         beep(700 + Math.random() * 200, 'sine', 0.1, 0.04);
         break;
       }
       case 'sleep': {
-        G.sleeping = !G.sleeping;
-        // update the pill
+        if (!G.sleepingIds) G.sleepingIds = new Set();
+        const asleep = G.sleepingIds.has(pet.id);
+        if (asleep) G.sleepingIds.delete(pet.id);
+        else G.sleepingIds.add(pet.id);
         const btn = document.querySelector('.action[data-id="sleep"]');
-        if (btn) btn.classList.toggle('on', G.sleeping);
-        if (G.sleeping) { thoughtAt(G.pet.x, G.pet.y - 25, '💤'); beep(300, 'sine', 0.4, 0.05); }
-        else            { thoughtAt(G.pet.x, G.pet.y - 25, '☀️'); beep(660, 'triangle', 0.15, 0.05); }
+        if (btn) btn.classList.toggle('on', !asleep);
+        if (!asleep) { thoughtAt(rt.x, rt.y - 25, '💤'); beep(300, 'sine', 0.4, 0.05); }
+        else         { thoughtAt(rt.x, rt.y - 25, '☀️'); beep(660, 'triangle', 0.15, 0.05); }
         break;
       }
     }
@@ -2167,25 +2505,43 @@
     saveNow();
   }
 
-  // Tap on the stage counts as a "tap the pet" if near it, else general love.
+  // Tap on the stage: hit an egg → hatch; hit a pet → select it (and,
+  // if it's already selected, give it a love tap); tap empty ground →
+  // walk the selected pet there.
   function onStageTap(e) {
-    if (!G.save || !G.save.pet || G.save.stage !== 'baby' && G.save.stage !== 'child' && G.save.stage !== 'teen' && G.save.stage !== 'adult' && G.save.stage !== 'elder') return;
+    if (!G.save || G.save.stage !== 'live') return;
     const rect = G.stage.getBoundingClientRect();
     const cx = (e.clientX - rect.left);
     const cy = (e.clientY - rect.top);
-    // Ready egg gets first dibs on taps.
     if (tapHitsPendingEgg(cx, cy)) return;
-    const petPx = (G.pet.x / 100) * rect.width;
-    const petPy = (G.pet.y / 75)  * rect.height;
-    const dist = Math.hypot(cx - petPx, cy - petPy);
-    if (dist < Math.max(48, rect.width * 0.15)) {
-      doAction('tap');
-    } else {
-      // walk to the tap
-      const tx = clamp((cx / rect.width) * 100, 10, 90);
-      G.pet.tx = tx;
-      G.pet.ty = 80;
-      G.wanderT = 5000;
+    // Priority: nearest pet within a hit radius.
+    let hit = null, hitDist = Infinity;
+    for (const pet of livePets()) {
+      const rt = petRuntimeFor(pet.id);
+      const px = (rt.x / 100) * rect.width;
+      const py = (rt.y / 75)  * rect.height;
+      const d  = Math.hypot(cx - px, cy - py);
+      const r  = Math.max(44, rect.width * 0.13);
+      if (d < r && d < hitDist) { hit = pet; hitDist = d; }
+    }
+    if (hit) {
+      if (G.selectedPetId === hit.id) {
+        doAction('tap');
+      } else {
+        G.selectedPetId = hit.id;
+        renderPetSelector();
+        renderHUD();
+        renderStagebar();
+      }
+      return;
+    }
+    // Empty ground — walk selected pet there.
+    const sel = selectedPet();
+    if (sel) {
+      const rt = petRuntimeFor(sel.id);
+      rt.tx = clamp((cx / rect.width) * 100, 10, 90);
+      rt.ty = 80;
+      rt.wanderT = 5000;
     }
   }
 
@@ -2202,8 +2558,9 @@
   function renderHUD() {
     const hud = document.getElementById('hud');
     if (!hud) return;
+    const pet = selectedPet();
+    if (!pet) { hud.innerHTML = ''; return; }
     if (!hud.children.length) {
-      // First render — build DOM
       for (const m of METERS_ORDER) {
         const el = document.createElement('div');
         el.className = 'hud-pill ' + m.key;
@@ -2213,19 +2570,22 @@
     }
     for (const m of METERS_ORDER) {
       const el = hud.querySelector('.hud-pill.' + m.key);
-      const v  = G.save.meters[m.key];
+      const v  = pet.meters[m.key];
       const fill = el.querySelector('.fill');
       fill.style.width = v + '%';
       el.classList.toggle('low', v < 20);
     }
     renderStagebar();
+    // Sync sleep button state to the selected pet.
+    const btn = document.querySelector('.action[data-id="sleep"]');
+    if (btn) btn.classList.toggle('on', G.sleepingIds && G.sleepingIds.has(pet.id));
   }
   function renderStagebar() {
-    const st = STAGES.find(s => s.key === G.save.stage);
-    const stName = st ? st.label : G.save.stage;
-    document.getElementById('chip-stage').textContent = stName;
-    // Age display as "Xd Yh" of real time since birth.
-    const born = G.save.history.born || G.save.createdAt;
+    const pet = selectedPet();
+    if (!pet) return;
+    const st = STAGES.find(s => s.key === pet.stage);
+    document.getElementById('chip-stage').textContent = st ? st.label : pet.stage;
+    const born = pet.born || G.save.createdAt;
     const ms = Date.now() - born;
     const days = Math.floor(ms / (24 * 3600 * 1000));
     const hrs  = Math.floor((ms % (24 * 3600 * 1000)) / (3600 * 1000));
@@ -2234,14 +2594,55 @@
   }
   function updateSickBadge() {
     const mark = document.getElementById('sick-mark');
-    if (!mark) return;
-    mark.style.display = isSick() ? 'block' : 'none';
-    // day/night
+    if (mark) {
+      const anySick = livePets().some(p => isSick(p));
+      mark.style.display = anySick ? 'block' : 'none';
+    }
     const dayBadge = document.getElementById('day-time');
     if (dayBadge) {
       const h = new Date().getHours();
       const night = h < 6 || h >= 20;
       dayBadge.textContent = night ? '🌙 Night' : '🌞 Day';
+    }
+  }
+
+  // ---------- Pet selector strip (v4) ----------
+  function renderPetSelector() {
+    let strip = document.getElementById('pet-selector');
+    if (!strip) return;   // element may not exist yet on early boot
+    const pets = livePets();
+    strip.innerHTML = '';
+    if (pets.length <= 1) { strip.style.display = 'none'; return; }
+    strip.style.display = 'flex';
+    for (const pet of pets) {
+      const btn = document.createElement('button');
+      btn.className = 'pet-chip' + (pet.id === G.selectedPetId ? ' selected' : '');
+      if (isSick(pet)) btn.classList.add('sick');
+      const variantSw = (SPECIES[pet.species].variants[pet.variant] || {}).swatch || '#9333ea';
+      const gender = pet.gender === 'f' ? '♀' : '♂';
+      const stage = STAGES.find(s => s.key === pet.stage) || {label: '?'};
+      const canvas = document.createElement('canvas');
+      canvas.width = 44; canvas.height = 44;
+      const c2 = canvas.getContext('2d');
+      c2.setTransform(1,0,0,1,0,0);
+      c2.clearRect(0,0,44,44);
+      withFilter(c2, variantFilter(pet.species, pet.variant || 0), () => {
+        c2.save(); c2.translate(22, 42); c2.scale(0.4, 0.4); c2.translate(-50, -100);
+        SPECIES[pet.species].draw(c2, 'happy', performance.now());
+        c2.restore();
+      });
+      btn.appendChild(canvas);
+      const label = document.createElement('div');
+      label.className = 'pet-chip__label';
+      label.innerHTML = `<div class="pet-chip__name">${pet.name} ${gender}</div><div class="pet-chip__stage">${stage.label} · <span class="sw" style="background:${variantSw};"></span></div>`;
+      btn.appendChild(label);
+      btn.addEventListener('click', () => {
+        G.selectedPetId = pet.id;
+        renderPetSelector();
+        renderHUD();
+        renderStagebar();
+      });
+      strip.appendChild(btn);
     }
   }
 
@@ -2265,49 +2666,56 @@
       document.getElementById('info-body').innerHTML = '<p>Pick a biome to hatch your first egg.</p>';
       return;
     }
-    if (!G.save.pet) {
+    if (G.save.stage === 'egg') {
       document.getElementById('info-name').textContent = 'Your egg';
       document.getElementById('info-body').innerHTML = `
         <p>Your ${BIOMES[G.save.biome].label} egg is incubating. Keep it warm!</p>
         <p>Incubation: <strong>${Math.floor(G.save.incubation)}%</strong></p>`;
       return;
     }
-    const sp = SPECIES[G.save.pet.species];
-    const stage = STAGES.find(s => s.key === G.save.stage);
-    const born = new Date(G.save.history.born).toLocaleString();
-    const variant = sp.variants[G.save.pet.variant] || sp.variants[0];
-    const genderText = G.save.pet.gender === 'f' ? '♀ Female' : '♂ Male';
-    document.getElementById('info-name').textContent = `${G.save.pet.name} — ${sp.name}`;
+    const pets = livePets();
+    if (!pets.length) {
+      document.getElementById('info-name').textContent = 'Household empty';
+      document.getElementById('info-body').innerHTML = '<p>Everyone has passed on. Start a new egg to begin again.</p>';
+      return;
+    }
+    document.getElementById('info-name').textContent = `Household — ${pets.length} pet${pets.length > 1 ? 's' : ''}`;
+    const rows = pets.map(pet => {
+      const sp = SPECIES[pet.species];
+      const stage = STAGES.find(s => s.key === pet.stage);
+      const variant = sp.variants[pet.variant] || sp.variants[0];
+      const born = new Date(pet.born).toLocaleString();
+      const isActive = pet.id === G.save.activePetId;
+      const hasMate = !!mateOf(pet);
+      return `
+        <div style="border:2px solid var(--ink); border-radius:14px; padding:0.6rem; margin-bottom:0.6rem; ${isActive ? 'background:linear-gradient(180deg,#fef9c3,#fef3c7);' : 'background:#fff;'}">
+          <div style="font-family:'Baloo 2',sans-serif;font-weight:800;">
+            ${pet.name} ${pet.gender === 'f' ? '♀' : '♂'} — ${sp.name}
+            ${isActive ? '<span style="font-size:0.75rem;background:var(--purple);color:#fff;border:2px solid var(--ink);border-radius:8px;padding:0.05rem 0.35rem;margin-left:0.4rem;">FOUNDER</span>' : ''}
+            ${hasMate ? '<span style="font-size:0.75rem;color:#db2777;">💜 paired</span>' : ''}
+          </div>
+          <div class="info-row"><span>Stage</span><strong>${stage ? stage.label : pet.stage}</strong></div>
+          <div class="info-row"><span>Age</span><strong>${formatDuration(Date.now() - pet.born)}</strong></div>
+          <div class="info-row"><span>Variant</span><strong>${variant.name} <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #1a1a1a;background:${variant.swatch};vertical-align:middle;margin-left:4px;"></span></strong></div>
+          <div class="info-row"><span>Generation</span><strong>#${pet.generation || 1}</strong></div>
+          <div class="info-row"><span>Born</span><strong>${born}</strong></div>
+        </div>`;
+    }).join('');
     document.getElementById('info-body').innerHTML = `
-      <p style="margin-top:0.5rem;">${sp.personality}</p>
       <div class="info-row"><span>Biome</span><strong>${BIOMES[G.save.biome].label}</strong></div>
-      <div class="info-row"><span>Stage</span><strong>${stage ? stage.label : G.save.stage}</strong></div>
-      <div class="info-row"><span>Gender</span><strong>${genderText}</strong></div>
-      <div class="info-row"><span>Variant</span><strong>${variant.name} <span style="display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #1a1a1a;background:${variant.swatch};vertical-align:middle;margin-left:4px;"></span></strong></div>
-      <div class="info-row"><span>Generation</span><strong>#${G.save.generation || 1}</strong></div>
-      <div class="info-row"><span>Born</span><strong>${born}</strong></div>
-      <div class="info-row"><span>Loves</span><strong>${sp.like}</strong></div>
-      <div class="info-row"><span>Hates</span><strong>${sp.hates}</strong></div>
       <div class="info-row"><span>Coins</span><strong>🪙 ${G.save.coins}</strong></div>
-      ${G.save.mate ? `<hr style="margin:0.75rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
-        <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">💜 Mate</p>
-        <div class="info-row"><span>Name</span><strong>${G.save.mate.name} ${G.save.mate.gender === 'f' ? '♀' : '♂'}</strong></div>
-        <div class="info-row"><span>Variant</span><strong>${(SPECIES[G.save.mate.species].variants[G.save.mate.variant] || {name:'?'}).name}</strong></div>
-        <div class="info-row"><span>Together since</span><strong>${new Date(G.save.partneredSince).toLocaleDateString()}</strong></div>` : ''}
-      ${(G.save.children && G.save.children.length) ? `
-        <hr style="margin:0.75rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
-        <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">👶 Children (${G.save.children.length})</p>
-        ${G.save.children.map(c => `<div class="info-row"><span>${c.name} ${c.gender === 'f' ? '♀' : '♂'}</span><strong>${(SPECIES[c.species].variants[c.variant] || {name:'?'}).name}</strong></div>`).join('')}` : ''}
+      <hr style="margin:0.75rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
+      ${rows}
       ${G.save.pendingEgg ? `
         <hr style="margin:0.75rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
-        <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">🥚 Egg</p>
-        <div class="info-row"><span>Status</span><strong>${Date.now() >= G.save.pendingEgg.readyAt ? 'Ready to hatch — tap it!' : 'Incubating…'}</strong></div>
+        <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">🥚 Pending egg</p>
+        <div class="info-row"><span>Status</span><strong>${Date.now() >= G.save.pendingEgg.readyAt ? 'Ready — tap it!' : 'Incubating…'}</strong></div>
         ${Date.now() < G.save.pendingEgg.readyAt ? `<div class="info-row"><span>Hatches in</span><strong>${formatDuration(G.save.pendingEgg.readyAt - Date.now())}</strong></div>` : ''}` : ''}
       ${(G.save.family && G.save.family.length) ? `
         <hr style="margin:0.75rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
         <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">📜 Family tree</p>
-        ${G.save.family.slice().reverse().slice(0, 8).map(f => `<div class="info-row"><span>Gen #${f.generation} ${f.name}${f.wasMate ? ' (mate)' : ''}</span><strong>${(SPECIES[f.species].variants[f.variant] || {name:'?'}).name}</strong></div>`).join('')}
-        ${G.save.family.length > 8 ? `<p style="text-align:center;color:#999;font-size:0.85rem;margin:0.35rem 0 0;">…and ${G.save.family.length - 8} more</p>` : ''}` : ''}`;
+        ${G.save.family.slice().reverse().slice(0, 10).map(f => `<div class="info-row"><span>Gen #${f.generation} ${f.name}${f.wasMate ? ' (mate)' : ''}</span><strong>${f.cause}</strong></div>`).join('')}
+        ${G.save.family.length > 10 ? `<p style="text-align:center;color:#999;font-size:0.85rem;margin:0.35rem 0 0;">…and ${G.save.family.length - 10} more</p>` : ''}` : ''}`;
   }
   function formatDuration(ms) {
     if (ms < 60_000) return Math.ceil(ms / 1000) + 's';
@@ -2352,16 +2760,14 @@
   // ============================================================
 
   function renderDead() {
-    const born = G.save.history.born || G.save.createdAt;
-    const died = G.save.history.died || Date.now();
-    const lifeMs = died - born;
-    const days = Math.floor(lifeMs / (24 * 3600 * 1000));
-    const hrs  = Math.floor((lifeMs % (24 * 3600 * 1000)) / (3600 * 1000));
-    const cause = G.save.history.cause === 'old age' ? 'passed on peacefully at a ripe old age' : 'wasn\'t looked after well enough';
-    document.getElementById('dead-title').textContent = `Goodbye, ${G.save.pet ? G.save.pet.name : 'friend'}`;
-    document.getElementById('dead-body').textContent = `${G.save.pet ? G.save.pet.name : 'Your pet'} ${cause}.`;
-    document.getElementById('dead-stats').textContent = `Lifespan: ${days}d ${hrs}h · Stage: ${G.save.stage}`;
-    // Memorial: draw species faded on the little canvas.
+    // Use the last family entry as the "final pet" that ended the run.
+    const last = (G.save.family && G.save.family.length) ? G.save.family[G.save.family.length - 1] : null;
+    const name = last ? last.name : 'your pet';
+    const cause = last ? (last.cause === 'old age' ? 'passed on peacefully at a ripe old age' : `succumbed to ${last.cause}`) : 'has gone.';
+    const generations = G.save.family ? Math.max(1, ...G.save.family.map(f => f.generation || 1)) : 1;
+    document.getElementById('dead-title').textContent = `Farewell, ${name}`;
+    document.getElementById('dead-body').textContent = `${name} ${cause}. Your household spanned ${generations} generation${generations > 1 ? 's' : ''}.`;
+    document.getElementById('dead-stats').textContent = G.save.family ? `${G.save.family.length} pet${G.save.family.length !== 1 ? 's' : ''} lived and loved in this ${BIOMES[G.save.biome].label.toLowerCase()}.` : '';
     const mc = document.getElementById('memorial-canvas');
     const mctx = mc.getContext('2d');
     mctx.setTransform(1,0,0,1,0,0);
@@ -2371,7 +2777,9 @@
     mctx.scale(1.15, 1.15);
     mctx.translate(-50, -100);
     mctx.globalAlpha = 0.7;
-    if (G.save.pet) SPECIES[G.save.pet.species].draw(mctx, 'sad', 0);
+    if (last) withFilter(mctx, variantFilter(last.species, last.variant || 0), () => {
+      SPECIES[last.species].draw(mctx, 'sad', 0);
+    });
     mctx.restore();
     // faded overlay
     mctx.fillStyle = 'rgba(255,255,255,0.35)';
@@ -2423,35 +2831,32 @@
   ];
 
   function generatePlayCentre() {
-    // Only CPUs of the same species — but of the OPPOSITE gender to
-    // the player pet (so the mating flow always has valid partners).
-    if (!G.save || !G.save.pet) return null;
-    const speciesKey = G.save.pet.species;
-    const opposite = G.save.pet.gender === 'm' ? 'f' : 'm';
+    // CPUs are same species, opposite gender to the founder pet.
+    const founder = activePet();
+    if (!founder) return null;
+    const speciesKey = founder.species;
+    const opposite = founder.gender === 'm' ? 'f' : 'm';
     const nameList = CPU_NAMES[opposite].slice();
     const usedNames = new Set();
     const roster = [];
     for (let i = 0; i < PLAY_CENTRE_ROSTER; i++) {
-      // Pick a unique name.
       let name = null;
       for (let tries = 0; tries < 8 && !name; tries++) {
         const cand = nameList[Math.floor(Math.random() * nameList.length)];
         if (!usedNames.has(cand)) { name = cand; usedNames.add(cand); }
       }
       if (!name) name = 'Pet ' + (i + 1);
-      // Variant: any of the species' colour morphs, biased away from
-      // the player's own so the couple looks distinct.
       const variants = SPECIES[speciesKey].variants;
       let variant = Math.floor(Math.random() * variants.length);
-      if (variants.length > 1 && variant === G.save.pet.variant) {
+      if (variants.length > 1 && variant === founder.variant) {
         variant = (variant + 1 + Math.floor(Math.random() * (variants.length - 1))) % variants.length;
       }
       roster.push({
         id: 'cpu_' + Date.now() + '_' + i,
         species: speciesKey,
         gender: opposite,
-        variant: variant,
-        name: name,
+        variant,
+        name,
         personality: PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)],
         attraction: 0,
         lastVisitAt: 0,
@@ -2460,24 +2865,29 @@
     return { generated: Date.now(), roster };
   }
 
-  // How mature does the pet need to be before dating is on the table?
+  // The play centre is open to any adult pet in the household that
+  // has no mate.  For v4 we still gate it to the founder to keep the
+  // core loop clear.
   function petIsMatingAge() {
-    if (!G.save || !G.save.pet) return false;
-    if (G.save.stage === 'dead' || G.save.stage === 'egg') return false;
-    // Teens and up.
-    return G.save.age >= 35;
+    const founder = activePet();
+    if (!founder) return false;
+    if (G.save.stage !== 'live') return false;
+    return founder.age >= 35;
   }
 
   function updatePlayCentreButton() {
     const btn = document.getElementById('btn-play-centre');
     if (!btn) return;
-    const show = G.screen === 'habitat' && petIsMatingAge() && !G.save.mate;
+    const founder = activePet();
+    const hasMate = founder && !!mateOf(founder);
+    const show = G.screen === 'habitat' && petIsMatingAge() && !hasMate;
     btn.style.display = show ? 'inline-flex' : 'none';
   }
 
   function openPlayCentre() {
     if (!petIsMatingAge()) return;
-    if (G.save.mate) return;
+    const founder = activePet();
+    if (mateOf(founder)) return;
     if (!G.save.playCentre || !G.save.playCentre.roster || !G.save.playCentre.roster.length) {
       G.save.playCentre = generatePlayCentre();
     }
@@ -2544,8 +2954,9 @@
     const cpu = G.save.playCentre.roster.find(c => c.id === id);
     if (!cpu) return;
     if (act === 'mate') { confirmMate(cpu); return; }
-    // Player pet spends a little energy or hunger doing the activity.
-    if (G.save.meters.energy < 8) {
+    const founder = activePet();
+    if (!founder) return;
+    if (founder.meters.energy < 8) {
       thoughtInPlayCentre(cpu.id, 'Too tired!');
       return;
     }
@@ -2555,17 +2966,15 @@
       case 'play':  bonus = 12 + Math.floor(Math.random() * 5); cost.energy = 6; cost.happy = -6; break;
       case 'snack': bonus = 10 + Math.floor(Math.random() * 5); cost.energy = 2; cost.hunger = -8; break;
       case 'gift':
-        // Gifts cost coins.
         if (G.save.coins < 10) { thoughtInPlayCentre(cpu.id, 'Need 10 coins!'); return; }
         G.save.coins -= 10;
         bonus = 18 + Math.floor(Math.random() * 6);
-        cost.happy = 4;   // happy bump
+        cost.happy = 4;
         break;
     }
-    // Apply cost/benefit to player pet meters.
     for (const k of Object.keys(cost)) {
-      if (k === 'energy') G.save.meters.energy = clamp(G.save.meters.energy - cost.energy, 0, 100);
-      else G.save.meters[k] = clamp(G.save.meters[k] + cost[k], 0, 100);   // could be negative (=drop) or positive (=bump)
+      if (k === 'energy') founder.meters.energy = clamp(founder.meters.energy - cost.energy, 0, 100);
+      else founder.meters[k] = clamp(founder.meters[k] + cost[k], 0, 100);
     }
     cpu.attraction = clamp(cpu.attraction + bonus, 0, 100);
     cpu.lastVisitAt = Date.now();
@@ -2591,26 +3000,34 @@
   }
 
   function confirmMate(cpu) {
-    if (!confirm(`Become mates with ${cpu.name}? You'll bring ${cpu.name} home to your habitat.`)) return;
-    G.save.mate = {
+    const active = activePet();
+    if (!active) return;
+    if (!confirm(`Become mates with ${cpu.name}? You'll bring ${cpu.name} home to your habitat as a full pet — you'll need to look after both.`)) return;
+    // Create a real pet in the household matching the active pet's
+    // age/stage so they grow old together at roughly the same pace.
+    const mate = makePet({
       species: cpu.species,
+      name: cpu.name,
       gender: cpu.gender,
       variant: cpu.variant,
-      name: cpu.name,
-      personality: cpu.personality,
-    };
-    G.save.partneredSince = Date.now();
-    // Roster is done — clear it.
+      born: Date.now(),
+      age: active.age,
+      stage: active.stage,
+      mateId: active.id,
+      isFounder: false,
+      generation: active.generation,
+    });
+    active.mateId = mate.id;
+    G.save.pets.push(mate);
     G.save.playCentre = null;
     saveNow();
-    // Cheer, then return to habitat.
     const list = document.getElementById('play-list');
     const cheer = document.createElement('div');
     cheer.className = 'pair-cheer';
     cheer.style.position = 'relative';
     cheer.style.padding = '2rem 1rem';
     cheer.style.borderRadius = '20px';
-    cheer.innerHTML = `<h3>💜 ${G.save.pet.name} & ${cpu.name} — a pair!</h3>`;
+    cheer.innerHTML = `<h3>💜 ${active.name} & ${cpu.name} — a pair!</h3>`;
     list.innerHTML = '';
     list.appendChild(cheer);
     beep(880, 'square', 0.2, 0.08);
@@ -2618,10 +3035,10 @@
     setTimeout(() => beep(1568, 'square', 0.3, 0.10), 240);
     setTimeout(() => {
       setScreen('habitat');
-      // Mate needs to spawn in habitat.
-      G.mateRuntime = { x: 70, y: 80, tx: 65, ty: 80, facing: -1, walkT: 0 };
+      renderPetSelector();
       renderStagebar();
-      thoughtAt(G.pet.x, G.pet.y - 25, 'Welcome home 💜', 3200);
+      const activeRt = petRuntimeFor(active.id);
+      if (activeRt) thoughtAt(activeRt.x, activeRt.y - 25, 'Welcome home 💜', 3200);
     }, 1600);
   }
 
@@ -2633,52 +3050,7 @@
     updatePlayCentreButton();
   }
 
-  // Draw the mate walking alongside the player pet.
-  function drawMate(t) {
-    if (!G.save.mate) return;
-    if (!G.mateRuntime) G.mateRuntime = { x: G.pet.x + 20, y: 80, tx: G.pet.x + 15, ty: 80, facing: -1, walkT: 0 };
-    const mr = G.mateRuntime;
-    // Mate follows a target that hovers near the player pet.
-    const desiredX = G.pet.x + (G.pet.x < 50 ? 18 : -18);
-    if (Math.abs(mr.tx - desiredX) > 12) mr.tx = clamp(desiredX + (Math.random() * 10 - 5), 12, 88);
-    const dx1 = mr.tx - mr.x;
-    const dist = Math.abs(dx1);
-    const speed = 0.010;
-    if (dist > 0.4) {
-      const step = Math.min(dist, speed * 16);
-      mr.x += Math.sign(dx1) * step;
-      mr.facing = dx1 > 0 ? 1 : -1;
-      mr.walkT += 16;
-    }
-    const species = SPECIES[G.save.mate.species];
-    const stage = STAGES.find(s => s.key === G.save.stage) || STAGES[3];
-    const spriteSize = 90 * stage.scale * 0.9;   // slightly smaller
-    const px = dx(mr.x);
-    const bob = Math.sin(t / 240 + mr.walkT / 200) * 2;
-    const py = dy(mr.y) + bob;
-    const filter = variantFilter(G.save.mate.species, G.save.mate.variant || 0);
-    withFilter(G.ctx, filter, () => {
-      G.ctx.save();
-      G.ctx.translate(px, py);
-      const s = spriteSize / 100;
-      G.ctx.scale(mr.facing * s, s);
-      G.ctx.translate(-50, -100);
-      species.draw(G.ctx, 'happy', t);
-      G.ctx.restore();
-    });
-    // Shadow
-    G.ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    G.ctx.beginPath();
-    G.ctx.ellipse(px, dy(mr.y) + 2, spriteSize * 0.24, spriteSize * 0.06, 0, 0, Math.PI * 2);
-    G.ctx.fill();
-    // Occasional heart between pair when close.
-    const gap = Math.abs(G.pet.x - mr.x);
-    if (gap < 20 && (Math.floor(t / 800) % 6 === 0)) {
-      G.ctx.font = 'bold 16px sans-serif';
-      G.ctx.fillStyle = '#db2777';
-      G.ctx.fillText('💜', (dx(G.pet.x) + px) / 2 - 8, dy(G.pet.y - 12));
-    }
-  }
+  // drawMate() is retired; mates are just another pet in save.pets[].
 
   // ============================================================
   //  v3 — variant colours, breeding, offspring, generations
@@ -2705,171 +3077,88 @@
     try { fn(); } finally { ctx.filter = prev || 'none'; }
   }
 
-  // How offspring inherit variant from parents.  40% player, 40% mate,
-  // 20% mutation (any other variant).
-  function inheritVariant(species) {
+  // How offspring inherit variant from two parents.  40% each parent,
+  // 20% mutation to any other variant.
+  function inheritVariant(species, parentA, parentB) {
     const variants = SPECIES[species].variants;
     const roll = Math.random();
-    if (roll < 0.4) return G.save.pet.variant;
-    if (roll < 0.8) return G.save.mate.variant;
-    // mutation — any variant that isn't a parent's, if possible
+    if (roll < 0.4) return parentA.variant;
+    if (roll < 0.8) return parentB.variant;
     const options = [];
     for (let i = 0; i < variants.length; i++) {
-      if (i !== G.save.pet.variant && i !== G.save.mate.variant) options.push(i);
+      if (i !== parentA.variant && i !== parentB.variant) options.push(i);
     }
-    if (!options.length) return G.save.pet.variant;
+    if (!options.length) return parentA.variant;
     return options[Math.floor(Math.random() * options.length)];
   }
 
-  // Ensure the next pending egg is scheduled (if any).  Called when
-  // pairing, hatching, or on load.
+  // Find any mated couples in the household and, if none of their eggs
+  // are pending, schedule one.  Called every loop tick and on load.
   function schedulePendingEgg() {
-    if (!G.save.mate) return;
     if (G.save.pendingEgg) return;
-    // Cap the household at 3 living offspring so the habitat doesn't
-    // get overwhelming — beyond that the couple stops laying until
-    // one grows up (or player promotes/dismisses one).
-    if ((G.save.children || []).length >= 3) return;
-    const gender = Math.random() < 0.5 ? 'm' : 'f';
-    const speciesKey = G.save.pet.species;
-    const variant = inheritVariant(speciesKey);
-    const nameList = CPU_NAMES[gender];
-    const name = nameList[Math.floor(Math.random() * nameList.length)];
-    // The very first egg comes ~half a gestation faster so the player
-    // sees the payoff of mating without a huge wait.
-    const firstEgg = !G.save.children || !G.save.children.length;
-    const wait = firstEgg ? EGG_GESTATION_MS * 0.5 : EGG_GESTATION_MS;
-    // If we're loading in with a lot of missed time, credit some of it.
-    const missed = Math.min(TUNE.OFFLINE_CAP_MS, Date.now() - (G.save.partneredSince || Date.now()));
-    G.save.pendingEgg = {
-      readyAt: Date.now() + Math.max(15_000, wait - Math.min(wait, missed * 0.1)),
-      species: speciesKey,
-      variant,
-      gender,
-      name,
-    };
+    if ((livePets().length) >= 6) return;  // cap household size
+    // Find the first mated couple.
+    for (const pet of livePets()) {
+      const mate = mateOf(pet);
+      if (!mate) continue;
+      // Both must be at least teen-age.
+      if (pet.age < 35 || mate.age < 35) continue;
+      const speciesKey = pet.species;
+      const variant = inheritVariant(speciesKey, pet, mate);
+      const gender = Math.random() < 0.5 ? 'm' : 'f';
+      const name = CPU_NAMES[gender][Math.floor(Math.random() * CPU_NAMES[gender].length)];
+      // First egg after a pairing comes half a gestation quicker.
+      const firstEgg = !livePets().some(p => p.parentIds && p.parentIds.includes(pet.id));
+      const wait = firstEgg ? EGG_GESTATION_MS * 0.5 : EGG_GESTATION_MS;
+      G.save.pendingEgg = {
+        id: 'e' + Date.now().toString(36),
+        parentIds: [pet.id, mate.id],
+        readyAt: Date.now() + wait,
+        species: speciesKey,
+        variant,
+        gender,
+        name,
+      };
+      return;
+    }
   }
 
-  // Called every second-ish from the loop when a couple exists.
   function tickBreeding() {
-    if (!G.save.mate) return;
     if (!G.save.pendingEgg) { schedulePendingEgg(); return; }
-    // Egg readiness is time-based; the visual + tap handled in draw.
   }
 
   function hatchPendingEgg() {
     const p = G.save.pendingEgg;
     if (!p) return;
     if (Date.now() < p.readyAt) return;
-    const baby = {
+    // Parents may have died since the egg was laid — use whatever's
+    // left of the parentIds as the baby's parentage record.
+    const alive = (p.parentIds || []).filter(id => petById(id));
+    // If no parents left at all, the egg is orphaned — cancel.
+    if (!alive.length) { G.save.pendingEgg = null; return; }
+    const parentGen = Math.max(...alive.map(id => petById(id).generation || 1));
+    const baby = makePet({
       species: p.species,
-      variant: p.variant,
-      gender: p.gender,
       name: p.name,
+      gender: p.gender,
+      variant: p.variant,
       born: Date.now(),
-    };
-    G.save.children = G.save.children || [];
-    G.save.children.push(baby);
+      age: 0,
+      stage: 'baby',
+      parentIds: alive,
+      isFounder: false,
+      generation: parentGen + 1,
+    });
+    G.save.pets.push(baby);
     G.save.pendingEgg = null;
     saveNow();
     thoughtAt(50, 30, `🎉 ${baby.name} hatched!`, 3500);
     beep(880, 'square', 0.15, 0.08);
     setTimeout(() => beep(1175, 'square', 0.15, 0.08), 90);
     setTimeout(() => beep(1568, 'square', 0.2, 0.10), 180);
-    // Kick off a new gestation if there's room.
+    renderPetSelector();
+    // Kick off the next gestation if the couple can still lay.
     schedulePendingEgg();
-    // Ensure runtime state exists for the new baby.
-    ensureChildRuntime(G.save.children.length - 1);
-  }
-
-  // Runtime positions/AI for each child (not persisted).
-  function ensureChildRuntime(i) {
-    G.childRuntime = G.childRuntime || [];
-    if (!G.childRuntime[i]) {
-      const startX = 30 + i * 20;
-      G.childRuntime[i] = {
-        x: startX, y: 82,
-        tx: startX + (Math.random() * 20 - 10), ty: 82,
-        facing: Math.random() < 0.5 ? 1 : -1,
-        walkT: 0,
-        wanderT: 2000 + Math.random() * 3000,
-      };
-    }
-  }
-  function stepChildAI(dt) {
-    if (!G.save.children || !G.save.children.length) return;
-    G.childRuntime = G.childRuntime || [];
-    for (let i = 0; i < G.save.children.length; i++) {
-      ensureChildRuntime(i);
-      const cr = G.childRuntime[i];
-      cr.wanderT -= dt;
-      if (cr.wanderT <= 0) {
-        cr.tx = 15 + Math.random() * 70;
-        cr.ty = 80 + Math.random() * 3;
-        cr.wanderT = 2500 + Math.random() * 3500;
-      }
-      const dx1 = cr.tx - cr.x;
-      const dist = Math.abs(dx1);
-      const speed = 0.011;
-      if (dist > 0.4) {
-        const step = Math.min(dist, speed * dt);
-        cr.x += Math.sign(dx1) * step;
-        cr.facing = dx1 > 0 ? 1 : -1;
-        cr.walkT += dt;
-      }
-    }
-  }
-  function drawChildren(t) {
-    if (!G.save.children || !G.save.children.length) return;
-    for (let i = 0; i < G.save.children.length; i++) {
-      const c = G.save.children[i];
-      const cr = G.childRuntime && G.childRuntime[i];
-      if (!cr) continue;
-      // babies scale small and stay small for demo — a mini "baby" size
-      const spriteSize = 90 * 0.5;
-      const px = dx(cr.x);
-      const bob = Math.sin(t / 200 + cr.walkT / 180) * 1.5;
-      const py = dy(cr.y) + bob;
-      const filter = variantFilter(c.species, c.variant);
-      withFilter(G.ctx, filter, () => {
-        G.ctx.save();
-        G.ctx.translate(px, py);
-        const s = spriteSize / 100;
-        G.ctx.scale(cr.facing * s, s);
-        G.ctx.translate(-50, -100);
-        SPECIES[c.species].draw(G.ctx, 'happy', t);
-        G.ctx.restore();
-      });
-      // shadow
-      G.ctx.fillStyle = 'rgba(0,0,0,0.22)';
-      G.ctx.beginPath();
-      G.ctx.ellipse(px, dy(cr.y) + 2, spriteSize * 0.24, spriteSize * 0.06, 0, 0, Math.PI * 2);
-      G.ctx.fill();
-      // Tiny name tag
-      G.ctx.fillStyle = '#fff';
-      G.ctx.strokeStyle = '#1a1a1a';
-      G.ctx.lineWidth = 2;
-      G.ctx.font = 'bold 10px "Baloo 2", sans-serif';
-      const w = G.ctx.measureText(c.name).width;
-      const tagX = px - w / 2 - 4;
-      const tagY = dy(cr.y) - spriteSize - 4;
-      G.ctx.beginPath();
-      // roundRect isn't in older browsers; hand-roll a small rounded rect.
-      const r = 5, xR = tagX, yR = tagY - 10, wR = w + 8, hR = 12;
-      G.ctx.moveTo(xR + r, yR);
-      G.ctx.lineTo(xR + wR - r, yR);
-      G.ctx.quadraticCurveTo(xR + wR, yR, xR + wR, yR + r);
-      G.ctx.lineTo(xR + wR, yR + hR - r);
-      G.ctx.quadraticCurveTo(xR + wR, yR + hR, xR + wR - r, yR + hR);
-      G.ctx.lineTo(xR + r, yR + hR);
-      G.ctx.quadraticCurveTo(xR, yR + hR, xR, yR + hR - r);
-      G.ctx.lineTo(xR, yR + r);
-      G.ctx.quadraticCurveTo(xR, yR, xR + r, yR);
-      G.ctx.closePath();
-      G.ctx.fill(); G.ctx.stroke();
-      G.ctx.fillStyle = '#1a1a1a';
-      G.ctx.fillText(c.name, tagX + 4, tagY);
-    }
   }
 
   // Draw the pending egg in the habitat, either as "cooking" or "ready".
@@ -2929,70 +3218,7 @@
     return false;
   }
 
-  // On old-age death, if there's an heir, promote them to be the new
-  // active pet and carry on the lineage.
-  function tryInheritance(cause) {
-    if (cause !== 'old age') return false;   // only old age passes the torch
-    if (!G.save.children || !G.save.children.length) return false;
-    // Log the departing pet into family.
-    G.save.family = G.save.family || [];
-    G.save.family.push({
-      species: G.save.pet.species,
-      variant: G.save.pet.variant,
-      gender: G.save.pet.gender,
-      name: G.save.pet.name,
-      born: G.save.history.born,
-      died: Date.now(),
-      cause: 'old age',
-      generation: G.save.generation,
-    });
-    // Promote first child.
-    const heir = G.save.children.shift();
-    G.save.pet = {
-      species: heir.species,
-      name: heir.name,
-      gender: heir.gender,
-      variant: heir.variant,
-      born: heir.born,
-    };
-    // The mate may also be aging — retire them along with the parent.
-    // (v3 keeps this simple: parents die together, next generation
-    // starts single, seeks a fresh play-centre partner.)
-    if (G.save.mate) {
-      G.save.family.push({
-        species: G.save.mate.species,
-        variant: G.save.mate.variant,
-        gender: G.save.mate.gender,
-        name: G.save.mate.name,
-        born: G.save.partneredSince,
-        died: Date.now(),
-        cause: 'old age',
-        generation: G.save.generation,
-        wasMate: true,
-      });
-    }
-    G.save.mate = null;
-    G.save.partneredSince = null;
-    G.save.pendingEgg = null;
-    G.save.playCentre = null;
-    G.save.generation = (G.save.generation || 1) + 1;
-    G.save.stage = 'baby';
-    G.save.age = 0;
-    G.save.meters = { hunger: 80, happy: 80, clean: 80, energy: 80 };
-    G.save.sickSince = null;
-    G.save.history = { born: heir.born, died: null, cause: null };
-    G.mateRuntime = null;
-    saveNow();
-    // Cheer!
-    setScreen('habitat');
-    renderHUD();
-    renderStagebar();
-    thoughtAt(50, 30, `${heir.name} carries the line on! ✨`, 4200);
-    beep(660, 'square', 0.2, 0.08);
-    setTimeout(() => beep(880, 'square', 0.2, 0.08), 120);
-    setTimeout(() => beep(1175, 'square', 0.3, 0.10), 240);
-    return true;
-  }
+  // Inheritance is now handled inline by killPet() → tryPromoteHeirOf().
 
   function boot() {
     // Wire up egg-stage tap
@@ -3058,13 +3284,13 @@
   // Save whenever the tab is hidden / closed.
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) saveNow();
-    else if (G.save && G.save.pet && G.save.stage !== 'dead') {
-      // Just returned — credit missed time up to cap.
+    else if (G.save && G.save.stage === 'live' && livePets().length) {
       const away = Math.max(0, Math.min(TUNE.OFFLINE_CAP_MS, Date.now() - (G.save.lastVisit || Date.now())));
       if (away > 30_000) {
         advanceTime(away);
         updateStage();
-        if (G.save.stage !== 'dead') {
+        if (G.save.stage === 'live') {
+          renderPetSelector();
           renderHUD();
           renderStagebar();
         }
