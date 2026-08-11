@@ -844,7 +844,7 @@
       ground: '#166534',
       dayTint: 'rgba(255,255,220,0.0)',
       nightTint: 'rgba(20,20,60,0.4)',
-      pets: ['sprout', 'foxy', 'owlet'],
+      pets: ['sprout', 'foxy', 'owlet', 'buggo', 'mushu', 'hopper', 'chippo', 'mothy'],
     },
     sea: {
       key: 'sea',
@@ -854,7 +854,7 @@
       ground: '#0e7490',
       dayTint: 'rgba(180,220,255,0.15)',
       nightTint: 'rgba(0,10,40,0.5)',
-      pets: ['blubby', 'turty', 'squig'],
+      pets: ['blubby', 'turty', 'squig', 'puffo', 'otie', 'coralia', 'starly', 'wavey'],
     },
     tropical: {
       key: 'tropical',
@@ -864,7 +864,7 @@
       ground: '#facc15',
       dayTint: 'rgba(255,240,200,0.05)',
       nightTint: 'rgba(30,10,60,0.4)',
-      pets: ['pango', 'slothy', 'cocoo'],
+      pets: ['pango', 'slothy', 'cocoo', 'froggy', 'iggy', 'bibby', 'wombi', 'mango'],
     },
   };
 
@@ -1107,6 +1107,660 @@
         ctx.restore();
       }
     },
+
+    // ---------- v6 species: Forest ----------
+    buggo: {
+      key: 'buggo', name: 'Buggo', biome: 'forest',
+      personality: 'A shiny beetle that clicks its wings when excited.',
+      like: 'shiny things', hates: 'puddles',
+      // palette: { shell, spots, legs, antennae }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.buggo.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // shell (rounded, wider than tall)
+        ctx.fillStyle = P.shell;
+        blob(ctx, 50, 62, 40, 30);
+        // wing split line
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(50, 40); ctx.lineTo(50, 84); ctx.stroke();
+        // spots on shell
+        ctx.fillStyle = P.spots;
+        [[34,52],[66,52],[36,72],[64,72],[50,60]].forEach(([x,y]) => {
+          ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        });
+        // legs
+        ctx.strokeStyle = P.legs; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        for (let i = 0; i < 3; i++) {
+          const y = 68 + i * 6;
+          ctx.beginPath(); ctx.moveTo(18, y); ctx.lineTo(8, y + 8); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(82, y); ctx.lineTo(92, y + 8); ctx.stroke();
+        }
+        // antennae
+        ctx.strokeStyle = P.antennae; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(42, 34); ctx.quadraticCurveTo(28, 18, 20, 12); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(58, 34); ctx.quadraticCurveTo(72, 18, 80, 12); ctx.stroke();
+        // antenna knobs
+        ctx.fillStyle = P.antennae;
+        ctx.beginPath(); ctx.arc(20, 12, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(80, 12, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // face (small, near top of shell)
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        drawFace(ctx, mood, t, 'small', 44);
+        ctx.restore();
+      }
+    },
+    mushu: {
+      key: 'mushu', name: 'Mushu', biome: 'forest',
+      personality: 'A shy toadstool that hums when the sun\'s out.',
+      like: 'damp mornings', hates: 'sunburn',
+      // palette: { cap, spots, stem, base }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.mushu.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // stem
+        ctx.fillStyle = P.stem;
+        ctx.beginPath();
+        ctx.moveTo(36, 60); ctx.lineTo(30, 92);
+        ctx.lineTo(70, 92); ctx.lineTo(64, 60);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // cap (dome)
+        ctx.fillStyle = P.cap;
+        ctx.beginPath();
+        ctx.moveTo(14, 60);
+        ctx.bezierCurveTo(14, 18, 86, 18, 86, 60);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // spots on cap
+        ctx.fillStyle = P.spots;
+        [[32,38,7],[58,32,9],[70,52,6],[42,50,5]].forEach(([x,y,r]) => {
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        });
+        // face on stem
+        drawFace(ctx, mood, t, 'small', 74);
+        // gills under cap
+        ctx.strokeStyle = P.base; ctx.lineWidth = 2;
+        for (let i = -3; i <= 3; i++) {
+          ctx.beginPath(); ctx.moveTo(50 + i * 8, 60); ctx.lineTo(50 + i * 7, 66); ctx.stroke();
+        }
+        ctx.restore();
+      }
+    },
+    hopper: {
+      key: 'hopper', name: 'Hopper', biome: 'forest',
+      personality: 'A twitchy bunny with a boundless supply of hops.',
+      like: 'clover', hates: 'thunder',
+      // palette: { body, belly, ears, tail, nose }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.hopper.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // ears
+        ctx.fillStyle = P.ears;
+        ctx.beginPath(); ctx.ellipse(38, 22, 6, 18, -0.15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(62, 22, 6, 18, 0.15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fbcfe8';
+        ctx.beginPath(); ctx.ellipse(38, 24, 3, 12, -0.15, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(62, 24, 3, 12, 0.15, 0, Math.PI * 2); ctx.fill();
+        // body
+        ctx.fillStyle = P.body;
+        blob(ctx, 50, 62, 36, 30);
+        // belly
+        ctx.fillStyle = P.belly;
+        ellipse(ctx, 50, 74, 20, 12, true);
+        // tail (cotton puff)
+        ctx.fillStyle = P.tail;
+        ctx.beginPath(); ctx.arc(86, 66, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // face
+        drawFace(ctx, mood, t, 'wide');
+        // nose
+        ctx.fillStyle = P.nose;
+        ctx.beginPath(); ctx.arc(50, 56, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    },
+    chippo: {
+      key: 'chippo', name: 'Chippo', biome: 'forest',
+      personality: 'A chipmunk with cheeks full of snacks and a plan.',
+      like: 'seeds', hates: 'empty pockets',
+      // palette: { body, belly, cheeks, tail, stripes }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.chippo.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // huge fluffy tail curled behind
+        ctx.fillStyle = P.tail;
+        ctx.beginPath();
+        ctx.moveTo(84, 68);
+        ctx.bezierCurveTo(100, 40, 90, 20, 74, 26);
+        ctx.bezierCurveTo(84, 40, 82, 54, 84, 68);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // body
+        ctx.fillStyle = P.body;
+        blob(ctx, 46, 62, 34, 28);
+        // belly
+        ctx.fillStyle = P.belly;
+        ellipse(ctx, 46, 70, 20, 12, true);
+        // stripes along back
+        ctx.strokeStyle = P.stripes; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(22, 50); ctx.lineTo(70, 50); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(24, 58); ctx.lineTo(70, 58); ctx.stroke();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        // cheek pouches
+        ctx.fillStyle = P.cheeks;
+        ctx.beginPath(); ctx.arc(30, 60, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(62, 60, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // face
+        drawFace(ctx, mood, t, 'wide', 52);
+        ctx.restore();
+      }
+    },
+    mothy: {
+      key: 'mothy', name: 'Mothy', biome: 'forest',
+      personality: 'A fluffy moth that follows the porch light home.',
+      like: 'lamps', hates: 'sudden movements',
+      // palette: { body, wing, spot, antennae }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.mothy.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // wings (upper + lower)
+        ctx.fillStyle = P.wing;
+        ctx.beginPath(); ctx.ellipse(24, 50, 22, 18, -0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(76, 50, 22, 18, 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(28, 74, 16, 12, 0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(72, 74, 16, 12, -0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // wing spots
+        ctx.fillStyle = P.spot;
+        ctx.beginPath(); ctx.arc(22, 48, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(78, 48, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // body (fuzzy oval)
+        ctx.fillStyle = P.body;
+        ellipse(ctx, 50, 62, 8, 24);
+        // antennae (feathery)
+        ctx.strokeStyle = P.antennae; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(46, 40); ctx.quadraticCurveTo(38, 22, 30, 14); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(54, 40); ctx.quadraticCurveTo(62, 22, 70, 14); ctx.stroke();
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath(); ctx.moveTo(42 - i * 2, 30 - i * 4); ctx.lineTo(38 - i * 2, 34 - i * 4); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(58 + i * 2, 30 - i * 4); ctx.lineTo(62 + i * 2, 34 - i * 4); ctx.stroke();
+        }
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        drawFace(ctx, mood, t, 'small', 56);
+        ctx.restore();
+      }
+    },
+
+    // ---------- v6 species: Sea ----------
+    puffo: {
+      key: 'puffo', name: 'Puffo', biome: 'sea',
+      personality: 'A tiny puffer that puffs up when startled — which is often.',
+      like: 'coral nooks', hates: 'loud fish',
+      // palette: { body, spines, fins, cheeks }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.puffo.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body — near-round
+        ctx.fillStyle = P.body;
+        ctx.beginPath(); ctx.arc(50, 60, 36, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // spines around edge
+        ctx.strokeStyle = P.spines; ctx.lineWidth = 3;
+        for (let i = 0; i < 14; i++) {
+          const a = (i / 14) * Math.PI * 2;
+          const x1 = 50 + Math.cos(a) * 34;
+          const y1 = 60 + Math.sin(a) * 34;
+          const x2 = 50 + Math.cos(a) * 44;
+          const y2 = 60 + Math.sin(a) * 44;
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        }
+        // side fins
+        ctx.fillStyle = P.fins;
+        ctx.beginPath(); ctx.ellipse(14, 60, 8, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(86, 60, 8, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // cheek blush
+        ctx.fillStyle = P.cheeks;
+        ctx.beginPath(); ctx.arc(38, 66, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(62, 66, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        drawFace(ctx, mood, t, 'wide', 56);
+        ctx.restore();
+      }
+    },
+    otie: {
+      key: 'otie', name: 'Otie', biome: 'sea',
+      personality: 'An otter who floats on their back holding a clam.',
+      like: 'lazy currents', hates: 'dry paws',
+      // palette: { body, belly, paws, whiskers }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.otie.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body (sleek horizontal oval)
+        ctx.fillStyle = P.body;
+        ellipse(ctx, 50, 66, 40, 22);
+        // belly patch
+        ctx.fillStyle = P.belly;
+        ellipse(ctx, 50, 70, 30, 12, true);
+        // paws up
+        ctx.fillStyle = P.paws;
+        ctx.beginPath(); ctx.arc(38, 52, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(62, 52, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // little clam between paws
+        ctx.fillStyle = '#a1a1aa';
+        ctx.beginPath(); ctx.arc(50, 46, 5, Math.PI, 0); ctx.fill(); ctx.stroke();
+        // ears
+        ctx.fillStyle = P.body;
+        ctx.beginPath(); ctx.arc(30, 56, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(28, 62, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // whiskers
+        ctx.strokeStyle = P.whiskers; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(20, 66); ctx.lineTo(6, 66); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(20, 70); ctx.lineTo(6, 72); ctx.stroke();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        // face on left side
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(22, 62, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(30, 62, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        if (mood === 'happy') { ctx.beginPath(); ctx.moveTo(20, 70); ctx.quadraticCurveTo(26, 74, 30, 70); ctx.stroke(); }
+        else                  { ctx.beginPath(); ctx.moveTo(20, 70); ctx.lineTo(30, 70); ctx.stroke(); }
+        ctx.restore();
+      }
+    },
+    coralia: {
+      key: 'coralia', name: 'Coralia', biome: 'sea',
+      personality: 'A polyp cluster that sways in the tide and dreams.',
+      like: 'plankton', hates: 'strong currents',
+      // palette: { stem, polyps, tips, base }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.coralia.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // base rock
+        ctx.fillStyle = P.base;
+        ctx.beginPath(); ctx.ellipse(50, 92, 34, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // stem
+        ctx.fillStyle = P.stem;
+        ctx.beginPath();
+        ctx.moveTo(38, 90);
+        ctx.bezierCurveTo(32, 60, 40, 40, 50, 34);
+        ctx.bezierCurveTo(60, 40, 68, 60, 62, 90);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // polyps (top cluster)
+        ctx.fillStyle = P.polyps;
+        [[42,26,7],[58,28,7],[50,20,8],[36,34,5],[64,34,5]].forEach(([x,y,r]) => {
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        });
+        // tentacles from polyps
+        ctx.strokeStyle = P.tips; ctx.lineWidth = 2;
+        [[42,22],[58,24],[50,14]].forEach(([x,y]) => {
+          const sway = Math.sin(t / 400 + x) * 3;
+          ctx.beginPath();
+          ctx.moveTo(x - 3, y - 6);
+          ctx.quadraticCurveTo(x - 6 + sway, y - 12, x - 4 + sway, y - 18);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x + 3, y - 6);
+          ctx.quadraticCurveTo(x + 6 - sway, y - 12, x + 4 - sway, y - 18);
+          ctx.stroke();
+        });
+        // face on stem
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        drawFace(ctx, mood, t, 'small', 64);
+        ctx.restore();
+      }
+    },
+    starly: {
+      key: 'starly', name: 'Starly', biome: 'sea',
+      personality: 'A cheerful starfish that grows back anything.',
+      like: 'sandy floors', hates: 'staying put',
+      // palette: { body, edge, dots }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.starly.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // 5-point star
+        ctx.fillStyle = P.body;
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const a = -Math.PI / 2 + (i * Math.PI) / 5;
+          const r = i % 2 === 0 ? 40 : 18;
+          const x = 50 + Math.cos(a) * r;
+          const y = 60 + Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // edge highlight
+        ctx.strokeStyle = P.edge; ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const a = -Math.PI / 2 + (i * Math.PI) / 5;
+          const r = i % 2 === 0 ? 30 : 14;
+          const x = 50 + Math.cos(a) * r;
+          const y = 60 + Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        // dots on arms
+        ctx.fillStyle = P.dots;
+        for (let i = 0; i < 5; i++) {
+          const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+          const x = 50 + Math.cos(a) * 32;
+          const y = 60 + Math.sin(a) * 32;
+          ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+        }
+        // face in center
+        drawFace(ctx, mood, t, 'wide', 60);
+        ctx.restore();
+      }
+    },
+    wavey: {
+      key: 'wavey', name: 'Wavey', biome: 'sea',
+      personality: 'A shy seahorse who curls around anything friendly.',
+      like: 'seagrass', hates: 'open water',
+      // palette: { body, fin, mane, snout }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.wavey.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // S-curved body
+        ctx.fillStyle = P.body;
+        ctx.beginPath();
+        ctx.moveTo(42, 22);
+        ctx.bezierCurveTo(72, 22, 74, 50, 46, 52);
+        ctx.bezierCurveTo(20, 54, 22, 84, 48, 90);
+        ctx.bezierCurveTo(58, 92, 58, 82, 54, 78);
+        ctx.bezierCurveTo(34, 74, 40, 62, 60, 62);
+        ctx.bezierCurveTo(88, 60, 84, 22, 42, 22);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // snout
+        ctx.fillStyle = P.snout;
+        ctx.beginPath();
+        ctx.moveTo(30, 32);
+        ctx.quadraticCurveTo(16, 30, 10, 40);
+        ctx.quadraticCurveTo(20, 44, 32, 40);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // dorsal fin
+        ctx.fillStyle = P.fin;
+        ctx.beginPath();
+        ctx.moveTo(60, 30);
+        ctx.quadraticCurveTo(78, 20, 82, 40);
+        ctx.quadraticCurveTo(72, 42, 62, 40);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // mane spikes
+        ctx.strokeStyle = P.mane; ctx.lineWidth = 3;
+        for (let i = 0; i < 4; i++) {
+          ctx.beginPath();
+          ctx.moveTo(55 + i * 4, 30 - i * 2);
+          ctx.lineTo(58 + i * 4, 24 - i * 2);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        // eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(38, 32, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(38, 33, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    },
+
+    // ---------- v6 species: Tropical ----------
+    froggy: {
+      key: 'froggy', name: 'Froggy', biome: 'tropical',
+      personality: 'A bright tree frog with sticky toes and opinions.',
+      like: 'wet leaves', hates: 'dry air',
+      // palette: { body, belly, feet, spots }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.froggy.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body (round crouched)
+        ctx.fillStyle = P.body;
+        blob(ctx, 50, 66, 40, 30);
+        // belly
+        ctx.fillStyle = P.belly;
+        ellipse(ctx, 50, 78, 26, 12, true);
+        // feet (splayed)
+        ctx.fillStyle = P.feet;
+        [[16, 88, -0.4], [84, 88, 0.4]].forEach(([x, y, tilt]) => {
+          for (let k = 0; k < 3; k++) {
+            const a = tilt + (k - 1) * 0.35;
+            ctx.beginPath();
+            ctx.ellipse(x + Math.cos(a) * 8, y + Math.sin(a) * 6, 6, 4, a, 0, Math.PI * 2);
+            ctx.fill(); ctx.stroke();
+          }
+        });
+        // huge eye bumps on top of head
+        ctx.fillStyle = P.body;
+        ctx.beginPath(); ctx.arc(36, 40, 12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(64, 40, 12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // eyes
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(36, 40, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(64, 40, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(37, 42, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(65, 42, 3, 0, Math.PI * 2); ctx.fill();
+        // spots on back
+        ctx.fillStyle = P.spots;
+        [[30,60,4],[70,58,4],[50,54,5]].forEach(([x,y,r]) => {
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        });
+        // mouth
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        if (mood === 'happy') { ctx.beginPath(); ctx.moveTo(38, 66); ctx.quadraticCurveTo(50, 74, 62, 66); ctx.stroke(); }
+        else                  { ctx.beginPath(); ctx.moveTo(38, 68); ctx.lineTo(62, 68); ctx.stroke(); }
+        ctx.restore();
+      }
+    },
+    iggy: {
+      key: 'iggy', name: 'Iggy', biome: 'tropical',
+      personality: 'A gecko who freezes on walls and pretends to be a leaf.',
+      like: 'sunbeams', hates: 'being seen',
+      // palette: { body, belly, spots, tongue }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.iggy.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body: long horizontal shape with head bulge
+        ctx.fillStyle = P.body;
+        ctx.beginPath();
+        ctx.moveTo(14, 66);
+        ctx.bezierCurveTo(14, 50, 40, 42, 60, 46);
+        ctx.bezierCurveTo(76, 48, 84, 52, 86, 60);
+        ctx.bezierCurveTo(88, 72, 74, 78, 60, 76);
+        ctx.bezierCurveTo(40, 74, 20, 78, 14, 66);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // tail curling
+        ctx.beginPath();
+        ctx.moveTo(84, 62);
+        ctx.quadraticCurveTo(102, 60, 96, 78);
+        ctx.quadraticCurveTo(90, 84, 82, 74);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // belly
+        ctx.fillStyle = P.belly;
+        ellipse(ctx, 50, 72, 30, 6, true);
+        // legs (splayed 4)
+        ctx.fillStyle = P.body;
+        [[26, 84], [58, 88], [40, 88], [70, 84]].forEach(([x, y]) => {
+          ctx.beginPath(); ctx.ellipse(x, y, 6, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        });
+        // spots along back
+        ctx.fillStyle = P.spots;
+        [[30,52,3],[46,50,3],[62,52,3],[76,56,3]].forEach(([x,y,r]) => {
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        });
+        // eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(24, 60, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(24, 61, 2.5, 0, Math.PI * 2); ctx.fill();
+        // tongue
+        ctx.fillStyle = P.tongue;
+        ctx.beginPath();
+        ctx.moveTo(14, 66); ctx.lineTo(4, 62); ctx.lineTo(6, 68); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    },
+    bibby: {
+      key: 'bibby', name: 'Bibby', biome: 'tropical',
+      personality: 'A hummingbird whose wings never stop.',
+      like: 'nectar', hates: 'still air',
+      // palette: { body, belly, wings, beak, gorget }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.bibby.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // body
+        ctx.fillStyle = P.body;
+        ellipse(ctx, 50, 60, 20, 18);
+        // belly
+        ctx.fillStyle = P.belly;
+        ellipse(ctx, 50, 66, 14, 10, true);
+        // gorget (throat patch)
+        ctx.fillStyle = P.gorget;
+        ellipse(ctx, 50, 54, 10, 6, true);
+        // beak (long thin)
+        ctx.fillStyle = P.beak;
+        ctx.beginPath();
+        ctx.moveTo(30, 52); ctx.lineTo(6, 50); ctx.lineTo(30, 56); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // blur wings (two ellipses stacked to hint motion)
+        ctx.fillStyle = P.wings;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath(); ctx.ellipse(70, 60, 20, 6, -0.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath(); ctx.ellipse(72, 60, 22, 6, -0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.globalAlpha = 1;
+        // tail
+        ctx.fillStyle = P.body;
+        ctx.beginPath(); ctx.moveTo(68, 66); ctx.lineTo(86, 74); ctx.lineTo(66, 72); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(44, 54, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath(); ctx.arc(44, 54, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    },
+    wombi: {
+      key: 'wombi', name: 'Wombi', biome: 'tropical',
+      personality: 'A stubby fuzzy friend who trundles everywhere.',
+      like: 'shady grass', hates: 'rush',
+      // palette: { body, belly, ears, nose, cheeks }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.wombi.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // chunky rectangular-ish body
+        ctx.fillStyle = P.body;
+        ctx.beginPath();
+        ctx.moveTo(16, 88);
+        ctx.lineTo(16, 44);
+        ctx.bezierCurveTo(16, 30, 84, 30, 84, 44);
+        ctx.lineTo(84, 88);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // belly
+        ctx.fillStyle = P.belly;
+        ellipse(ctx, 50, 70, 26, 14, true);
+        // ears (round on top)
+        ctx.fillStyle = P.ears;
+        ctx.beginPath(); ctx.arc(28, 30, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(72, 30, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        // legs (little stumps)
+        ctx.fillStyle = P.body;
+        ctx.beginPath(); ctx.rect(22, 84, 14, 10); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.rect(64, 84, 14, 10); ctx.fill(); ctx.stroke();
+        // face
+        drawFace(ctx, mood, t, 'wide', 50);
+        // big square nose
+        ctx.fillStyle = P.nose;
+        ctx.beginPath();
+        ctx.moveTo(42, 58); ctx.lineTo(58, 58);
+        ctx.quadraticCurveTo(60, 64, 58, 68);
+        ctx.lineTo(42, 68);
+        ctx.quadraticCurveTo(40, 64, 42, 58);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // cheek blush
+        ctx.fillStyle = P.cheeks;
+        ctx.beginPath(); ctx.arc(28, 58, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(72, 58, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    },
+    mango: {
+      key: 'mango', name: 'Mango', biome: 'tropical',
+      personality: 'A fruit bat that hangs upside-down waiting for treats.',
+      like: 'ripe fruit', hates: 'dawn',
+      // palette: { body, wings, belly, ears }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.mango.variants[0].palette;
+        ctx.save();
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+        // hanging: body is upside-down teardrop
+        ctx.fillStyle = P.body;
+        ctx.beginPath();
+        ctx.moveTo(50, 12);
+        ctx.bezierCurveTo(28, 20, 24, 60, 50, 76);
+        ctx.bezierCurveTo(76, 60, 72, 20, 50, 12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // wings folded
+        ctx.fillStyle = P.wings;
+        ctx.beginPath();
+        ctx.moveTo(28, 30);
+        ctx.bezierCurveTo(6, 44, 8, 62, 28, 62);
+        ctx.bezierCurveTo(30, 50, 32, 42, 28, 30);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(72, 30);
+        ctx.bezierCurveTo(94, 44, 92, 62, 72, 62);
+        ctx.bezierCurveTo(70, 50, 68, 42, 72, 30);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // wing bones
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2;
+        [[10,50],[14,58],[86,58],[90,50]].forEach(([x,y]) => {
+          ctx.beginPath(); ctx.moveTo(28, 40); ctx.lineTo(x, y); ctx.stroke();
+        });
+        ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+        // ears
+        ctx.fillStyle = P.ears;
+        ctx.beginPath(); ctx.moveTo(38, 22); ctx.lineTo(34, 8); ctx.lineTo(44, 18); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(62, 22); ctx.lineTo(66, 8); ctx.lineTo(56, 18); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        // belly patch
+        ctx.fillStyle = P.belly;
+        ellipse(ctx, 50, 50, 14, 18, true);
+        // face
+        drawFace(ctx, mood, t, 'wide', 40);
+        // little feet at top holding on
+        ctx.fillStyle = P.body;
+        ctx.beginPath(); ctx.arc(44, 8, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(56, 8, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    },
   };
 
   // Variant palettes.  Each entry: { name, swatch, palette }.  The
@@ -1166,6 +1820,97 @@
       { name: 'Sunburn',  swatch: '#f97316', palette: { body: '#f97316', claws: '#c2410c' } },
       { name: 'Coral',    swatch: '#fb7185', palette: { body: '#fb7185', claws: '#be185d' } },
       { name: 'Ghost',    swatch: '#f5f5f4', palette: { body: '#f5f5f4', claws: '#e7e5e4' } },
+    ],
+    // v6 additions
+    buggo: [
+      { name: 'Ruby',     swatch: '#dc2626', palette: { shell: '#dc2626', spots: '#1a1a1a', legs: '#1a1a1a', antennae: '#1a1a1a' } },
+      { name: 'Beetle',   swatch: '#166534', palette: { shell: '#166534', spots: '#facc15', legs: '#052e16', antennae: '#052e16' } },
+      { name: 'Sapphire', swatch: '#1d4ed8', palette: { shell: '#1d4ed8', spots: '#60a5fa', legs: '#172554', antennae: '#172554' } },
+      { name: 'Rainbow',  swatch: '#a855f7', palette: { shell: '#a855f7', spots: '#facc15', legs: '#581c87', antennae: '#581c87' } },
+    ],
+    mushu: [
+      { name: 'Fly Cap',  swatch: '#dc2626', palette: { cap: '#dc2626', spots: '#fefce8', stem: '#fef3c7', base: '#a16207' } },
+      { name: 'Chestnut', swatch: '#78350f', palette: { cap: '#78350f', spots: '#fbbf24', stem: '#fde68a', base: '#451a03' } },
+      { name: 'Coral',    swatch: '#fb7185', palette: { cap: '#fb7185', spots: '#fefce8', stem: '#fce7f3', base: '#831843' } },
+      { name: 'Slime',    swatch: '#84cc16', palette: { cap: '#84cc16', spots: '#365314', stem: '#d9f99d', base: '#365314' } },
+    ],
+    hopper: [
+      { name: 'Cottontail', swatch: '#f5f5f4', palette: { body: '#f5f5f4', belly: '#fafaf9', ears: '#e7e5e4', tail: '#ffffff', nose: '#fbcfe8' } },
+      { name: 'Cocoa',      swatch: '#78350f', palette: { body: '#78350f', belly: '#fef3c7', ears: '#92400e', tail: '#fef3c7', nose: '#fbcfe8' } },
+      { name: 'Meadow',     swatch: '#84cc16', palette: { body: '#84cc16', belly: '#d9f99d', ears: '#65a30d', tail: '#f5f5f4', nose: '#f472b6' } },
+      { name: 'Cloud',      swatch: '#e2e8f0', palette: { body: '#cbd5e1', belly: '#f8fafc', ears: '#94a3b8', tail: '#f8fafc', nose: '#fbcfe8' } },
+    ],
+    chippo: [
+      { name: 'Nutmeg',   swatch: '#a16207', palette: { body: '#a16207', belly: '#fef3c7', cheeks: '#fed7aa', tail: '#78350f', stripes: '#451a03' } },
+      { name: 'Ashen',    swatch: '#71717a', palette: { body: '#71717a', belly: '#f4f4f5', cheeks: '#fecaca', tail: '#3f3f46', stripes: '#18181b' } },
+      { name: 'Coral',    swatch: '#fb7185', palette: { body: '#fb7185', belly: '#fecdd3', cheeks: '#fbcfe8', tail: '#be185d', stripes: '#831843' } },
+      { name: 'Honey',    swatch: '#eab308', palette: { body: '#eab308', belly: '#fef3c7', cheeks: '#fed7aa', tail: '#a16207', stripes: '#78350f' } },
+    ],
+    mothy: [
+      { name: 'Moonlit',  swatch: '#c4b5fd', palette: { body: '#a78bfa', wing: '#c4b5fd', spot: '#4c1d95', antennae: '#4c1d95' } },
+      { name: 'Golden',   swatch: '#facc15', palette: { body: '#fbbf24', wing: '#fde68a', spot: '#78350f', antennae: '#78350f' } },
+      { name: 'Ash',      swatch: '#71717a', palette: { body: '#52525b', wing: '#a1a1aa', spot: '#18181b', antennae: '#18181b' } },
+      { name: 'Rose',     swatch: '#fb7185', palette: { body: '#f43f5e', wing: '#fecdd3', spot: '#881337', antennae: '#881337' } },
+    ],
+    puffo: [
+      { name: 'Sunny',    swatch: '#facc15', palette: { body: '#facc15', spines: '#a16207', fins: '#f97316', cheeks: '#f472b6' } },
+      { name: 'Ocean',    swatch: '#06b6d4', palette: { body: '#06b6d4', spines: '#155e75', fins: '#0e7490', cheeks: '#fb7185' } },
+      { name: 'Coral',    swatch: '#fb7185', palette: { body: '#fb7185', spines: '#881337', fins: '#e11d48', cheeks: '#fce7f3' } },
+      { name: 'Mint',     swatch: '#5eead4', palette: { body: '#5eead4', spines: '#0f766e', fins: '#14b8a6', cheeks: '#fecaca' } },
+    ],
+    otie: [
+      { name: 'Cocoa',    swatch: '#78350f', palette: { body: '#78350f', belly: '#fed7aa', paws: '#451a03', whiskers: '#78350f' } },
+      { name: 'Silver',   swatch: '#94a3b8', palette: { body: '#94a3b8', belly: '#e2e8f0', paws: '#475569', whiskers: '#334155' } },
+      { name: 'Sand',     swatch: '#fbbf24', palette: { body: '#fbbf24', belly: '#fef3c7', paws: '#a16207', whiskers: '#78350f' } },
+      { name: 'Rose',     swatch: '#fb7185', palette: { body: '#fb7185', belly: '#fecdd3', paws: '#be185d', whiskers: '#881337' } },
+    ],
+    coralia: [
+      { name: 'Rose',     swatch: '#fb7185', palette: { stem: '#fb7185', polyps: '#f472b6', tips: '#831843', base: '#a1a1aa' } },
+      { name: 'Amethyst', swatch: '#a855f7', palette: { stem: '#a855f7', polyps: '#c084fc', tips: '#581c87', base: '#a1a1aa' } },
+      { name: 'Reef',     swatch: '#f97316', palette: { stem: '#f97316', polyps: '#fb923c', tips: '#7c2d12', base: '#a1a1aa' } },
+      { name: 'Kelp',     swatch: '#22c55e', palette: { stem: '#22c55e', polyps: '#86efac', tips: '#14532d', base: '#a1a1aa' } },
+    ],
+    starly: [
+      { name: 'Sunny',    swatch: '#facc15', palette: { body: '#facc15', edge: '#a16207', dots: '#f97316' } },
+      { name: 'Coral',    swatch: '#fb7185', palette: { body: '#fb7185', edge: '#881337', dots: '#fce7f3' } },
+      { name: 'Amethyst', swatch: '#a855f7', palette: { body: '#a855f7', edge: '#581c87', dots: '#f472b6' } },
+      { name: 'Ocean',    swatch: '#06b6d4', palette: { body: '#06b6d4', edge: '#155e75', dots: '#a5f3fc' } },
+    ],
+    wavey: [
+      { name: 'Sunfire',  swatch: '#f97316', palette: { body: '#f97316', fin: '#fb923c', mane: '#fbbf24', snout: '#fed7aa' } },
+      { name: 'Ocean',    swatch: '#06b6d4', palette: { body: '#06b6d4', fin: '#22d3ee', mane: '#a5f3fc', snout: '#a5f3fc' } },
+      { name: 'Coral',    swatch: '#fb7185', palette: { body: '#fb7185', fin: '#fce7f3', mane: '#fecdd3', snout: '#fce7f3' } },
+      { name: 'Golden',   swatch: '#facc15', palette: { body: '#facc15', fin: '#fde68a', mane: '#fbbf24', snout: '#fef3c7' } },
+    ],
+    froggy: [
+      { name: 'Lime',     swatch: '#84cc16', palette: { body: '#84cc16', belly: '#fefce8', feet: '#f97316', spots: '#166534' } },
+      { name: 'Poison',   swatch: '#facc15', palette: { body: '#facc15', belly: '#fef3c7', feet: '#7c2d12', spots: '#78350f' } },
+      { name: 'Coral',    swatch: '#fb7185', palette: { body: '#fb7185', belly: '#fce7f3', feet: '#facc15', spots: '#881337' } },
+      { name: 'Rain',     swatch: '#06b6d4', palette: { body: '#06b6d4', belly: '#cffafe', feet: '#fbbf24', spots: '#155e75' } },
+    ],
+    iggy: [
+      { name: 'Emerald',  swatch: '#22c55e', palette: { body: '#22c55e', belly: '#d9f99d', spots: '#14532d', tongue: '#fb7185' } },
+      { name: 'Sand',     swatch: '#fbbf24', palette: { body: '#fbbf24', belly: '#fef3c7', spots: '#78350f', tongue: '#fb7185' } },
+      { name: 'Storm',    swatch: '#475569', palette: { body: '#475569', belly: '#cbd5e1', spots: '#0f172a', tongue: '#fb7185' } },
+      { name: 'Coral',    swatch: '#fb7185', palette: { body: '#fb7185', belly: '#fecdd3', spots: '#831337', tongue: '#facc15' } },
+    ],
+    bibby: [
+      { name: 'Emerald',  swatch: '#22c55e', palette: { body: '#22c55e', belly: '#d9f99d', wings: '#166534', beak: '#1a1a1a', gorget: '#f43f5e' } },
+      { name: 'Sky',      swatch: '#3b82f6', palette: { body: '#3b82f6', belly: '#dbeafe', wings: '#1e3a8a', beak: '#1a1a1a', gorget: '#f43f5e' } },
+      { name: 'Amethyst', swatch: '#9333ea', palette: { body: '#9333ea', belly: '#e9d5ff', wings: '#581c87', beak: '#1a1a1a', gorget: '#facc15' } },
+      { name: 'Ruby',     swatch: '#dc2626', palette: { body: '#dc2626', belly: '#fecaca', wings: '#7f1d1d', beak: '#1a1a1a', gorget: '#facc15' } },
+    ],
+    wombi: [
+      { name: 'Cocoa',    swatch: '#78350f', palette: { body: '#78350f', belly: '#fed7aa', ears: '#451a03', nose: '#1a1a1a', cheeks: '#f472b6' } },
+      { name: 'Ashen',    swatch: '#71717a', palette: { body: '#71717a', belly: '#e4e4e7', ears: '#3f3f46', nose: '#1a1a1a', cheeks: '#f472b6' } },
+      { name: 'Honey',    swatch: '#fbbf24', palette: { body: '#fbbf24', belly: '#fef3c7', ears: '#a16207', nose: '#1a1a1a', cheeks: '#f472b6' } },
+      { name: 'Cloud',    swatch: '#cbd5e1', palette: { body: '#cbd5e1', belly: '#f8fafc', ears: '#94a3b8', nose: '#1a1a1a', cheeks: '#f472b6' } },
+    ],
+    mango: [
+      { name: 'Cocoa',    swatch: '#78350f', palette: { body: '#78350f', wings: '#451a03', belly: '#fed7aa', ears: '#92400e' } },
+      { name: 'Ashen',    swatch: '#3f3f46', palette: { body: '#3f3f46', wings: '#18181b', belly: '#e4e4e7', ears: '#52525b' } },
+      { name: 'Sunset',   swatch: '#f97316', palette: { body: '#f97316', wings: '#7c2d12', belly: '#fed7aa', ears: '#c2410c' } },
+      { name: 'Sky',      swatch: '#3b82f6', palette: { body: '#3b82f6', wings: '#172554', belly: '#dbeafe', ears: '#1e3a8a' } },
     ],
   };
   for (const key of Object.keys(SPECIES)) {
