@@ -2795,17 +2795,33 @@
       const avg = (m.hunger + m.happy + m.clean + m.energy) / 4;
       rt.mood = petSleeping ? 'sleep' : (avg > 55 ? 'happy' : avg > 25 ? 'neutral' : 'sad');
 
-      // Target selection: goal-driven, else random wander.
+      // Target selection: goal-driven, else random wander.  Activity
+      // zones are seeked before care items so pets naturally use them.
       const items = G.save.ownedItems || {};
-      if (petSleeping || m.energy < 12)                         { rt.tx = 20; rt.ty = 82; }
-      else if (m.hunger < 20 && items.bowl)                     { rt.tx = 78; rt.ty = 82; }
-      else if (m.happy  < 20 && items.toy)                      { rt.tx = 62; rt.ty = 82; }
+      let target = null;
+      if (petSleeping) target = items.shadeTree ? ZONES.shadeTree : { x: 20, y: 82 };
+      else if (m.energy < 25 && items.shadeTree) target = ZONES.shadeTree;
+      else if (m.hunger < 25 && items.feeder)    target = ZONES.feeder;
+      else if (m.hunger < 20 && items.bowl)      target = { x: 78, y: 82 };
+      else if (m.clean  < 25 && items.pond)      target = ZONES.pond;
+      else if (m.happy  < 25 && items.ballpit)   target = ZONES.ballpit;
+      else if (m.happy  < 20 && items.toy)       target = { x: 62, y: 82 };
+      if (target) { rt.tx = target.x; rt.ty = target.y; }
       else {
         rt.wanderT -= dt;
         if (rt.wanderT <= 0) {
           rt.tx = 15 + Math.random() * 70;
           rt.ty = 78 + Math.random() * 4;
           rt.wanderT = 2500 + Math.random() * 3500;
+        }
+      }
+
+      // Passive meter gains while standing on an owned activity zone.
+      // Rates are % per second — dt is in ms.
+      for (const [zoneId, zone] of Object.entries(ZONES)) {
+        if (!items[zoneId]) continue;
+        if (Math.hypot(rt.x - zone.x, rt.y - zone.y) <= zone.r) {
+          m[zone.meter] = clamp(m[zone.meter] + zone.rate * (dt / 1000), 0, 100);
         }
       }
 
@@ -3069,10 +3085,115 @@
 
   function drawOwnedItems() {
     const items = G.save.ownedItems || {};
+    const ctx = G.ctx;
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+    // Decor first (behind zones/props)
+    if (items.rug)     drawRug(dx(30), dy(90));
+    if (items.banner)  drawBanner(ctx);
+    if (items.plant)   drawPlant(dx(90), dy(85));
+    if (items.mailbox) drawMailbox(dx(8), dy(84));
+    // Activity zones
+    if (items.pond)      drawPond(dx(ZONES.pond.x),      dy(ZONES.pond.y));
+    if (items.ballpit)   drawBallPit(dx(ZONES.ballpit.x),  dy(ZONES.ballpit.y));
+    if (items.shadeTree) drawShadeTree(dx(ZONES.shadeTree.x), dy(ZONES.shadeTree.y));
+    if (items.feeder)    drawFeeder(dx(ZONES.feeder.x),    dy(ZONES.feeder.y));
+    // Care items (bowl / toy / bed / bath)
     if (items.bowl) drawBowl(dx(78), dy(85));
     if (items.toy)  drawToy(dx(62), dy(85));
     if (items.bed)  drawBed(dx(20), dy(85));
     if (items.bath) drawBubbleBath(dx(38), dy(85));
+  }
+  function drawRug(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#a855f7';
+    ctx.fillRect(x - 40, y - 3, 80, 6); ctx.strokeRect(x - 40, y - 3, 80, 6);
+    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2;
+    for (let i = -3; i <= 3; i++) {
+      ctx.beginPath(); ctx.moveTo(x + i * 12, y - 3); ctx.lineTo(x + i * 12, y + 3); ctx.stroke();
+    }
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+  }
+  function drawBanner(ctx) {
+    // A string of triangular pennants across the top of the stage.
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(dx(4), dy(6)); ctx.quadraticCurveTo(dx(50), dy(10), dx(96), dy(6)); ctx.stroke();
+    const colors = ['#ec4899','#facc15','#22c55e','#3b82f6','#f97316','#a855f7'];
+    for (let i = 0; i < 8; i++) {
+      const t = i / 7;
+      const x = dx(6 + t * 88);
+      const y = dy(6 + Math.sin(t * Math.PI) * 4);
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.beginPath();
+      ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.lineTo(x, y + 8); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    }
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+  }
+  function drawPlant(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#78350f';
+    ctx.beginPath();
+    ctx.moveTo(x - 8, y); ctx.lineTo(x - 6, y + 10); ctx.lineTo(x + 6, y + 10); ctx.lineTo(x + 8, y);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#22c55e';
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI - Math.PI / 2;
+      ctx.beginPath(); ctx.ellipse(x + Math.cos(a) * 8, y - 6 + Math.sin(a) * 6, 6, 3, a, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    }
+  }
+  function drawMailbox(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(x - 6, y - 12, 12, 12); ctx.strokeRect(x - 6, y - 12, 12, 12);
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(x - 1, y, 2, 10);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(x + 6, y - 10, 3, 6); ctx.strokeRect(x + 6, y - 10, 3, 6);
+  }
+  function drawPond(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath(); ctx.ellipse(x, y, 32, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(x - 6, y - 1, 8, 2, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+  }
+  function drawBallPit(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.moveTo(x - 24, y); ctx.lineTo(x - 20, y + 6); ctx.lineTo(x + 20, y + 6); ctx.lineTo(x + 24, y);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    const balls = [['#ec4899', -14, -2], ['#22c55e', -4, -4], ['#3b82f6', 6, -3], ['#f97316', 14, -1]];
+    for (const [c, ox, oy] of balls) {
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(x + ox, y + oy, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+  }
+  function drawShadeTree(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(x - 4, y - 18, 8, 18); ctx.strokeRect(x - 4, y - 18, 8, 18);
+    ctx.fillStyle = '#166534';
+    ctx.beginPath(); ctx.arc(x, y - 26, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath(); ctx.arc(x - 8, y - 22, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 10, y - 20, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+  function drawFeeder(x, y) {
+    const ctx = G.ctx;
+    ctx.fillStyle = '#a1a1aa';
+    ctx.beginPath();
+    ctx.moveTo(x - 10, y - 20); ctx.lineTo(x + 10, y - 20);
+    ctx.lineTo(x + 8, y - 6); ctx.lineTo(x - 8, y - 6);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath(); ctx.arc(x, y - 4, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // little seeds
+    ctx.fillStyle = '#a16207';
+    ctx.beginPath(); ctx.arc(x - 3, y - 2, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 3, y - 2, 1.5, 0, Math.PI * 2); ctx.fill();
   }
   function drawBowl(x, y) {
     const ctx = G.ctx;
@@ -3184,40 +3305,74 @@
   }
 
   const SHOP_ITEMS = [
-    { id: 'bowl', emoji: '🍚', name: 'Food Bowl',    desc: 'A cheerful bowl. Pet visits it when hungry.', price: 120 },
-    { id: 'toy',  emoji: '🎾', name: 'Squeaky Toy',  desc: 'Pet drifts over to play. Small happy bonus.',  price: 150 },
-    { id: 'bath', emoji: '🛁', name: 'Bubble Bath',  desc: 'Bath action gives +extra cleanliness.',        price: 180 },
-    { id: 'bed',  emoji: '🛏️', name: 'Comfy Bed',    desc: 'Pet sleeps faster and recovers more energy.',   price: 220 },
+    // Care upgrades — affect the manual actions.
+    { id: 'bowl', emoji: '🍚', name: 'Food Bowl',    desc: 'A cheerful bowl. Feed gives more food per item.', price: 120, kind: 'care' },
+    { id: 'toy',  emoji: '🎾', name: 'Squeaky Toy',  desc: 'Ball catches give more happy.',                     price: 150, kind: 'care' },
+    { id: 'bath', emoji: '🛁', name: 'Bubble Bath',  desc: 'Bath action gives extra cleanliness.',              price: 180, kind: 'care' },
+    { id: 'bed',  emoji: '🛏️', name: 'Comfy Bed',    desc: 'Pet sleeps deeper and recovers more energy.',       price: 220, kind: 'care' },
+    // Decor — visible in the habitat, no gameplay effect.
+    { id: 'rug',    emoji: '🟪', name: 'Cosy Rug',       desc: 'A soft purple rug for the habitat.',             price: 90,  kind: 'decor' },
+    { id: 'plant',  emoji: '🪴', name: 'Potted Plant',   desc: 'A cheerful potted plant in the corner.',         price: 110, kind: 'decor' },
+    { id: 'banner', emoji: '🎉', name: 'Party Bunting',  desc: 'Colourful bunting strung across the top.',       price: 120, kind: 'decor' },
+    { id: 'mailbox',emoji: '📮', name: 'Mailbox',        desc: 'A little mailbox for a homely touch.',           price: 130, kind: 'decor' },
+    // Activity zones — pets seek these out and gain meters passively
+    // while standing on them.
+    { id: 'pond',      emoji: '💧', name: 'Splash Pond',  desc: 'Pets drink and cool off. Slowly tops up Clean.', price: 300, kind: 'zone' },
+    { id: 'ballpit',   emoji: '🥎', name: 'Ball Pit',     desc: 'Pets play here on their own. Slowly tops up Happy.', price: 300, kind: 'zone' },
+    { id: 'shadeTree', emoji: '🌳', name: 'Shade Tree',   desc: 'Pets nap under it. Slowly tops up Energy.',      price: 300, kind: 'zone' },
+    { id: 'feeder',    emoji: '🥣', name: 'Auto Feeder',  desc: 'Trickles snacks. Slowly tops up Full nearby.',   price: 300, kind: 'zone' },
   ];
+
+  // Design-space positions and effects for each activity zone.
+  const ZONES = {
+    pond:      { x: 20, y: 84, r: 14, meter: 'clean',  rate: 3.0 },   // % per second
+    ballpit:   { x: 44, y: 85, r: 12, meter: 'happy',  rate: 3.0 },
+    shadeTree: { x: 60, y: 84, r: 12, meter: 'energy', rate: 2.5 },
+    feeder:    { x: 78, y: 85, r: 10, meter: 'hunger', rate: 3.0 },
+  };
 
   function openShop() {
     const list = document.getElementById('shop-list');
     document.getElementById('shop-coins').textContent = G.save.coins;
     list.innerHTML = '';
-    for (const item of SHOP_ITEMS) {
-      const owned = !!(G.save.ownedItems && G.save.ownedItems[item.id]);
-      const canAfford = G.save.coins >= item.price;
-      const cell = document.createElement('div');
-      cell.className = 'shop-item' + (owned ? ' owned' : (!canAfford ? ' locked' : ''));
-      cell.innerHTML = `
-        <div class="row">
-          <span class="emoji">${item.emoji}</span>
-          <span class="name">${item.name}</span>
-        </div>
-        <div class="desc">${item.desc}</div>
-        <button>${owned ? '✓ Owned' : (canAfford ? `Buy — 🪙 ${item.price}` : `🔒 ${item.price} coins`)}</button>`;
-      const btn = cell.querySelector('button');
-      btn.addEventListener('click', () => {
-        if (owned) return;
-        if (G.save.coins < item.price) return;
-        G.save.coins -= item.price;
-        G.save.ownedItems[item.id] = true;
-        saveNow();
-        openShop();
-        renderStagebar();
-        beep(660, 'triangle', 0.18, 0.08);
-      });
-      list.appendChild(cell);
+    // Group items by kind so browsing feels tidy.
+    const groups = [
+      { kind: 'care',  title: 'Care upgrades' },
+      { kind: 'zone',  title: 'Activity zones (pets use these on their own)' },
+      { kind: 'decor', title: 'Decor' },
+    ];
+    for (const g of groups) {
+      const header = document.createElement('h3');
+      header.style.gridColumn = '1 / -1';
+      header.style.margin = '0.5rem 0 0.25rem';
+      header.style.fontSize = '1rem';
+      header.textContent = g.title;
+      list.appendChild(header);
+      for (const item of SHOP_ITEMS.filter(i => (i.kind || 'care') === g.kind)) {
+        const owned = !!(G.save.ownedItems && G.save.ownedItems[item.id]);
+        const canAfford = G.save.coins >= item.price;
+        const cell = document.createElement('div');
+        cell.className = 'shop-item' + (owned ? ' owned' : (!canAfford ? ' locked' : ''));
+        cell.innerHTML = `
+          <div class="row">
+            <span class="emoji">${item.emoji}</span>
+            <span class="name">${item.name}</span>
+          </div>
+          <div class="desc">${item.desc}</div>
+          <button>${owned ? '✓ Owned' : (canAfford ? `Buy — 🪙 ${item.price}` : `🔒 ${item.price} coins`)}</button>`;
+        const btn = cell.querySelector('button');
+        btn.addEventListener('click', () => {
+          if (owned) return;
+          if (G.save.coins < item.price) return;
+          G.save.coins -= item.price;
+          G.save.ownedItems[item.id] = true;
+          saveNow();
+          openShop();
+          renderStagebar();
+          beep(660, 'triangle', 0.18, 0.08);
+        });
+        list.appendChild(cell);
+      }
     }
     openModal('modal-shop');
   }
