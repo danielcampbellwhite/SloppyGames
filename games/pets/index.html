@@ -3291,14 +3291,22 @@
   // ============================================================
 
   // Coins per passive tick, scaled to household composition:
-  //   +1 per adult (founder + mate, so 1 or 2)
-  //   +1 flat bonus if any children exist (0 or 1, not per-child)
+  //   +1 per adult — founder and mate always qualify; a child that
+  //   has outlived both parents also counts (they're now leading the
+  //   household after inheritance).
+  //   +1 flat bonus if any children are currently in the household.
   // Max = 3 coins per cycle for a full family.
   function coinsPerCycle() {
     if (!G.save || G.save.stage !== 'live') return 0;
     const pets = livePets();
-    const adults   = pets.filter(p => !p.parentIds || p.parentIds.length === 0).length;
-    const anyKids  = pets.some(p => p.parentIds && p.parentIds.length > 0) ? 1 : 0;
+    const isAdult = pet => {
+      if (!pet.parentIds || pet.parentIds.length === 0) return true;
+      // If none of this pet's parents are still alive, they've come
+      // of age as the new head of the household.
+      return !pet.parentIds.some(pid => petById(pid));
+    };
+    const adults = pets.filter(isAdult).length;
+    const anyKids = pets.some(p => !isAdult(p)) ? 1 : 0;
     return adults + anyKids;
   }
 
@@ -4262,8 +4270,9 @@
   // Find any mated couples in the household and, if none of their eggs
   // are pending, schedule one.  Called every loop tick and on load.
   // Max children per couple.  Once they hit this, no more eggs will
-  // schedule for that couple even if an existing child dies.
-  const MAX_CHILDREN_PER_COUPLE = 2;
+  // schedule for that couple even if the child dies — the line
+  // continues through that single heir when the parents pass on.
+  const MAX_CHILDREN_PER_COUPLE = 1;
 
   function schedulePendingEgg() {
     if (G.save.pendingEgg) return;
