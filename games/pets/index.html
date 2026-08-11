@@ -664,6 +664,43 @@
       background: linear-gradient(180deg, #fbcfe8, #f472b6) !important;
     }
 
+    /* Mini-game overlay */
+    .mini-overlay {
+      position: absolute;
+      top: 8px; left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      z-index: 4;
+      pointer-events: none;
+    }
+    .mini-hint {
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      padding: 0.15rem 0.7rem;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .mini-done {
+      pointer-events: auto;
+      background: var(--yellow);
+      color: var(--ink);
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      padding: 0.15rem 0.7rem;
+      font-family: 'Baloo 2', sans-serif;
+      font-weight: 800;
+      font-size: 0.85rem;
+      box-shadow: 3px 3px 0 var(--ink);
+      cursor: pointer;
+    }
+    .mini-done:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--ink); }
+    .mini-done:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); }
+
     /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
       .egg-shape, .egg-shape.warming { animation: none !important; }
@@ -720,6 +757,10 @@
         <div class="day-time" id="day-time">🌞 Day</div>
         <div class="sick-mark" id="sick-mark" style="display:none;">🤢 Sick</div>
         <canvas id="canvas"></canvas>
+        <div class="mini-overlay" id="mini-overlay" style="display:none;">
+          <span class="mini-hint" id="mini-hint"></span>
+          <button class="mini-done" id="mini-done" type="button">Done</button>
+        </div>
       </div>
       <div class="actions" id="actions"></div>
     </section>
@@ -2670,6 +2711,7 @@
       drawScene(nowMs);
       drawAllPets(nowMs);
       drawPendingEgg(nowMs);
+      if (G.miniGame) drawMiniGame(nowMs);
       tickBreeding();
       updateThoughts(dt);
       updatePlayCentreButton();
@@ -3142,43 +3184,22 @@
     if (!G.save || G.save.stage !== 'live') return;
     const pet = selectedPet();
     if (!pet) return;
+    // Feed / Play / Bath now launch mini-interactions instead of
+    // applying an instant bonus.  Love and Sleep are still one-tap
+    // because there's nothing interactive to add.
+    if (id === 'feed') { startMini('feed', pet); return; }
+    if (id === 'play') {
+      if (pet.meters.energy < 15) {
+        const rt = petRuntimeFor(pet.id);
+        thoughtAt(rt.x, rt.y - 25, 'Too tired 😴');
+        return;
+      }
+      startMini('play', pet); return;
+    }
+    if (id === 'bath') { startMini('bath', pet); return; }
     const rt = petRuntimeFor(pet.id);
     const m = pet.meters;
     switch (id) {
-      case 'feed': {
-        const bump = G.save.ownedItems.bowl ? 42 : 32;
-        const wasHungry = m.hunger < 60;
-        m.hunger = clamp(m.hunger + bump, 0, 100);
-        m.clean  = clamp(m.clean - 5, 0, 100);
-        thoughtAt(rt.x, rt.y - 25, wasHungry ? 'Yummy! 😋' : '🙂');
-        beep(520, 'sine', 0.22, 0.06);
-        if (wasHungry) grantCoins(3, rt.x, rt.y - 25);
-        break;
-      }
-      case 'play': {
-        if (m.energy < 15) { thoughtAt(rt.x, rt.y - 25, 'Too tired 😴'); return; }
-        const bump = G.save.ownedItems.toy ? 32 : 24;
-        m.happy  = clamp(m.happy  + bump, 0, 100);
-        m.energy = clamp(m.energy - 8,   0, 100);
-        m.hunger = clamp(m.hunger - 4,   0, 100);
-        thoughtAt(rt.x, rt.y - 25, ['Yay!','🎉','Wheee!','Again!'][Math.floor(Math.random()*4)]);
-        beep(880, 'triangle', 0.15, 0.05);
-        setTimeout(() => beep(1175, 'triangle', 0.15, 0.05), 90);
-        rt.tx = 20 + Math.random() * 60; rt.ty = 78 + Math.random() * 4;
-        rt.wanderT = 4000;
-        grantCoins(1, rt.x, rt.y - 25);
-        break;
-      }
-      case 'bath': {
-        const bump = G.save.ownedItems.bath ? 55 : 40;
-        const wasDirty = m.clean < 60;
-        m.clean = clamp(m.clean + bump, 0, 100);
-        m.happy = clamp(m.happy - 5, 0, 100);
-        thoughtAt(rt.x, rt.y - 25, wasDirty ? 'Sparkly! ✨' : 'ugh 💧');
-        beep(1200, 'sine', 0.3, 0.05);
-        if (wasDirty) grantCoins(3, rt.x, rt.y - 25);
-        break;
-      }
       case 'tap': {
         m.happy = clamp(m.happy + 6, 0, 100);
         thoughtAt(rt.x, rt.y - 25, ['💜','✨','🥰','🙂'][Math.floor(Math.random()*4)]);
@@ -3425,6 +3446,7 @@
   document.getElementById('btn-shop').addEventListener('click', () => openShop());
   document.getElementById('btn-play-centre').addEventListener('click', openPlayCentre);
   document.getElementById('play-leave').addEventListener('click', leavePlayCentre);
+  document.getElementById('mini-done').addEventListener('click', () => { if (G.miniGame) endMini(); });
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (confirm('Really reset? Your pet will be gone forever.')) {
       wipeSave();
@@ -3898,6 +3920,394 @@
 
   // Inheritance is now handled inline by killPet() → tryPromoteHeirOf().
 
+  // ============================================================
+  //  v7 — Mini-interactions for Feed / Bath / Play
+  //
+  //  Each mini-game runs as an overlay on the habitat canvas.  While
+  //  a mini-game is active the pet AI keeps running (pets still walk
+  //  around) but pointer events route to the mini-game instead of
+  //  the usual tap-to-select behaviour.  Mini-games end via completion,
+  //  timeout, or a Cancel button.
+  // ============================================================
+
+  const MINI_TIMEOUT_MS = 30_000;
+
+  function startMini(type, pet) {
+    if (G.miniGame) return;   // already running
+    const rt = petRuntimeFor(pet.id);
+    G.miniGame = {
+      type,
+      petId: pet.id,
+      startedAt: performance.now(),
+    };
+    if (type === 'feed') {
+      // 3 food items to drag to the pet's mouth (one at a time).
+      G.miniGame.items = [
+        { x: 20, y: 90, emoji: '🍔', delivered: false },
+        { x: 50, y: 92, emoji: '🍎', delivered: false },
+        { x: 80, y: 90, emoji: '🍪', delivered: false },
+      ];
+      G.miniGame.drag = null;
+      G.miniGame.hint = 'Drag food to your pet';
+    } else if (type === 'bath') {
+      // A dirt grid covering the pet — scrub each cell down to 0 to
+      // count as cleaned.  Bar fills as cells drop.
+      const cells = [];
+      const rows = 4, cols = 6;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          cells.push({ r, c, dirt: 100 });
+        }
+      }
+      G.miniGame.cells = cells;
+      G.miniGame.rows = rows;
+      G.miniGame.cols = cols;
+      G.miniGame.bubbles = [];
+      G.miniGame.hint = 'Scrub your pet clean';
+    } else if (type === 'play') {
+      // 3 throws — flick the ball toward the pet.
+      G.miniGame.throwsLeft = 3;
+      G.miniGame.caught = 0;
+      G.miniGame.ball = null;   // active thrown ball
+      G.miniGame.readyBall = { x: 50, y: 90 };
+      G.miniGame.drag = null;
+      G.miniGame.hint = 'Flick the ball toward your pet';
+    }
+    showMiniOverlay();
+  }
+
+  function endMini(bonus) {
+    const mg = G.miniGame;
+    if (!mg) return;
+    const pet = petById(mg.petId);
+    if (pet) {
+      const rt = petRuntimeFor(pet.id);
+      const m = pet.meters;
+      if (mg.type === 'feed') {
+        const delivered = mg.items.filter(i => i.delivered).length;
+        const bump = (G.save.ownedItems.bowl ? 14 : 12) * delivered;
+        const wasHungry = m.hunger < 60;
+        m.hunger = clamp(m.hunger + bump, 0, 100);
+        m.clean = clamp(m.clean - 3 * delivered, 0, 100);
+        thoughtAt(rt.x, rt.y - 25, delivered > 0 ? `Yummy! 😋 (${delivered} eaten)` : 'Missed everything 😞');
+        if (delivered > 0) grantCoins(Math.min(6, delivered * 2), rt.x, rt.y - 25);
+      } else if (mg.type === 'bath') {
+        const cleanedCells = mg.cells.filter(c => c.dirt <= 5).length;
+        const total = mg.cells.length;
+        const pct = cleanedCells / total;
+        const bump = Math.round((G.save.ownedItems.bath ? 55 : 40) * pct);
+        const wasDirty = m.clean < 60;
+        m.clean = clamp(m.clean + bump, 0, 100);
+        m.happy = clamp(m.happy - 3, 0, 100);
+        thoughtAt(rt.x, rt.y - 25, pct > 0.8 ? 'Sparkly! ✨' : pct > 0.4 ? 'Better!' : 'Still gunky 😞');
+        if (pct > 0.6 && wasDirty) grantCoins(5, rt.x, rt.y - 25);
+      } else if (mg.type === 'play') {
+        const caught = mg.caught;
+        const bump = (G.save.ownedItems.toy ? 10 : 8) * caught;
+        m.happy = clamp(m.happy + bump, 0, 100);
+        m.energy = clamp(m.energy - 3 * caught, 0, 100);
+        m.hunger = clamp(m.hunger - 2 * caught, 0, 100);
+        if (caught > 0) {
+          thoughtAt(rt.x, rt.y - 25, ['Yay!','Wheee!','Again!'][Math.min(caught - 1, 2)]);
+          grantCoins(caught, rt.x, rt.y - 25);
+        } else {
+          thoughtAt(rt.x, rt.y - 25, 'Aww… try again');
+        }
+      }
+    }
+    G.miniGame = null;
+    hideMiniOverlay();
+    renderHUD();
+    saveNow();
+  }
+
+  function showMiniOverlay() {
+    let el = document.getElementById('mini-overlay');
+    if (!el) return;
+    el.style.display = 'flex';
+    const label = document.getElementById('mini-hint');
+    if (label) label.textContent = G.miniGame.hint || '';
+  }
+  function hideMiniOverlay() {
+    const el = document.getElementById('mini-overlay');
+    if (el) el.style.display = 'none';
+  }
+
+  function drawMiniGame(nowMs) {
+    if (!G.miniGame) return;
+    const mg = G.miniGame;
+    const ctx = G.ctx;
+    // Timeout check
+    if (nowMs - mg.startedAt > MINI_TIMEOUT_MS) { endMini(); return; }
+
+    // Dim scene slightly to focus attention.
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(0, 0, G._pxW, G._pxH);
+
+    const pet = petById(mg.petId);
+    const rt = pet ? petRuntimeFor(pet.id) : null;
+    if (!pet || !rt) { endMini(); return; }
+    // Pointer target on the pet for feed/play (~mouth height).
+    const petPx = dx(rt.x);
+    const petPy = dy(rt.y - 15);   // roughly at the mouth
+
+    if (mg.type === 'feed') drawFeedMini(nowMs, mg, petPx, petPy);
+    else if (mg.type === 'bath') drawBathMini(nowMs, mg, petPx, petPy);
+    else if (mg.type === 'play') drawPlayMini(nowMs, mg, petPx, petPy);
+  }
+
+  function drawFeedMini(t, mg, petPx, petPy) {
+    const ctx = G.ctx;
+    // Draw a soft target ring around the pet's mouth.
+    ctx.strokeStyle = 'rgba(132, 204, 22, 0.8)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.arc(petPx, petPy, 40, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    // Draw undelivered food items.
+    ctx.font = 'bold 34px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const item of mg.items) {
+      if (item.delivered) continue;
+      const ix = mg.drag && mg.drag.item === item ? mg.drag.x : dx(item.x);
+      const iy = mg.drag && mg.drag.item === item ? mg.drag.y : dy(item.y);
+      // Circle plate
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(ix, iy, 22, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillText(item.emoji, ix, iy + 2);
+    }
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+    // If all delivered, finish.
+    if (mg.items.every(i => i.delivered)) endMini();
+  }
+
+  function drawBathMini(t, mg, petPx, petPy) {
+    const ctx = G.ctx;
+    // Bath tub outline around the pet.
+    ctx.strokeStyle = '#0891b2';
+    ctx.lineWidth = 4;
+    const tubW = 220, tubH = 100;
+    const tubX = petPx - tubW / 2, tubY = petPy + 10;
+    ctx.beginPath();
+    ctx.moveTo(tubX + 20, tubY);
+    ctx.lineTo(tubX + tubW - 20, tubY);
+    ctx.quadraticCurveTo(tubX + tubW, tubY, tubX + tubW, tubY + 20);
+    ctx.lineTo(tubX + tubW, tubY + tubH - 12);
+    ctx.quadraticCurveTo(tubX + tubW, tubY + tubH, tubX + tubW - 20, tubY + tubH);
+    ctx.lineTo(tubX + 20, tubY + tubH);
+    ctx.quadraticCurveTo(tubX, tubY + tubH, tubX, tubY + tubH - 12);
+    ctx.lineTo(tubX, tubY + 20);
+    ctx.quadraticCurveTo(tubX, tubY, tubX + 20, tubY);
+    ctx.stroke();
+
+    // Dirt cells over the pet — each shrinks as scrubbed.
+    const cellW = 28, cellH = 22;
+    const gridX = petPx - (mg.cols * cellW) / 2;
+    const gridY = petPy - 40;
+    let cleaned = 0;
+    for (const cell of mg.cells) {
+      if (cell.dirt <= 5) { cleaned++; continue; }
+      const cx = gridX + cell.c * cellW + cellW / 2;
+      const cy = gridY + cell.r * cellH + cellH / 2;
+      const alpha = cell.dirt / 100;
+      ctx.fillStyle = `rgba(107, 68, 35, ${alpha * 0.55})`;
+      ctx.beginPath(); ctx.arc(cx, cy, cellW * 0.55 * alpha, 0, Math.PI * 2); ctx.fill();
+    }
+    // Bubbles floating up
+    mg.bubbles = mg.bubbles.filter(b => {
+      b.y -= 40 * (1/60);
+      b.age += 1/60;
+      if (b.age > 3) return false;
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
+      return true;
+    });
+    // Progress bar
+    const pct = cleaned / mg.cells.length;
+    const barX = petPx - 60, barY = tubY + tubH + 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(barX, barY, 120, 8);
+    ctx.fillStyle = pct >= 0.8 ? '#84cc16' : '#22c55e';
+    ctx.fillRect(barX, barY, 120 * pct, 8);
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2;
+    ctx.strokeRect(barX, barY, 120, 8);
+    if (pct >= 0.98) endMini();
+  }
+
+  function drawPlayMini(t, mg, petPx, petPy) {
+    const ctx = G.ctx;
+    // Draw target ring on the pet.
+    ctx.strokeStyle = 'rgba(236, 72, 153, 0.8)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.arc(petPx, petPy + 10, 44, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    // Advance flying ball
+    if (mg.ball) {
+      mg.ball.vy += 0.5;                              // gravity
+      mg.ball.x  += mg.ball.vx;
+      mg.ball.y  += mg.ball.vy;
+      // If ball hits pet target: catch!
+      const dxb = mg.ball.x - petPx, dyb = mg.ball.y - (petPy + 10);
+      if (Math.hypot(dxb, dyb) < 44 && mg.ball.vy > 0) {
+        mg.caught++;
+        mg.ball = null;
+        beep(880, 'triangle', 0.15, 0.05);
+        setTimeout(() => beep(1175, 'triangle', 0.15, 0.05), 90);
+      } else if (mg.ball && (mg.ball.y > G._pxH + 30 || mg.ball.x < -30 || mg.ball.x > G._pxW + 30)) {
+        mg.ball = null;
+        beep(200, 'sine', 0.2, 0.03);
+      }
+    }
+    // Draw ready ball if no ball in flight and throws remain
+    if (!mg.ball && mg.throwsLeft > 0) {
+      const rb = mg.readyBall;
+      const rbx = mg.drag ? mg.drag.x : dx(rb.x);
+      const rby = mg.drag ? mg.drag.y : dy(rb.y);
+      ctx.fillStyle = '#22c55e';
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(rbx, rby, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      // Aim line while dragging
+      if (mg.drag) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(dx(rb.x), dy(rb.y));
+        ctx.lineTo(mg.drag.x, mg.drag.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+    // Draw flying ball
+    if (mg.ball) {
+      ctx.fillStyle = '#22c55e';
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(mg.ball.x, mg.ball.y, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    // Throws remaining chip
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2;
+    const chipW = 96, chipX = petPx - chipW / 2, chipY = petPy + 60;
+    ctx.beginPath();
+    ctx.rect(chipX, chipY, chipW, 20);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = 'bold 12px "Baloo 2", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`🎾 ${mg.throwsLeft} left · Caught ${mg.caught}`, petPx, chipY + 14);
+    ctx.textAlign = 'start';
+    // End when out of throws and no flying ball
+    if (mg.throwsLeft <= 0 && !mg.ball) endMini();
+  }
+
+  // Route pointerdown / pointermove / pointerup while a mini-game is
+  // active.  Returns true if the mini-game handled the event.
+  function miniPointerDown(cx, cy) {
+    const mg = G.miniGame;
+    if (!mg) return false;
+    if (mg.type === 'feed') {
+      for (const item of mg.items) {
+        if (item.delivered) continue;
+        const ix = dx(item.x), iy = dy(item.y);
+        if (Math.hypot(cx - ix, cy - iy) < 28) {
+          mg.drag = { item, x: cx, y: cy };
+          return true;
+        }
+      }
+    } else if (mg.type === 'bath') {
+      mg.scrub = { x: cx, y: cy };
+      applyScrub(cx, cy);
+      return true;
+    } else if (mg.type === 'play') {
+      if (mg.ball) return true;
+      if (mg.throwsLeft <= 0) return true;
+      const rb = mg.readyBall;
+      const rbx = dx(rb.x), rby = dy(rb.y);
+      if (Math.hypot(cx - rbx, cy - rby) < 32) {
+        mg.drag = { x: cx, y: cy, startX: cx, startY: cy, startT: performance.now() };
+        return true;
+      }
+    }
+    return false;
+  }
+  function miniPointerMove(cx, cy) {
+    const mg = G.miniGame;
+    if (!mg) return false;
+    if (mg.type === 'feed' && mg.drag) { mg.drag.x = cx; mg.drag.y = cy; return true; }
+    if (mg.type === 'bath' && mg.scrub) {
+      // Interpolate scrub along the drag path.
+      const dxs = cx - mg.scrub.x, dys = cy - mg.scrub.y;
+      const dist = Math.hypot(dxs, dys);
+      const steps = Math.max(1, Math.floor(dist / 8));
+      for (let i = 1; i <= steps; i++) {
+        applyScrub(mg.scrub.x + (dxs * i) / steps, mg.scrub.y + (dys * i) / steps);
+      }
+      mg.scrub = { x: cx, y: cy };
+      return true;
+    }
+    if (mg.type === 'play' && mg.drag) { mg.drag.x = cx; mg.drag.y = cy; return true; }
+    return false;
+  }
+  function miniPointerUp(cx, cy) {
+    const mg = G.miniGame;
+    if (!mg) return false;
+    if (mg.type === 'feed' && mg.drag) {
+      const pet = petById(mg.petId);
+      const rt  = pet && petRuntimeFor(pet.id);
+      if (pet && rt) {
+        const petPx = dx(rt.x);
+        const petPy = dy(rt.y - 15);
+        const d = Math.hypot(mg.drag.x - petPx, mg.drag.y - petPy);
+        if (d < 44) {
+          mg.drag.item.delivered = true;
+          beep(520, 'sine', 0.22, 0.06);
+        }
+      }
+      mg.drag = null;
+      return true;
+    }
+    if (mg.type === 'bath' && mg.scrub) { mg.scrub = null; return true; }
+    if (mg.type === 'play' && mg.drag) {
+      const dt = Math.max(60, performance.now() - mg.drag.startT);
+      const vx = (mg.drag.x - dx(mg.readyBall.x)) / (dt / 20);
+      const vy = (mg.drag.y - dy(mg.readyBall.y)) / (dt / 20);
+      mg.ball = { x: dx(mg.readyBall.x), y: dy(mg.readyBall.y), vx: vx * 1.6, vy: vy * 1.6 - 4 };
+      mg.throwsLeft -= 1;
+      mg.drag = null;
+      beep(400, 'triangle', 0.1, 0.04);
+      return true;
+    }
+    return false;
+  }
+
+  function applyScrub(cx, cy) {
+    const mg = G.miniGame;
+    if (!mg || mg.type !== 'bath') return;
+    const pet = petById(mg.petId);
+    if (!pet) return;
+    const rt = petRuntimeFor(pet.id);
+    const petPx = dx(rt.x), petPy = dy(rt.y - 15);
+    const cellW = 28, cellH = 22;
+    const gridX = petPx - (mg.cols * cellW) / 2;
+    const gridY = petPy - 40;
+    for (const cell of mg.cells) {
+      const ccx = gridX + cell.c * cellW + cellW / 2;
+      const ccy = gridY + cell.r * cellH + cellH / 2;
+      if (Math.hypot(cx - ccx, cy - ccy) < 22) {
+        cell.dirt = Math.max(0, cell.dirt - 12);
+        if (Math.random() < 0.3) {
+          mg.bubbles.push({ x: cx + (Math.random() * 10 - 5), y: cy, r: 3 + Math.random() * 4, age: 0 });
+        }
+      }
+    }
+  }
+
   function boot() {
     // Wire up egg-stage tap
     const eggStage = document.getElementById('egg-stage');
@@ -3906,10 +4316,29 @@
       tapEgg(e.clientX, e.clientY);
     });
 
-    // Wire up habitat tap
-    document.getElementById('stage').addEventListener('pointerdown', (e) => {
+    // Wire up habitat pointer events (routes to mini-game first).
+    const stageEl = document.getElementById('stage');
+    stageEl.addEventListener('pointerdown', (e) => {
       ensureAudio();
+      const rect = stageEl.getBoundingClientRect();
+      const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+      if (G.miniGame && miniPointerDown(cx, cy)) { e.preventDefault(); return; }
       onStageTap(e);
+    });
+    stageEl.addEventListener('pointermove', (e) => {
+      if (!G.miniGame) return;
+      const rect = stageEl.getBoundingClientRect();
+      miniPointerMove(e.clientX - rect.left, e.clientY - rect.top);
+    });
+    stageEl.addEventListener('pointerup', (e) => {
+      if (!G.miniGame) return;
+      const rect = stageEl.getBoundingClientRect();
+      miniPointerUp(e.clientX - rect.left, e.clientY - rect.top);
+    });
+    stageEl.addEventListener('pointercancel', (e) => {
+      if (!G.miniGame) return;
+      const rect = stageEl.getBoundingClientRect();
+      miniPointerUp(e.clientX - rect.left, e.clientY - rect.top);
     });
     document.addEventListener('click', ensureAudio, { once: true });
 
