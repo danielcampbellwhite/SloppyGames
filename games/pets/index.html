@@ -530,6 +530,101 @@
       z-index: 3;
     }
 
+    /* ---------- Play Centre ---------- */
+    .play-header {
+      display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+      width: 100%; max-width: 640px;
+      text-align: center;
+    }
+    .play-header h2 { font-size: 1.5rem; }
+    .play-header p  { margin: 0; color: #555; font-size: 0.95rem; }
+    .play-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.85rem;
+      width: 100%;
+      max-width: 640px;
+    }
+    @media (min-width: 620px) { .play-list { grid-template-columns: 1fr 1fr; } }
+    .play-card {
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 20px;
+      box-shadow: 5px 5px 0 var(--ink);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .play-card__top { display: flex; gap: 0.5rem; align-items: center; }
+    .play-card__portrait {
+      width: 72px; height: 72px;
+      border: 3px solid var(--ink);
+      border-radius: 16px;
+      background: #fff9c4;
+      display: grid; place-items: center;
+      flex-shrink: 0;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .play-card__portrait canvas { width: 100%; height: 100%; display: block; border-radius: 12px; }
+    .play-card__name { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.15rem; line-height: 1; }
+    .play-card__meta { font-size: 0.8rem; color: #666; margin-top: 0.15rem; }
+    .play-card__meta .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink); vertical-align: middle; margin-left: 3px; }
+    .play-card__personality { font-size: 0.85rem; color: #444; font-style: italic; }
+    .play-card__bar {
+      height: 12px; background: rgba(0,0,0,0.15);
+      border: 2px solid var(--ink);
+      border-radius: 999px; overflow: hidden;
+    }
+    .play-card__bar .fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #f9a8d4, #db2777);
+      transition: width 0.3s ease;
+    }
+    .play-card__bar.full .fill { background: linear-gradient(90deg, #f472b6, #db2777, #9333ea); }
+    .play-card__row {
+      display: flex; gap: 0.35rem; flex-wrap: wrap;
+    }
+    .play-card__row button {
+      flex: 1 1 0;
+      min-width: 80px;
+      background: var(--paper);
+      border: 3px solid var(--ink);
+      border-radius: 12px;
+      box-shadow: 2px 2px 0 var(--ink);
+      padding: 0.35rem 0.4rem;
+      font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.85rem;
+      cursor: pointer;
+    }
+    .play-card__row button:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); }
+    .play-card__row button:active { transform: translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
+    .play-card__row button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .play-card__mate-btn {
+      background: linear-gradient(180deg, #fef3c7, #facc15) !important;
+    }
+
+    .play-back {
+      display: flex; gap: 0.5rem; justify-content: center;
+      width: 100%;
+    }
+
+    /* Mate confetti / pair popup */
+    .pair-cheer {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.85);
+      display: grid; place-items: center;
+      z-index: 5;
+      animation: pairPop 0.4s ease-out;
+    }
+    @keyframes pairPop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    .pair-cheer h3 { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.6rem; color: var(--purple-dark); text-align: center; }
+
+    /* Mate chip in stagebar */
+    .mate-chip {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      background: linear-gradient(180deg, #fbcfe8, #f472b6) !important;
+    }
+
     /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
       .egg-shape, .egg-shape.warming { animation: none !important; }
@@ -542,6 +637,7 @@
     <a class="back" href="../../">← Back</a>
     <img src="../../assets/logo.png" alt="Sloppy Games" />
     <div class="topbar-right">
+      <button class="icon-btn" id="btn-play-centre" title="Play Centre" style="display:none;">🏛️ Play Centre</button>
       <button class="icon-btn" id="btn-shop" title="Shop">🛒 Shop</button>
       <button class="icon-btn" id="btn-info" title="Info">ℹ️</button>
     </div>
@@ -586,6 +682,18 @@
         <canvas id="canvas"></canvas>
       </div>
       <div class="actions" id="actions"></div>
+    </section>
+
+    <!-- Play Centre -->
+    <section id="screen-play" class="screen">
+      <div class="play-header">
+        <h2>🏛️ The Play Centre</h2>
+        <p id="play-blurb">Other pets of the same species come here to meet friends. Play together enough and one of them might become your pet's mate!</p>
+      </div>
+      <div class="play-list" id="play-list"></div>
+      <div class="play-back">
+        <button class="ghost-btn" id="play-leave">← Back to habitat</button>
+      </div>
     </section>
 
     <!-- Death / restart -->
@@ -640,6 +748,10 @@
 
   const SAVE_KEY = 'sloppy.pets.v1';
   const SAVE_VERSION = 1;
+
+  // Bump this when the play-centre CPU roster should be regenerated
+  // (kept per-save so partners feel stable rather than shuffled).
+  const PLAY_CENTRE_ROSTER = 3;
 
   // Real-time tunings (all in ms).  Keep these clustered — future
   // updates may re-balance without touching game code.
@@ -1187,6 +1299,9 @@
       pendingEgg: null,      // { readyAt, variant } once a couple lays one
       family: [],            // ancestry log — { species, variant, gender, born, died, cause }
       generation: 1,
+      // The Play Centre CPU roster is generated once per pet lifetime
+      // so partners you meet feel consistent visit-to-visit.
+      playCentre: null,      // { generated, roster: [{ id, species, gender, variant, name, personality, attraction }] }
       history: { born: null, died: null, cause: null },
     };
   }
@@ -1214,6 +1329,7 @@
       if (!('pendingEgg'     in data)) data.pendingEgg = null;
       if (!('family'         in data)) data.family = [];
       if (!('generation'     in data)) data.generation = 1;
+      if (!('playCentre'     in data)) data.playCentre = null;
       // Backfill gender/variant on the pet itself.
       if (data.pet && !('gender'  in data.pet)) data.pet.gender  = Math.random() < 0.5 ? 'm' : 'f';
       if (data.pet && !('variant' in data.pet)) data.pet.variant = 0;
@@ -1347,10 +1463,11 @@
 
   function setScreen(name) {
     G.screen = name;
-    for (const s of ['biome','egg','habitat','dead']) {
+    for (const s of ['biome','egg','habitat','play','dead']) {
       const el = document.getElementById('screen-' + s);
       if (el) el.classList.toggle('active', s === name);
     }
+    updatePlayCentreButton();
     // Sub-screens tweak subtitle + biome tint.
     const sub = document.getElementById('subtitle');
     if (name === 'biome') {
@@ -1359,7 +1476,11 @@
       sub.textContent = 'Tap the egg to keep it warm. Keep going until it hatches!';
     } else if (name === 'habitat') {
       const bi = BIOMES[G.save.biome];
-      sub.textContent = `${G.save.pet ? G.save.pet.name : 'Your pet'} lives in the ${bi.label}. Look after them every day.`;
+      const pn = G.save.pet ? G.save.pet.name : 'Your pet';
+      const mate = G.save.mate ? ` (with ${G.save.mate.name} 💜)` : '';
+      sub.textContent = `${pn}${mate} lives in the ${bi.label}. Look after them every day.`;
+    } else if (name === 'play') {
+      sub.textContent = 'Meet other pets of the same species. Play together to grow attraction — hit 100 and you can become mates!';
     } else if (name === 'dead') {
       sub.textContent = 'A quiet moment for a beloved friend.';
     }
@@ -1533,7 +1654,13 @@
   function dy(y) { return (y / 75)  * G._pxH; }
 
   function loop(nowMs) {
-    if (G.screen !== 'habitat') return;
+    // Keep the RAF chain alive across screens so we can pause work but
+    // still resume drawing when the player returns to the habitat.
+    if (G.screen !== 'habitat') {
+      G.lastFrame = nowMs;
+      requestAnimationFrame(loop);
+      return;
+    }
     const dt = Math.min(nowMs - G.lastFrame, 200);   // clamp huge jumps
     G.lastFrame = nowMs;
 
@@ -1559,7 +1686,9 @@
     if (G.save.stage !== 'dead') {
       aiStep(dt);
       drawScene(nowMs);
+      if (G.save.mate) drawMate(nowMs);
       updateThoughts(dt);
+      updatePlayCentreButton();
     }
     requestAnimationFrame(loop);
   }
@@ -2148,7 +2277,12 @@
       <div class="info-row"><span>Born</span><strong>${born}</strong></div>
       <div class="info-row"><span>Loves</span><strong>${sp.like}</strong></div>
       <div class="info-row"><span>Hates</span><strong>${sp.hates}</strong></div>
-      <div class="info-row"><span>Coins</span><strong>🪙 ${G.save.coins}</strong></div>`;
+      <div class="info-row"><span>Coins</span><strong>🪙 ${G.save.coins}</strong></div>
+      ${G.save.mate ? `<hr style="margin:0.75rem 0; border: none; border-top: 2px dotted rgba(0,0,0,0.15);" />
+        <p style="margin:0.25rem 0;font-family:'Baloo 2',sans-serif;font-weight:800;">💜 Mate</p>
+        <div class="info-row"><span>Name</span><strong>${G.save.mate.name} ${G.save.mate.gender === 'f' ? '♀' : '♂'}</strong></div>
+        <div class="info-row"><span>Variant</span><strong>${(SPECIES[G.save.mate.species].variants[G.save.mate.variant] || {name:'?'}).name}</strong></div>
+        <div class="info-row"><span>Together since</span><strong>${new Date(G.save.partneredSince).toLocaleDateString()}</strong></div>` : ''}`;
   }
 
   document.getElementById('btn-info').addEventListener('click', () => {
@@ -2156,6 +2290,8 @@
     openModal('modal-info');
   });
   document.getElementById('btn-shop').addEventListener('click', () => openShop());
+  document.getElementById('btn-play-centre').addEventListener('click', openPlayCentre);
+  document.getElementById('play-leave').addEventListener('click', leavePlayCentre);
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (confirm('Really reset? Your pet will be gone forever.')) {
       wipeSave();
@@ -2237,6 +2373,274 @@
       g.gain.linearRampToValueAtTime(0, t + dur);
       o.start(t); o.stop(t + dur + 0.02);
     } catch (e) {}
+  }
+
+  // ============================================================
+  //  Play Centre — meet other pets of your species and pair up
+  // ============================================================
+
+  // A tiny pool of pet-ish names.  We pick a first name at random and
+  // keep it stable per CPU pet in the save.
+  const CPU_NAMES = {
+    m: ['Ziggy','Bramble','Nibbles','Otto','Kip','Rowan','Miso','Bramble','Fen','Skip','Bertie','Waffle','Otis','Toby','Pip','Bram','Colin','Bruce','Alfie','Jasper'],
+    f: ['Marli','Willow','Pip','Suki','Poppy','Iris','Nell','Juno','Luna','Peach','Winnie','Cleo','Freya','Bea','Hazel','Rey','Mia','Nova','Sage','Wren'],
+  };
+  const PERSONALITIES = [
+    'Loves a laugh.', 'Very chill.', 'A bit chatty.', 'Sensitive soul.',
+    'Naps a lot.', 'Adventurous type.', 'Bit of a foodie.', 'Loves games.',
+    'Prefers quiet.', 'Bouncy energy.', 'Kind-hearted.', 'Cheeky one.',
+  ];
+
+  function generatePlayCentre() {
+    // Only CPUs of the same species — but of the OPPOSITE gender to
+    // the player pet (so the mating flow always has valid partners).
+    if (!G.save || !G.save.pet) return null;
+    const speciesKey = G.save.pet.species;
+    const opposite = G.save.pet.gender === 'm' ? 'f' : 'm';
+    const nameList = CPU_NAMES[opposite].slice();
+    const usedNames = new Set();
+    const roster = [];
+    for (let i = 0; i < PLAY_CENTRE_ROSTER; i++) {
+      // Pick a unique name.
+      let name = null;
+      for (let tries = 0; tries < 8 && !name; tries++) {
+        const cand = nameList[Math.floor(Math.random() * nameList.length)];
+        if (!usedNames.has(cand)) { name = cand; usedNames.add(cand); }
+      }
+      if (!name) name = 'Pet ' + (i + 1);
+      // Variant: any of the species' colour morphs, biased away from
+      // the player's own so the couple looks distinct.
+      const variants = SPECIES[speciesKey].variants;
+      let variant = Math.floor(Math.random() * variants.length);
+      if (variants.length > 1 && variant === G.save.pet.variant) {
+        variant = (variant + 1 + Math.floor(Math.random() * (variants.length - 1))) % variants.length;
+      }
+      roster.push({
+        id: 'cpu_' + Date.now() + '_' + i,
+        species: speciesKey,
+        gender: opposite,
+        variant: variant,
+        name: name,
+        personality: PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)],
+        attraction: 0,
+        lastVisitAt: 0,
+      });
+    }
+    return { generated: Date.now(), roster };
+  }
+
+  // How mature does the pet need to be before dating is on the table?
+  function petIsMatingAge() {
+    if (!G.save || !G.save.pet) return false;
+    if (G.save.stage === 'dead' || G.save.stage === 'egg') return false;
+    // Teens and up.
+    return G.save.age >= 35;
+  }
+
+  function updatePlayCentreButton() {
+    const btn = document.getElementById('btn-play-centre');
+    if (!btn) return;
+    const show = G.screen === 'habitat' && petIsMatingAge() && !G.save.mate;
+    btn.style.display = show ? 'inline-flex' : 'none';
+  }
+
+  function openPlayCentre() {
+    if (!petIsMatingAge()) return;
+    if (G.save.mate) return;
+    if (!G.save.playCentre || !G.save.playCentre.roster || !G.save.playCentre.roster.length) {
+      G.save.playCentre = generatePlayCentre();
+    }
+    saveNow();
+    setScreen('play');
+    renderPlayCentre();
+  }
+
+  function renderPlayCentre() {
+    const list = document.getElementById('play-list');
+    list.innerHTML = '';
+    const roster = G.save.playCentre.roster;
+    for (const cpu of roster) {
+      const card = document.createElement('div');
+      card.className = 'play-card';
+      const speciesName = SPECIES[cpu.species].name;
+      const variantName = (SPECIES[cpu.species].variants[cpu.variant] || {}).name || '';
+      const variantSwatch = (SPECIES[cpu.species].variants[cpu.variant] || {}).swatch || '#9333ea';
+      const genderLabel = cpu.gender === 'f' ? '♀' : '♂';
+      const canMate = cpu.attraction >= 100;
+      card.innerHTML = `
+        <div class="play-card__top">
+          <div class="play-card__portrait">
+            <canvas width="80" height="80" data-portrait="${cpu.id}"></canvas>
+          </div>
+          <div>
+            <div class="play-card__name">${cpu.name} ${genderLabel}</div>
+            <div class="play-card__meta">${speciesName} · ${variantName}<span class="swatch" style="background:${variantSwatch};"></span></div>
+            <div class="play-card__personality">"${cpu.personality}"</div>
+          </div>
+        </div>
+        <div class="play-card__bar${canMate ? ' full' : ''}">
+          <div class="fill" style="width:${cpu.attraction}%;"></div>
+        </div>
+        <div class="play-card__row">
+          <button data-act="play"  data-id="${cpu.id}">🎾 Play together</button>
+          <button data-act="snack" data-id="${cpu.id}">🍔 Share a snack</button>
+          <button data-act="gift"  data-id="${cpu.id}">💐 Give a gift</button>
+        </div>
+        ${canMate ? `<div class="play-card__row"><button class="play-card__mate-btn" data-act="mate" data-id="${cpu.id}">❤️ Become mates with ${cpu.name}!</button></div>` : ''}`;
+      list.appendChild(card);
+      // paint portrait
+      const pc = card.querySelector('canvas');
+      const pctx = pc.getContext('2d');
+      pctx.setTransform(1,0,0,1,0,0);
+      pctx.clearRect(0,0,80,80);
+      pctx.save();
+      pctx.translate(40, 76);
+      pctx.scale(0.7, 0.7);
+      pctx.translate(-50, -100);
+      SPECIES[cpu.species].draw(pctx, 'happy', performance.now());
+      pctx.restore();
+    }
+    // Delegate button clicks.
+    list.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => onPlayCentreClick(b.dataset.act, b.dataset.id));
+    });
+  }
+
+  function onPlayCentreClick(act, id) {
+    const cpu = G.save.playCentre.roster.find(c => c.id === id);
+    if (!cpu) return;
+    if (act === 'mate') { confirmMate(cpu); return; }
+    // Player pet spends a little energy or hunger doing the activity.
+    if (G.save.meters.energy < 8) {
+      thoughtInPlayCentre(cpu.id, 'Too tired!');
+      return;
+    }
+    let bonus = 0;
+    let cost = { energy: 4 };
+    switch (act) {
+      case 'play':  bonus = 12 + Math.floor(Math.random() * 5); cost.energy = 6; cost.happy = -6; break;
+      case 'snack': bonus = 10 + Math.floor(Math.random() * 5); cost.energy = 2; cost.hunger = -8; break;
+      case 'gift':
+        // Gifts cost coins.
+        if (G.save.coins < 10) { thoughtInPlayCentre(cpu.id, 'Need 10 coins!'); return; }
+        G.save.coins -= 10;
+        bonus = 18 + Math.floor(Math.random() * 6);
+        cost.happy = 4;   // happy bump
+        break;
+    }
+    // Apply cost/benefit to player pet meters.
+    for (const k of Object.keys(cost)) {
+      if (k === 'energy') G.save.meters.energy = clamp(G.save.meters.energy - cost.energy, 0, 100);
+      else G.save.meters[k] = clamp(G.save.meters[k] + cost[k], 0, 100);   // could be negative (=drop) or positive (=bump)
+    }
+    cpu.attraction = clamp(cpu.attraction + bonus, 0, 100);
+    cpu.lastVisitAt = Date.now();
+    saveNow();
+    beep(700 + bonus * 8, 'triangle', 0.15, 0.05);
+    renderPlayCentre();
+    if (cpu.attraction >= 100) beep(1200, 'square', 0.2, 0.08);
+  }
+
+  function thoughtInPlayCentre(cpuId, text) {
+    const card = document.querySelector(`[data-portrait="${cpuId}"]`);
+    if (!card) return;
+    const holder = card.closest('.play-card');
+    const el = document.createElement('div');
+    el.className = 'thought';
+    el.textContent = text;
+    el.style.position = 'absolute';
+    el.style.left = '50%';
+    el.style.top = '10px';
+    holder.style.position = 'relative';
+    holder.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+
+  function confirmMate(cpu) {
+    if (!confirm(`Become mates with ${cpu.name}? You'll bring ${cpu.name} home to your habitat.`)) return;
+    G.save.mate = {
+      species: cpu.species,
+      gender: cpu.gender,
+      variant: cpu.variant,
+      name: cpu.name,
+      personality: cpu.personality,
+    };
+    G.save.partneredSince = Date.now();
+    // Roster is done — clear it.
+    G.save.playCentre = null;
+    saveNow();
+    // Cheer, then return to habitat.
+    const list = document.getElementById('play-list');
+    const cheer = document.createElement('div');
+    cheer.className = 'pair-cheer';
+    cheer.style.position = 'relative';
+    cheer.style.padding = '2rem 1rem';
+    cheer.style.borderRadius = '20px';
+    cheer.innerHTML = `<h3>💜 ${G.save.pet.name} & ${cpu.name} — a pair!</h3>`;
+    list.innerHTML = '';
+    list.appendChild(cheer);
+    beep(880, 'square', 0.2, 0.08);
+    setTimeout(() => beep(1175, 'square', 0.2, 0.08), 120);
+    setTimeout(() => beep(1568, 'square', 0.3, 0.10), 240);
+    setTimeout(() => {
+      setScreen('habitat');
+      // Mate needs to spawn in habitat.
+      G.mateRuntime = { x: 70, y: 80, tx: 65, ty: 80, facing: -1, walkT: 0 };
+      renderStagebar();
+      thoughtAt(G.pet.x, G.pet.y - 25, 'Welcome home 💜', 3200);
+    }, 1600);
+  }
+
+  function leavePlayCentre() {
+    // If any CPUs are close to 100, cache the roster; otherwise refresh
+    // on next visit so meets feel fresh.
+    setScreen('habitat');
+    renderStagebar();
+    updatePlayCentreButton();
+  }
+
+  // Draw the mate walking alongside the player pet.
+  function drawMate(t) {
+    if (!G.save.mate) return;
+    if (!G.mateRuntime) G.mateRuntime = { x: G.pet.x + 20, y: 80, tx: G.pet.x + 15, ty: 80, facing: -1, walkT: 0 };
+    const mr = G.mateRuntime;
+    // Mate follows a target that hovers near the player pet.
+    const desiredX = G.pet.x + (G.pet.x < 50 ? 18 : -18);
+    if (Math.abs(mr.tx - desiredX) > 12) mr.tx = clamp(desiredX + (Math.random() * 10 - 5), 12, 88);
+    const dx1 = mr.tx - mr.x;
+    const dist = Math.abs(dx1);
+    const speed = 0.010;
+    if (dist > 0.4) {
+      const step = Math.min(dist, speed * 16);
+      mr.x += Math.sign(dx1) * step;
+      mr.facing = dx1 > 0 ? 1 : -1;
+      mr.walkT += 16;
+    }
+    const species = SPECIES[G.save.mate.species];
+    const stage = STAGES.find(s => s.key === G.save.stage) || STAGES[3];
+    const spriteSize = 90 * stage.scale * 0.9;   // slightly smaller
+    const px = dx(mr.x);
+    const bob = Math.sin(t / 240 + mr.walkT / 200) * 2;
+    const py = dy(mr.y) + bob;
+    G.ctx.save();
+    G.ctx.translate(px, py);
+    const s = spriteSize / 100;
+    G.ctx.scale(mr.facing * s, s);
+    G.ctx.translate(-50, -100);
+    species.draw(G.ctx, 'happy', t);
+    G.ctx.restore();
+    // Shadow
+    G.ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    G.ctx.beginPath();
+    G.ctx.ellipse(px, dy(mr.y) + 2, spriteSize * 0.24, spriteSize * 0.06, 0, 0, Math.PI * 2);
+    G.ctx.fill();
+    // Occasional heart between pair when close.
+    const gap = Math.abs(G.pet.x - mr.x);
+    if (gap < 20 && (Math.floor(t / 800) % 6 === 0)) {
+      G.ctx.font = 'bold 16px sans-serif';
+      G.ctx.fillStyle = '#db2777';
+      G.ctx.fillText('💜', (dx(G.pet.x) + px) / 2 - 8, dy(G.pet.y - 12));
+    }
   }
 
   // ============================================================
