@@ -2768,9 +2768,9 @@
       updateSickBadge();
     }
     if (nowStamp - G.lastCoin >= TUNE.COIN_TICK_MS) {
-      const inc = Math.floor((nowStamp - G.lastCoin) / TUNE.COIN_TICK_MS);
-      G.save.coins += inc;
-      G.lastCoin += inc * TUNE.COIN_TICK_MS;
+      const cycles = Math.floor((nowStamp - G.lastCoin) / TUNE.COIN_TICK_MS);
+      G.save.coins += cycles * coinsPerCycle();
+      G.lastCoin += cycles * TUNE.COIN_TICK_MS;
       renderStagebar();
     }
 
@@ -3289,6 +3289,18 @@
   // ============================================================
   //  Coins & shop
   // ============================================================
+
+  // Coins per passive tick, scaled to household composition:
+  //   +1 per adult (founder + mate, so 1 or 2)
+  //   +1 flat bonus if any children exist (0 or 1, not per-child)
+  // Max = 3 coins per cycle for a full family.
+  function coinsPerCycle() {
+    if (!G.save || G.save.stage !== 'live') return 0;
+    const pets = livePets();
+    const adults   = pets.filter(p => !p.parentIds || p.parentIds.length === 0).length;
+    const anyKids  = pets.some(p => p.parentIds && p.parentIds.length > 0) ? 1 : 0;
+    return adults + anyKids;
+  }
 
   function grantCoins(n, sourceX, sourceY) {
     G.save.coins += n;
