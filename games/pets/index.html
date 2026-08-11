@@ -868,37 +868,31 @@
     },
   };
 
-  // Each species has a draw() function that renders the sprite into
-  // ctx at (0, 0) with a bounding box of 100x100 (design units).  The
-  // engine handles positioning, scaling and mirroring.
+  // Each species has a draw(ctx, mood, t, palette) that renders the
+  // sprite into ctx at (0,0) with a bounding box of 100x100 (design
+  // units).  Every themable colour comes from `palette` so variants
+  // recolour properly instead of relying on a hue-rotate hack.
+  //
+  // Palette schema per species is documented on the species itself;
+  // if the caller doesn't pass a palette we fall back to variant 0.
   const SPECIES = {
     sprout: {
       key: 'sprout', name: 'Sprout',
       biome: 'forest',
       personality: 'A leafy little woodland pup that giggles when the sun hits its head.',
       like: 'sunshine', hates: 'cold water',
-      draw(ctx, mood, t) {
-        // body
+      // palette: { body, belly, legs, leaf, stem }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.sprout.variants[0].palette;
         ctx.save();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-        ctx.fillStyle = '#84cc16';
-        blob(ctx, 50, 60, 42, 34);
-        // belly patch
-        ctx.fillStyle = '#d9f99d';
-        ellipse(ctx, 50, 72, 22, 14, true);
-        // legs
-        ctx.fillStyle = '#65a30d';
-        blob(ctx, 30, 88, 12, 8);
-        blob(ctx, 70, 88, 12, 8);
-        // leaves on head
-        ctx.fillStyle = '#22c55e';
-        leaf(ctx, 42, 28, -30);
-        leaf(ctx, 58, 28,  30);
-        // stem
-        ctx.strokeStyle = '#166534'; ctx.lineWidth = 4;
+        ctx.fillStyle = P.body;   blob(ctx, 50, 60, 42, 34);
+        ctx.fillStyle = P.belly;  ellipse(ctx, 50, 72, 22, 14, true);
+        ctx.fillStyle = P.legs;   blob(ctx, 30, 88, 12, 8); blob(ctx, 70, 88, 12, 8);
+        ctx.fillStyle = P.leaf;   leaf(ctx, 42, 28, -30); leaf(ctx, 58, 28, 30);
+        ctx.strokeStyle = P.stem; ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(50, 34); ctx.lineTo(50, 26); ctx.stroke();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
-        // face
         drawFace(ctx, mood, t, 'small');
         ctx.restore();
       }
@@ -907,33 +901,19 @@
       key: 'foxy', name: 'Foxy', biome: 'forest',
       personality: 'A curious little fox that darts about and steals crumbs when you look away.',
       like: 'playing', hates: 'being alone',
-      draw(ctx, mood, t) {
+      // palette: { body, belly, legs, ears, tail, snout }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.foxy.variants[0].palette;
         ctx.save();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-        // body
-        ctx.fillStyle = '#f97316';
-        blob(ctx, 50, 62, 40, 30);
-        // belly
-        ctx.fillStyle = '#fef3c7';
-        ellipse(ctx, 50, 74, 22, 12, true);
-        // legs
-        ctx.fillStyle = '#c2410c';
-        blob(ctx, 30, 88, 10, 7);
-        blob(ctx, 70, 88, 10, 7);
-        // ears (triangles)
-        ctx.fillStyle = '#f97316';
-        triangle(ctx, 30, 34, 22, 18, 38, 18);
-        triangle(ctx, 70, 34, 62, 18, 78, 18);
-        // tail
-        ctx.fillStyle = '#fb923c';
-        wag(ctx, 88, 60, 20, 6, t);
-        // face
+        ctx.fillStyle = P.body;   blob(ctx, 50, 62, 40, 30);
+        ctx.fillStyle = P.belly;  ellipse(ctx, 50, 74, 22, 12, true);
+        ctx.fillStyle = P.legs;   blob(ctx, 30, 88, 10, 7); blob(ctx, 70, 88, 10, 7);
+        ctx.fillStyle = P.ears;   triangle(ctx, 30, 34, 22, 18, 38, 18); triangle(ctx, 70, 34, 62, 18, 78, 18);
+        ctx.fillStyle = P.tail;   wag(ctx, 88, 60, 20, 6, t);
         drawFace(ctx, mood, t, 'wide');
-        // snout
-        ctx.fillStyle = '#fef3c7';
-        ellipse(ctx, 50, 56, 12, 8, true);
-        ctx.fillStyle = '#1a1a1a';
-        ctx.beginPath(); ctx.arc(50, 54, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = P.snout;  ellipse(ctx, 50, 56, 12, 8, true);
+        ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(50, 54, 3.5, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
     },
@@ -941,26 +921,16 @@
       key: 'owlet', name: 'Owlet', biome: 'forest',
       personality: 'A round little owl chick that blinks slowly and hoots at 4am.',
       like: 'quiet', hates: 'loud noises',
-      draw(ctx, mood, t) {
+      // palette: { body, belly, wings, tufts, beak }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.owlet.variants[0].palette;
         ctx.save();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-        ctx.fillStyle = '#a16207';
-        blob(ctx, 50, 60, 40, 38);
-        // belly
-        ctx.fillStyle = '#fde68a';
-        ellipse(ctx, 50, 68, 24, 20, true);
-        // tufts
-        ctx.fillStyle = '#a16207';
-        triangle(ctx, 32, 26, 22, 12, 40, 22);
-        triangle(ctx, 68, 26, 60, 22, 78, 12);
-        // wings
-        ctx.fillStyle = '#78350f';
-        ellipse(ctx, 20, 62, 8, 22, true);
-        ellipse(ctx, 80, 62, 8, 22, true);
-        // beak
-        ctx.fillStyle = '#f97316';
-        triangle(ctx, 50, 58, 44, 52, 56, 52);
-        // eyes (big)
+        ctx.fillStyle = P.body;   blob(ctx, 50, 60, 40, 38);
+        ctx.fillStyle = P.belly;  ellipse(ctx, 50, 68, 24, 20, true);
+        ctx.fillStyle = P.tufts;  triangle(ctx, 32, 26, 22, 12, 40, 22); triangle(ctx, 68, 26, 60, 22, 78, 12);
+        ctx.fillStyle = P.wings;  ellipse(ctx, 20, 62, 8, 22, true); ellipse(ctx, 80, 62, 8, 22, true);
+        ctx.fillStyle = P.beak;   triangle(ctx, 50, 58, 44, 52, 56, 52);
         drawFace(ctx, mood, t, 'huge');
         ctx.restore();
       }
@@ -969,11 +939,12 @@
       key: 'blubby', name: 'Blubby', biome: 'sea',
       personality: 'A wobbly pink jellyfish. Bubbles when it laughs. Just don\'t touch its top.',
       like: 'gentle currents', hates: 'being rushed',
-      draw(ctx, mood, t) {
+      // palette: { bell, tentacles }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.blubby.variants[0].palette;
         ctx.save();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-        // bell
-        ctx.fillStyle = '#ec4899';
+        ctx.fillStyle = P.bell;
         ctx.beginPath();
         ctx.moveTo(10, 58);
         ctx.bezierCurveTo(10, 20, 90, 20, 90, 58);
@@ -981,8 +952,7 @@
         ctx.bezierCurveTo(70, 74, 30, 74, 12, 62);
         ctx.closePath();
         ctx.fill(); ctx.stroke();
-        // tentacles
-        ctx.strokeStyle = '#f472b6'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+        ctx.strokeStyle = P.tentacles; ctx.lineWidth = 5; ctx.lineCap = 'round';
         for (let i = 0; i < 5; i++) {
           const x = 22 + i * 14;
           const sway = Math.sin(t / 400 + i) * 6;
@@ -1000,25 +970,17 @@
       key: 'turty', name: 'Turty', biome: 'sea',
       personality: 'A cheerful sea turtle that loves a good back scratch.',
       like: 'algae snacks', hates: 'plastic bags',
-      draw(ctx, mood, t) {
+      // palette: { shell, patches, headFlippers }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.turty.variants[0].palette;
         ctx.save();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-        // flippers
-        ctx.fillStyle = '#16a34a';
+        ctx.fillStyle = P.headFlippers;
         wag(ctx, 12, 62, 16, 10, t, 0.5);
         wag(ctx, 88, 62, -16, 10, t, 0.5, Math.PI);
-        // shell
-        ctx.fillStyle = '#22c55e';
-        blob(ctx, 50, 62, 36, 28);
-        // shell patches
-        ctx.fillStyle = '#14532d';
-        hex(ctx, 40, 60, 8);
-        hex(ctx, 60, 60, 8);
-        hex(ctx, 50, 48, 8);
-        hex(ctx, 50, 72, 8);
-        // head
-        ctx.fillStyle = '#16a34a';
-        ellipse(ctx, 50, 34, 16, 14);
+        ctx.fillStyle = P.shell;   blob(ctx, 50, 62, 36, 28);
+        ctx.fillStyle = P.patches; hex(ctx, 40, 60, 8); hex(ctx, 60, 60, 8); hex(ctx, 50, 48, 8); hex(ctx, 50, 72, 8);
+        ctx.fillStyle = P.headFlippers; ellipse(ctx, 50, 34, 16, 14);
         drawFace(ctx, mood, t, 'small', 32);
         ctx.restore();
       }
@@ -1027,11 +989,12 @@
       key: 'squig', name: 'Squig', biome: 'sea',
       personality: 'A quiet purple squid. Blows ink rings when it\'s happy.',
       like: 'dim light', hates: 'flashes',
-      draw(ctx, mood, t) {
+      // palette: { mantle, tentacles }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.squig.variants[0].palette;
         ctx.save();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-        // body (mantle)
-        ctx.fillStyle = '#9333ea';
+        ctx.fillStyle = P.mantle;
         ctx.beginPath();
         ctx.moveTo(30, 20);
         ctx.bezierCurveTo(70, 10, 78, 30, 74, 60);
@@ -1039,8 +1002,7 @@
         ctx.bezierCurveTo(22, 30, 30, 20, 30, 20);
         ctx.closePath();
         ctx.fill(); ctx.stroke();
-        // tentacles
-        ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+        ctx.strokeStyle = P.tentacles; ctx.lineWidth = 6; ctx.lineCap = 'round';
         for (let i = 0; i < 6; i++) {
           const x = 28 + i * 9;
           const sway = Math.sin(t / 500 + i * 0.7) * 5;
@@ -1058,36 +1020,28 @@
       key: 'pango', name: 'Pango', biome: 'tropical',
       personality: 'A cheeky toucan chick with a beak twice the size of its head.',
       like: 'fruit', hates: 'silence',
-      draw(ctx, mood, t) {
+      // palette: { body, belly, wings, beak, beakTip }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.pango.variants[0].palette;
         ctx.save();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-        // body
-        ctx.fillStyle = '#1a1a1a';
-        blob(ctx, 50, 62, 34, 32);
-        // belly
-        ctx.fillStyle = '#facc15';
-        ellipse(ctx, 50, 68, 22, 18, true);
-        // wings
-        ctx.fillStyle = '#111';
-        ellipse(ctx, 24, 60, 8, 20, true);
-        ellipse(ctx, 76, 60, 8, 20, true);
-        // huge beak
-        ctx.fillStyle = '#f97316';
+        ctx.fillStyle = P.body;    blob(ctx, 50, 62, 34, 32);
+        ctx.fillStyle = P.belly;   ellipse(ctx, 50, 68, 22, 18, true);
+        ctx.fillStyle = P.wings;   ellipse(ctx, 24, 60, 8, 20, true); ellipse(ctx, 76, 60, 8, 20, true);
+        ctx.fillStyle = P.beak;
         ctx.beginPath();
         ctx.moveTo(30, 46);
         ctx.quadraticCurveTo(50, 30, 78, 44);
         ctx.quadraticCurveTo(60, 58, 30, 52);
         ctx.closePath();
         ctx.fill(); ctx.stroke();
-        // beak tip
-        ctx.fillStyle = '#facc15';
+        ctx.fillStyle = P.beakTip;
         ctx.beginPath();
         ctx.moveTo(70, 45);
         ctx.quadraticCurveTo(80, 46, 78, 44);
         ctx.quadraticCurveTo(76, 46, 70, 47);
         ctx.closePath();
         ctx.fill();
-        // eyes tucked above beak
         drawFace(ctx, mood, t, 'wide', 34, true);
         ctx.restore();
       }
@@ -1096,28 +1050,22 @@
       key: 'slothy', name: 'Slothy', biome: 'tropical',
       personality: 'A tiny sloth. Moves slower than syrup. Perfect cuddler.',
       like: 'naps', hates: 'being hurried',
-      draw(ctx, mood, t) {
+      // palette: { body, face, bands, arms }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.slothy.variants[0].palette;
         ctx.save();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-        // body
-        ctx.fillStyle = '#a8a29e';
-        blob(ctx, 50, 60, 38, 34);
-        // face patch
-        ctx.fillStyle = '#fef3c7';
-        ellipse(ctx, 50, 46, 26, 20, true);
-        // eye bands
-        ctx.fillStyle = '#7c2d12';
+        ctx.fillStyle = P.body;   blob(ctx, 50, 60, 38, 34);
+        ctx.fillStyle = P.face;   ellipse(ctx, 50, 46, 26, 20, true);
+        ctx.fillStyle = P.bands;
         ctx.beginPath(); ctx.ellipse(40, 46, 8, 4, -0.2, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.ellipse(60, 46, 8, 4, 0.2, 0, Math.PI * 2); ctx.fill();
-        // eyes (sleepy)
         ctx.fillStyle = '#1a1a1a';
         ctx.beginPath(); ctx.arc(40, 47, 2.5, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(60, 47, 2.5, 0, Math.PI * 2); ctx.fill();
-        // arms hanging
-        ctx.strokeStyle = '#78716c'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+        ctx.strokeStyle = P.arms; ctx.lineWidth = 8; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(24, 60); ctx.quadraticCurveTo(10, 80, 22, 92); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(76, 60); ctx.quadraticCurveTo(90, 80, 78, 92); ctx.stroke();
-        // smile
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(44, 58); ctx.quadraticCurveTo(50, 62, 56, 58); ctx.stroke();
         ctx.restore();
@@ -1127,13 +1075,12 @@
       key: 'cocoo', name: 'Cocoo', biome: 'tropical',
       personality: 'A grumpy little coconut crab. Snaps its claws when excited.',
       like: 'snacks', hates: 'gulls',
-      draw(ctx, mood, t) {
+      // palette: { body, claws }
+      draw(ctx, mood, t, palette) {
+        const P = palette || SPECIES.cocoo.variants[0].palette;
         ctx.save();
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
-        // body
-        ctx.fillStyle = '#dc2626';
-        blob(ctx, 50, 66, 34, 22);
-        // eyes on stalks
+        ctx.fillStyle = P.body; blob(ctx, 50, 66, 34, 22);
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.moveTo(40, 56); ctx.lineTo(38, 42); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(60, 56); ctx.lineTo(62, 42); ctx.stroke();
@@ -1144,19 +1091,16 @@
         ctx.fillStyle = '#1a1a1a';
         ctx.beginPath(); ctx.arc(39, 41, 2.5, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(63, 41, 2.5, 0, Math.PI * 2); ctx.fill();
-        // claws (with wave)
-        ctx.fillStyle = '#b91c1c';
+        ctx.fillStyle = P.claws;
         const s = Math.sin(t / 200) * 3;
         blob(ctx, 16 + s, 68, 12, 10);
         blob(ctx, 84 - s, 68, 12, 10);
-        // legs
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3;
         for (let i = 0; i < 3; i++) {
           const y = 74 + i * 4;
           ctx.beginPath(); ctx.moveTo(28, y); ctx.lineTo(18, y + 8); ctx.stroke();
           ctx.beginPath(); ctx.moveTo(72, y); ctx.lineTo(82, y + 8); ctx.stroke();
         }
-        // mouth
         ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
         if (mood === 'happy') { ctx.beginPath(); ctx.moveTo(44, 66); ctx.quadraticCurveTo(50, 72, 56, 66); ctx.stroke(); }
         else                  { ctx.beginPath(); ctx.moveTo(44, 68); ctx.lineTo(56, 68); ctx.stroke(); }
@@ -1165,68 +1109,78 @@
     },
   };
 
-  // Variant metadata — attaches to each species after the fact.  Each
-  // entry names a colour morph.  In this v1 the sprite art is fixed
-  // per species (variant recolours are the next commit) but the field
-  // is saved so future updates don't have to migrate.
+  // Variant palettes.  Each entry: { name, swatch, palette }.  The
+  // swatch is used for the info-panel colour chip; the palette is
+  // what the species draw() actually reads.
   const VARIANTS = {
     sprout: [
-      { name: 'Meadow',  swatch: '#84cc16' },
-      { name: 'Bramble', swatch: '#166534' },
-      { name: 'Rosy',    swatch: '#ec4899' },
-      { name: 'Frosty',  swatch: '#a5f3fc' },
+      { name: 'Meadow',  swatch: '#84cc16', palette: { body: '#84cc16', belly: '#d9f99d', legs: '#65a30d', leaf: '#22c55e', stem: '#166534' } },
+      { name: 'Bramble', swatch: '#166534', palette: { body: '#166534', belly: '#86efac', legs: '#052e16', leaf: '#14532d', stem: '#052e16' } },
+      { name: 'Rosy',    swatch: '#ec4899', palette: { body: '#ec4899', belly: '#fbcfe8', legs: '#be185d', leaf: '#f472b6', stem: '#831843' } },
+      { name: 'Frosty',  swatch: '#67e8f9', palette: { body: '#67e8f9', belly: '#ecfeff', legs: '#0e7490', leaf: '#22d3ee', stem: '#155e75' } },
     ],
     foxy: [
-      { name: 'Ember',   swatch: '#f97316' },
-      { name: 'Ashen',   swatch: '#71717a' },
-      { name: 'Cocoa',   swatch: '#78350f' },
-      { name: 'Snow',    swatch: '#f5f5f4' },
+      { name: 'Ember',   swatch: '#f97316', palette: { body: '#f97316', belly: '#fef3c7', legs: '#c2410c', ears: '#f97316', tail: '#fb923c', snout: '#fef3c7' } },
+      { name: 'Ashen',   swatch: '#71717a', palette: { body: '#71717a', belly: '#f4f4f5', legs: '#3f3f46', ears: '#71717a', tail: '#a1a1aa', snout: '#f4f4f5' } },
+      { name: 'Cocoa',   swatch: '#78350f', palette: { body: '#78350f', belly: '#fbbf24', legs: '#451a03', ears: '#78350f', tail: '#92400e', snout: '#fef3c7' } },
+      { name: 'Snow',    swatch: '#f5f5f4', palette: { body: '#f5f5f4', belly: '#fafaf9', legs: '#a8a29e', ears: '#f5f5f4', tail: '#e7e5e4', snout: '#fecdd3' } },
     ],
     owlet: [
-      { name: 'Nutmeg',  swatch: '#a16207' },
-      { name: 'Slate',   swatch: '#475569' },
-      { name: 'Milky',   swatch: '#fef3c7' },
-      { name: 'Coalie',  swatch: '#1a1a1a' },
+      { name: 'Nutmeg',  swatch: '#a16207', palette: { body: '#a16207', belly: '#fde68a', wings: '#78350f', tufts: '#a16207', beak: '#f97316' } },
+      { name: 'Slate',   swatch: '#475569', palette: { body: '#475569', belly: '#e2e8f0', wings: '#334155', tufts: '#475569', beak: '#fbbf24' } },
+      { name: 'Milky',   swatch: '#fef3c7', palette: { body: '#fef3c7', belly: '#fefce8', wings: '#fbbf24', tufts: '#fef3c7', beak: '#f97316' } },
+      { name: 'Coalie',  swatch: '#1a1a1a', palette: { body: '#1a1a1a', belly: '#525252', wings: '#171717', tufts: '#1a1a1a', beak: '#facc15' } },
     ],
     blubby: [
-      { name: 'Bubblegum', swatch: '#ec4899' },
-      { name: 'Sunset',    swatch: '#f97316' },
-      { name: 'Deep Blue', swatch: '#1d4ed8' },
-      { name: 'Mint',      swatch: '#5eead4' },
+      { name: 'Bubblegum', swatch: '#ec4899', palette: { bell: '#ec4899', tentacles: '#f472b6' } },
+      { name: 'Sunset',    swatch: '#f97316', palette: { bell: '#f97316', tentacles: '#fb923c' } },
+      { name: 'Deep Blue', swatch: '#1d4ed8', palette: { bell: '#1d4ed8', tentacles: '#60a5fa' } },
+      { name: 'Mint',      swatch: '#5eead4', palette: { bell: '#5eead4', tentacles: '#a7f3d0' } },
     ],
     turty: [
-      { name: 'Reef',    swatch: '#22c55e' },
-      { name: 'Kelp',    swatch: '#166534' },
-      { name: 'Coral',   swatch: '#fb7185' },
-      { name: 'Golden',  swatch: '#facc15' },
+      { name: 'Reef',    swatch: '#22c55e', palette: { shell: '#22c55e', patches: '#14532d', headFlippers: '#16a34a' } },
+      { name: 'Kelp',    swatch: '#166534', palette: { shell: '#166534', patches: '#052e16', headFlippers: '#14532d' } },
+      { name: 'Coral',   swatch: '#fb7185', palette: { shell: '#fb7185', patches: '#881337', headFlippers: '#e11d48' } },
+      { name: 'Golden',  swatch: '#facc15', palette: { shell: '#facc15', patches: '#a16207', headFlippers: '#eab308' } },
     ],
     squig: [
-      { name: 'Amethyst', swatch: '#9333ea' },
-      { name: 'Indigo',   swatch: '#3730a3' },
-      { name: 'Rose',     swatch: '#f43f5e' },
-      { name: 'Aqua',     swatch: '#06b6d4' },
+      { name: 'Amethyst', swatch: '#9333ea', palette: { mantle: '#9333ea', tentacles: '#a855f7' } },
+      { name: 'Indigo',   swatch: '#4338ca', palette: { mantle: '#4338ca', tentacles: '#6366f1' } },
+      { name: 'Rose',     swatch: '#f43f5e', palette: { mantle: '#f43f5e', tentacles: '#fb7185' } },
+      { name: 'Aqua',     swatch: '#06b6d4', palette: { mantle: '#06b6d4', tentacles: '#22d3ee' } },
     ],
     pango: [
-      { name: 'Classic',  swatch: '#facc15' },
-      { name: 'Ruby',     swatch: '#dc2626' },
-      { name: 'Sky',      swatch: '#3b82f6' },
-      { name: 'Cream',    swatch: '#fef3c7' },
+      { name: 'Classic',  swatch: '#facc15', palette: { body: '#1a1a1a', belly: '#facc15', wings: '#111111', beak: '#f97316', beakTip: '#facc15' } },
+      { name: 'Ruby',     swatch: '#dc2626', palette: { body: '#7f1d1d', belly: '#fecaca', wings: '#450a0a', beak: '#dc2626', beakTip: '#fecaca' } },
+      { name: 'Sky',      swatch: '#3b82f6', palette: { body: '#1e3a8a', belly: '#dbeafe', wings: '#172554', beak: '#3b82f6', beakTip: '#dbeafe' } },
+      { name: 'Cream',    swatch: '#fef3c7', palette: { body: '#78350f', belly: '#fef3c7', wings: '#451a03', beak: '#f97316', beakTip: '#facc15' } },
     ],
     slothy: [
-      { name: 'Mocha',    swatch: '#a8a29e' },
-      { name: 'Honey',    swatch: '#facc15' },
-      { name: 'Rain',     swatch: '#94a3b8' },
-      { name: 'Pinkie',   swatch: '#fbcfe8' },
+      { name: 'Mocha',    swatch: '#a8a29e', palette: { body: '#a8a29e', face: '#fef3c7', bands: '#7c2d12', arms: '#78716c' } },
+      { name: 'Honey',    swatch: '#eab308', palette: { body: '#eab308', face: '#fef3c7', bands: '#78350f', arms: '#a16207' } },
+      { name: 'Rain',     swatch: '#94a3b8', palette: { body: '#94a3b8', face: '#f1f5f9', bands: '#334155', arms: '#64748b' } },
+      { name: 'Pinkie',   swatch: '#fbcfe8', palette: { body: '#fbcfe8', face: '#fce7f3', bands: '#831843', arms: '#f472b6' } },
     ],
     cocoo: [
-      { name: 'Chilli',   swatch: '#dc2626' },
-      { name: 'Sunburn',  swatch: '#f97316' },
-      { name: 'Coral',    swatch: '#fb7185' },
-      { name: 'Ghost',    swatch: '#f5f5f4' },
+      { name: 'Chilli',   swatch: '#dc2626', palette: { body: '#dc2626', claws: '#b91c1c' } },
+      { name: 'Sunburn',  swatch: '#f97316', palette: { body: '#f97316', claws: '#c2410c' } },
+      { name: 'Coral',    swatch: '#fb7185', palette: { body: '#fb7185', claws: '#be185d' } },
+      { name: 'Ghost',    swatch: '#f5f5f4', palette: { body: '#f5f5f4', claws: '#e7e5e4' } },
     ],
   };
   for (const key of Object.keys(SPECIES)) {
-    SPECIES[key].variants = VARIANTS[key] || [{ name: 'Default', swatch: '#9333ea' }];
+    SPECIES[key].variants = VARIANTS[key] || [{ name: 'Default', swatch: '#9333ea', palette: {} }];
+  }
+
+  // Look up a pet's palette (safe if the pet or variant is stale).
+  function paletteFor(pet) {
+    if (!pet || !SPECIES[pet.species]) return {};
+    const vs = SPECIES[pet.species].variants;
+    return (vs[pet.variant] || vs[0]).palette || {};
+  }
+  function paletteBySV(species, variantIdx) {
+    const vs = (SPECIES[species] && SPECIES[species].variants) || [];
+    return ((vs[variantIdx] || vs[0]) || {}).palette || {};
   }
 
   // ---------- Draw helpers (all draw into the design 100x100 box) ----------
@@ -2077,16 +2031,13 @@
     ctx.ellipse(px, dy(rt.y) + 2, spriteSize * 0.25, spriteSize * 0.06, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    const filter = variantFilter(pet.species, pet.variant || 0);
-    withFilter(ctx, filter, () => {
-      ctx.save();
-      ctx.translate(px, py);
-      const s = spriteSize / 100;
-      ctx.scale(rt.facing * s, s);
-      ctx.translate(-50, -100);
-      species.draw(ctx, rt.mood, t);
-      ctx.restore();
-    });
+    ctx.save();
+    ctx.translate(px, py);
+    const s = spriteSize / 100;
+    ctx.scale(rt.facing * s, s);
+    ctx.translate(-50, -100);
+    species.draw(ctx, rt.mood, t, paletteFor(pet));
+    ctx.restore();
 
     // Sleeping Z's
     if (asleep) {
@@ -2626,11 +2577,9 @@
       const c2 = canvas.getContext('2d');
       c2.setTransform(1,0,0,1,0,0);
       c2.clearRect(0,0,44,44);
-      withFilter(c2, variantFilter(pet.species, pet.variant || 0), () => {
-        c2.save(); c2.translate(22, 42); c2.scale(0.4, 0.4); c2.translate(-50, -100);
-        SPECIES[pet.species].draw(c2, 'happy', performance.now());
-        c2.restore();
-      });
+      c2.save(); c2.translate(22, 42); c2.scale(0.4, 0.4); c2.translate(-50, -100);
+      SPECIES[pet.species].draw(c2, 'happy', performance.now(), paletteFor(pet));
+      c2.restore();
       btn.appendChild(canvas);
       const label = document.createElement('div');
       label.className = 'pet-chip__label';
@@ -2777,9 +2726,7 @@
     mctx.scale(1.15, 1.15);
     mctx.translate(-50, -100);
     mctx.globalAlpha = 0.7;
-    if (last) withFilter(mctx, variantFilter(last.species, last.variant || 0), () => {
-      SPECIES[last.species].draw(mctx, 'sad', 0);
-    });
+    if (last) SPECIES[last.species].draw(mctx, 'sad', 0, paletteBySV(last.species, last.variant || 0));
     mctx.restore();
     // faded overlay
     mctx.fillStyle = 'rgba(255,255,255,0.35)';
@@ -2934,15 +2881,12 @@
       const pctx = pc.getContext('2d');
       pctx.setTransform(1,0,0,1,0,0);
       pctx.clearRect(0,0,80,80);
-      const filter = variantFilter(cpu.species, cpu.variant || 0);
-      withFilter(pctx, filter, () => {
-        pctx.save();
-        pctx.translate(40, 76);
-        pctx.scale(0.7, 0.7);
-        pctx.translate(-50, -100);
-        SPECIES[cpu.species].draw(pctx, 'happy', performance.now());
-        pctx.restore();
-      });
+      pctx.save();
+      pctx.translate(40, 76);
+      pctx.scale(0.7, 0.7);
+      pctx.translate(-50, -100);
+      SPECIES[cpu.species].draw(pctx, 'happy', performance.now(), paletteBySV(cpu.species, cpu.variant || 0));
+      pctx.restore();
     }
     // Delegate button clicks.
     list.querySelectorAll('button').forEach(b => {
@@ -3060,22 +3004,11 @@
   // from the moment the last egg hatched.  Aim for one egg per real hour.
   const EGG_GESTATION_MS = 60 * 60 * 1000;
 
-  // Applies a canvas filter that recolours a sprite based on its
-  // variant index.  Variant 0 is the "default" (identity).  Later
-  // variants shift the hue so the mate and children visibly differ
-  // from the base sprite even though the draw functions are shared.
-  function variantFilter(species, variantIdx) {
-    if (!variantIdx) return 'none';
-    const shifts = [0, 60, 190, 285];
-    const shift = shifts[variantIdx % shifts.length];
-    const sat = variantIdx === 3 ? 0.75 : 1.15;
-    return `hue-rotate(${shift}deg) saturate(${sat})`;
-  }
-  function withFilter(ctx, filter, fn) {
-    const prev = ctx.filter;
-    ctx.filter = filter;
-    try { fn(); } finally { ctx.filter = prev || 'none'; }
-  }
+  // The hue-rotate variantFilter from v3 is retired — palettes now
+  // carry the colours directly.  Kept as harmless shims in case any
+  // stray call site still references them.
+  function variantFilter() { return 'none'; }
+  function withFilter(ctx, filter, fn) { fn(); }
 
   // How offspring inherit variant from two parents.  40% each parent,
   // 20% mutation to any other variant.
